@@ -29,7 +29,8 @@ pub enum Axis {
 }
 
 pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⍟";
-pub const ARG_OP_CHARS: &str = "≔⇒↥↧⇂";
+pub const ARG_OP_CHARS: &str = "≔⇒↥↧⇂⇈⇟";
+pub const ARG2_OP_CHARS: &str = "⇉";
 const STRUCTURAL: &str = "«»⟨⟩[]⏎¯.※⋮⇓⇊∅ \t";
 
 pub fn is_op(c: char) -> bool {
@@ -38,8 +39,11 @@ pub fn is_op(c: char) -> bool {
 pub fn is_arg_op(c: char) -> bool {
     ARG_OP_CHARS.contains(c)
 }
+pub fn is_arg2_op(c: char) -> bool {
+    ARG2_OP_CHARS.contains(c)
+}
 pub fn is_reserved(c: char) -> bool {
-    is_op(c) || is_arg_op(c) || STRUCTURAL.contains(c) || c.is_ascii_digit()
+    is_op(c) || is_arg_op(c) || is_arg2_op(c) || STRUCTURAL.contains(c) || c.is_ascii_digit()
 }
 
 struct Lexer {
@@ -198,10 +202,15 @@ impl Lexer {
             } else if is_arg_op(ch) {
                 self.i += 1;
                 let arg = self.arg_char(cell, ch)?;
-                code.push(Instr { op: Op::B(ch, arg), pos: self.pos(&cell) });
+                code.push(Instr { op: Op::B(ch, arg, '\0'), pos: self.pos(&cell) });
+            } else if is_arg2_op(ch) {
+                self.i += 1;
+                let a = self.arg_char(cell, ch)?;
+                let b = self.arg_char(cell, ch)?;
+                code.push(Instr { op: Op::B(ch, a, b), pos: self.pos(&cell) });
             } else if is_op(ch) {
                 self.i += 1;
-                code.push(Instr { op: Op::B(ch, '\0'), pos: self.pos(&cell) });
+                code.push(Instr { op: Op::B(ch, '\0', '\0'), pos: self.pos(&cell) });
             } else if ch == '.' {
                 return self.err("stray . — floats are written like 1.5 or .5", &cell);
             } else {

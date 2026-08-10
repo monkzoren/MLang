@@ -86,6 +86,14 @@ CASES = [
     ("deadlock", "↧a\n↧b", ""),
     ("interleave-deterministic", "5⍸[«A»⍞]∀\n5⍸[«B»⍞]∀", ""),
     ("yield", "3⍸[«A»⍞⌛]∀\n3⍸[«B»⍞⌛]∀", ""),
+    # ── stream combinators ──
+    ("pour-drain", "⟨1 2 3⟩⇈a ⇟a⍞ ⟨⟩⇈b ⇟b⍞ «xy»⇈c ⇟c⍞", ""),
+    ("pump-pipeline", "9⍸[1+∂×]∵⇈α\n[2×]⇉αβ\n⇟β[⍞]∀", ""),
+    ("pump-empty", "⟨⟩⇈a\n[∂×]⇉ab\n⇟b#⍞", ""),
+    ("pump-chained", "5⍸⇈a\n[1+]⇉ab\n[10×]⇉bc\n⇟c⍞", ""),
+    ("drain-cross-strand", "3⍸⇈q\n⇟q⍞", ""),
+    ("pump-type-error", "5⇉ab", ""),
+    ("pour-type-error", "5⇈a", ""),
     # ── boot & forms ──
     ("boot-defs", "[∂×]≔²\n⇊\n7²↥a\n↧a 1+⍞", ""),
     ("boot-glitch-stops", "1 0÷\n⇊\n«never»⍞", ""),
@@ -112,6 +120,7 @@ EXAMPLE_FILES = [
     "fibonacci.ml",
     "fizzbuzz.ml",
     "pipeline.ml",
+    "pipeline-manual.ml",
     "parallel-sum.ml",
     "spawn.ml",
     "glitch.ml",

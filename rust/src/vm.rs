@@ -73,6 +73,18 @@ enum Frame {
         handler: Rc<Vec<Instr>>,
         depth: usize,
     },
+    Drain {
+        chan: char,
+        out: Vec<Value>,
+        pos: Pos,
+    },
+    Pump {
+        src: char,
+        dst: char,
+        f: Rc<Vec<Instr>>,
+        phase: u8,
+        pos: Pos,
+    },
 }
 
 fn cf(code: Rc<Vec<Instr>>) -> Frame {
@@ -589,6 +601,56 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
             s.frames.pop(); // body finished cleanly — disarm
             Ok(())
         }
+        Frame::Drain { .. } => {
+            let (chan, pos) = match &s.frames[fi] {
+                Frame::Drain { chan, pos, .. } => (*chan, *pos),
+                _ => unreachable!(),
+            };
+            let q = vm.channels.entry(chan).or_default();
+            let Some(v) = q.pop_front() else {
+                return Err(Sig::Block(BlockOn::Chan(chan), pos));
+            };
+            if matches!(v, Value::Nil) {
+                let frame = s.frames.pop().unwrap();
+                if let Frame::Drain { out, .. } = frame {
+                    s.push(Value::List(Rc::new(out)));
+                }
+            } else if let Frame::Drain { out, .. } = &mut s.frames[fi] {
+                out.push(v);
+            }
+            Ok(())
+        }
+        Frame::Pump { .. } => {
+            let (src, dst, f, phase, pos) = match &s.frames[fi] {
+                Frame::Pump { src, dst, f, phase, pos } => {
+                    (*src, *dst, f.clone(), *phase, *pos)
+                }
+                _ => unreachable!(),
+            };
+            if phase == 0 {
+                let q = vm.channels.entry(src).or_default();
+                let Some(v) = q.pop_front() else {
+                    return Err(Sig::Block(BlockOn::Chan(src), pos));
+                };
+                if matches!(v, Value::Nil) {
+                    vm.channels.entry(dst).or_default().push_back(Value::Nil);
+                    s.frames.pop();
+                    return Ok(());
+                }
+                if let Frame::Pump { phase, .. } = &mut s.frames[fi] {
+                    *phase = 1;
+                }
+                s.push(v);
+                s.frames.push(cf(f));
+            } else {
+                if let Frame::Pump { phase, .. } = &mut s.frames[fi] {
+                    *phase = 0;
+                }
+                let v = s.pop(pos, "the pump body's result")?;
+                vm.channels.entry(dst).or_default().push_back(v);
+            }
+            Ok(())
+        }
     }
 }
 
@@ -632,11 +694,11 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             s.push(Value::List(Rc::new(items)));
             Ok(())
         }
-        Op::B(ch, arg) => builtin(vm, s, *ch, *arg, pos),
+        Op::B(ch, arg, arg2) => builtin(vm, s, *ch, *arg, *arg2, pos),
     }
 }
 
-fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, pos: Pos) -> R<()> {
+fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Pos) -> R<()> {
     match ch {
         // ── stack ──
         '∂' => {
@@ -1016,6 +1078,19 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, pos: Pos) -> R<()> 
                 }
                 None => s.push(Value::int(0)),
             }
+        }
+        '⇈' => {
+            let items = s.pop_seq(pos, "⇈")?;
+            let q = vm.channels.entry(arg).or_default();
+            q.extend(items.iter().cloned());
+            q.push_back(Value::Nil);
+        }
+        '⇟' => {
+            s.frames.push(Frame::Drain { chan: arg, out: Vec::new(), pos });
+        }
+        '⇉' => {
+            let f = s.pop_quot(pos, "⇉")?;
+            s.frames.push(Frame::Pump { src: arg, dst: arg2, f, phase: 0, pos });
         }
         '⚡' => {
             let q = s.pop_quot(pos, "⚡")?;

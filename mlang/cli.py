@@ -5,7 +5,7 @@ import sys
 
 from .errors import LoadError
 from .forms import parse_source, to_flat, to_rain
-from .sigils import ARG_OPS, OPS
+from .sigils import ARG2_OPS, ARG_OPS, OPS
 from .vm import VM
 
 
@@ -36,9 +36,10 @@ def _ops_table():
     lines = ["MLang sigils — every operation is one character.", ""]
     lines.append("sigil  name          effect              description")
     lines.append("─" * 78)
-    for table in (OPS, ARG_OPS):
+    for table in (OPS, ARG_OPS, ARG2_OPS):
+        suffix = {id(OPS): "", id(ARG_OPS): "X", id(ARG2_OPS): "XY"}[id(table)]
         for ch, info in table.items():
-            shown = ch + ("X" if table is ARG_OPS else "")
+            shown = ch + suffix
             lines.append(f"{shown:<6} {info.name:<13} {info.sig:<19} {info.doc}")
     lines += [
         "",

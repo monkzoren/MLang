@@ -20,7 +20,7 @@ from collections import deque
 from .errors import BlockSignal, LoadError, MGlitch, YieldSignal
 from .forms import parse_source
 from .lex import lex_strand
-from .sigils import ARG_OPS, OPS, RESERVED
+from .sigils import ARG2_OPS, ARG_OPS, OPS, RESERVED
 from .values import MARK, NIL, Quot, fmt, truthy, type_name
 
 SLICE = 8  # instructions per strand per scheduler turn (fixed → deterministic)
@@ -120,6 +120,62 @@ class IterF:
         self.i += 1
         self.awaiting = True
         strand.frames.append(CF(self.f.code))
+
+
+class DrainF:
+    """Drives ⇟: collects from a channel until ∅, then pushes the list."""
+
+    __slots__ = ("chan", "out", "pos")
+
+    def __init__(self, chan, pos):
+        self.chan = chan
+        self.out = []
+        self.pos = pos
+
+    def step(self, vm, strand):
+        q = vm.channels.setdefault(self.chan, deque())
+        if not q:
+            raise BlockSignal("chan", self.chan, self.pos)
+        v = q.popleft()
+        if v is NIL:
+            strand.frames.pop()
+            strand.push(tuple(self.out))
+        else:
+            self.out.append(v)
+
+
+class PumpF:
+    """Drives ⇉: recv from src, run f on each value, send result to dst.
+
+    On ∅ the end-marker is forwarded to dst and the pump stops.
+    """
+
+    __slots__ = ("src", "dst", "f", "phase", "pos")
+
+    def __init__(self, src, dst, f, pos):
+        self.src = src
+        self.dst = dst
+        self.f = f
+        self.phase = 0  # 0 → receive next value, 1 → f finished, send result
+        self.pos = pos
+
+    def step(self, vm, strand):
+        if self.phase == 0:
+            q = vm.channels.setdefault(self.src, deque())
+            if not q:
+                raise BlockSignal("chan", self.src, self.pos)
+            v = q.popleft()
+            if v is NIL:
+                vm.channels.setdefault(self.dst, deque()).append(NIL)
+                strand.frames.pop()
+                return
+            self.phase = 1
+            strand.push(v)
+            strand.frames.append(CF(self.f.code))
+        else:
+            self.phase = 0
+            v = strand.pop(self.pos, "the pump body's result")
+            vm.channels.setdefault(self.dst, deque()).append(v)
 
 
 class TryF:
@@ -487,6 +543,17 @@ def _build_builtins():
             s.push(1)
         else:
             s.push(0)
+    def pour(vm, s, a, p):
+        items, _ = s.pop_seq(p, "⇈")
+        q = vm.channels.setdefault(a, deque())
+        q.extend(items)
+        q.append(NIL)
+    def drain(vm, s, a, p):
+        s.frames.append(DrainF(a, p))
+    def pump(vm, s, a, p):
+        f = s.pop_quot(p, "⇉")
+        src, dst = a
+        s.frames.append(PumpF(src, dst, f, p))
     def spawn(vm, s, a, p):
         q = s.pop_quot(p, "⚡")
         child = vm.spawn(q, s)
@@ -513,6 +580,7 @@ def _build_builtins():
         raise YieldSignal()
     B["↥"], B["↧"], B["⇂"], B["⚡"] = send, recv, try_recv, spawn
     B["⋈"], B["⍳"], B["≣"], B["⌛"] = join_, strand_id, strand_count, yield_
+    B["⇈"], B["⇟"], B["⇉"] = pour, drain, pump
 
     # glitches
     def try_(vm, s, a, p):
@@ -537,7 +605,7 @@ def _build_builtins():
         vm.err.write(f"⍟ strand {fmt(s.sid)} ({s.label}): {items}\n")
     B["⍞"], B["⊸"], B["⌨"], B["⍟"] = println, print_, readline, debug
 
-    missing = (set(OPS) | set(ARG_OPS)) - set(B)
+    missing = (set(OPS) | set(ARG_OPS) | set(ARG2_OPS)) - set(B)
     assert not missing, f"ops without implementations: {missing}"
     return B
 

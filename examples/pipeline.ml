@@ -1,8 +1,9 @@
-※ A three-strand pipeline over channels α and β.
-※ strand 0: emits squares of 1..9        → α
-※ strand 1: doubles everything from α    → β
-※ strand 2: prints everything from β
-※ ∅ is the end-of-stream sentinel each stage forwards.
-9⍸[1+∂×↥α]∀∅↥α
-[↧α∂∅≠][2×↥β]⟳⌫∅↥β
-[↧β∂∅≠][⍞]⟳⌫
+※ A three-strand pipeline in 25 glyphs, using the stream combinators:
+※   ⇈α  pour a list into channel α (then the ∅ end-marker)
+※   ⇉αβ pump: transform each value from α, send to β, forward ∅
+※   ⇟β  drain channel β into a list
+※ strand 0 emits the squares of 1..9, strand 1 doubles them,
+※ strand 2 prints them. All three run concurrently.
+9⍸[1+∂×]∵⇈α
+[2×]⇉αβ
+⇟β[⍞]∀

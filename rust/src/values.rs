@@ -19,8 +19,9 @@ pub enum Op {
     Name(char),
     LMark,
     LBuild,
-    /// Builtin op char, plus its argument sigil for ≔ ⇒ ↥ ↧ ⇂ ('\0' if none).
-    B(char, char),
+    /// Builtin op char plus up to two argument sigils ('\0' when absent):
+    /// one for ≔ ⇒ ↥ ↧ ⇂ ⇈ ⇟, two (src, dst) for ⇉.
+    B(char, char, char),
 }
 
 #[derive(Clone, Debug)]

@@ -14,6 +14,23 @@ ROOT = os.path.join(os.path.dirname(__file__), "..")
 
 
 class TestStrands(unittest.TestCase):
+    def test_pour_drain(self):
+        self.assertEqual(out_of("⟨1 2 3⟩⇈a ⇟a⍞"), "⟨1 2 3⟩\n")
+        self.assertEqual(out_of("⟨⟩⇈a ⇟a⍞"), "⟨⟩\n")
+        self.assertEqual(out_of("«ab»⇈a ⇟a⍞"), "⟨«a» «b»⟩\n")
+
+    def test_pump_pipeline(self):
+        src = "9⍸[1+∂×]∵⇈α\n[2×]⇉αβ\n⇟β[⍞]∀"
+        self.assertEqual(out_of(src).split(),
+                         [str(2 * n * n) for n in range(1, 10)])
+
+    def test_pump_empty_stream(self):
+        self.assertEqual(out_of("⟨⟩⇈a\n[∂×]⇉ab\n⇟b#⍞"), "0\n")
+
+    def test_drain_blocks_until_nil(self):
+        # drain in strand 1 must wait for strand 0's pour
+        self.assertEqual(out_of("3⍸⇈q\n⇟q⍞"), "⟨0 1 2⟩\n")
+
     def test_channel_pipeline(self):
         src = ("9⍸[1+∂×↥α]∀∅↥α\n"
                "[↧α∂∅≠][2×↥β]⟳⌫∅↥β\n"
@@ -126,6 +143,7 @@ class TestExamples(unittest.TestCase):
         "fibonacci.ml": "1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987",
         "parallel-sum.ml": "500500\n",
         "pipeline.ml": "2 8 18 32 50 72 98 128 162",
+        "pipeline-manual.ml": "2 8 18 32 50 72 98 128 162",
         "spawn.ml": ("machine 1 online\nmachine 2 online\n"
                      "machine 3 online\nmachine 4 online\nids sum: 10\n"),
     }

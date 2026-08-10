@@ -15,6 +15,13 @@ ARG_OPS = {
     "↥": OpInfo("send", "v ↥X →", "send v down channel X (never blocks; unbounded FIFO)"),
     "↧": OpInfo("recv", "↧X → v", "receive from channel X; blocks until a value arrives"),
     "⇂": OpInfo("try-recv", "⇂X → v 1 | 0", "non-blocking receive: value and 1, or just 0"),
+    "⇈": OpInfo("pour", "L ⇈X →", "send each item of a list/string down channel X, then the ∅ end-marker"),
+    "⇟": OpInfo("drain", "⇟X → L", "collect from channel X until ∅ into a list (blocks as needed)"),
+}
+
+# Ops that consume the next TWO characters (source and destination channels).
+ARG2_OPS = {
+    "⇉": OpInfo("pump", "[f] ⇉XY →", "for each value from channel X run f (v → v′) and send to Y; forward ∅ and stop"),
 }
 
 # Plain single-glyph ops.
@@ -90,4 +97,4 @@ OPS = {
 # Characters with structural meaning; they can never be user sigils.
 STRUCTURAL = set("«»⟨⟩[]⏎¯.※⋮⇓⇊∅ \t")
 DIGITS = set("0123456789")
-RESERVED = set(OPS) | set(ARG_OPS) | STRUCTURAL | DIGITS
+RESERVED = set(OPS) | set(ARG_OPS) | set(ARG2_OPS) | STRUCTURAL | DIGITS

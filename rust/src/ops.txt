@@ -63,6 +63,9 @@ sigil  name          effect              description
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)
 ↧X     recv          ↧X → v              receive from channel X; blocks until a value arrives
 ⇂X     try-recv      ⇂X → v 1 | 0        non-blocking receive: value and 1, or just 0
+⇈X     pour          L ⇈X →              send each item of a list/string down channel X, then the ∅ end-marker
+⇟X     drain         ⇟X → L              collect from channel X until ∅ into a list (blocks as needed)
+⇉XY    pump          [f] ⇉XY →           for each value from channel X run f (v → v′) and send to Y; forward ∅ and stop
 
 literals:  123  ¯5  2.5  «string»  (⏎ = newline)  ⟨1 2 3⟩  [quotation]  ∅
 layout:    ⇓ first line = rain form (columns are strands, read downward)

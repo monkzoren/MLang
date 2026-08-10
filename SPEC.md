@@ -48,10 +48,18 @@ the grid"). Each code point is one grid cell (implementations are not
 required to handle combining sequences or double-width rendering; authors
 should avoid combining marks).
 
-### 2.1 Rain form (canonical, vertical)
+### 2.1 Flat form (linear — the authoring form)
+
+Any file not starting with `⇓` is in flat form. **Each line is one
+strand**, executed left to right. Blank lines are ignored. A line whose
+content is exactly `⇊` is the divider: lines above it are concatenated into
+the boot strand. A line starting with `⋮` continues the previous strand.
+Flat form is the intended authoring form — text generators emit lines.
+
+### 2.2 Rain form (vertical — the presentation form)
 
 A file whose first line consists of `⇓` is in rain form. The remaining
-lines form the grid. **Each column of the grid is one strand**, executed
+lines form a grid. **Each column of the grid is one strand**, executed
 top to bottom. Columns containing only blanks are ignored (use them as
 gutters). Blank cells within a column act as separators (§3.1).
 
@@ -59,17 +67,11 @@ A grid row whose first non-blank glyph is `⇊` is the **divider**: rows
 above it are the **boot section**, rows below it are the strands. The boot
 section's columns are concatenated left-to-right into a single boot strand.
 
-### 2.2 Flat form (transposed, linear)
-
-Any file not starting with `⇓` is in flat form. **Each line is one
-strand**, executed left to right. Blank lines are ignored. A line whose
-content is exactly `⇊` is the divider: lines above it are concatenated into
-the boot strand. A line starting with `⋮` continues the previous strand.
-
 Rain and flat forms are transposes of each other and are semantically
-identical. Tooling (`mlang rain`, `mlang flat`) converts losslessly
-(strings that span column boundaries in a rain boot section are the one
-caveat; keep boot strings within one column or author boot sections flat).
+identical; engines must accept both. Tooling (`mlang rain`, `mlang flat`)
+converts losslessly (strings that span column boundaries in a rain boot
+section are the one caveat; keep boot strings within one column or author
+boot sections flat).
 
 ### 2.3 Comments
 
@@ -91,8 +93,9 @@ Each strand's cell sequence is lexed independently.
    themselves.
 4. `[` … `]` delimit a quotation (nestable; unbalanced brackets are load
    errors). `⟨` and `⟩` compile to list-building instructions.
-5. `≔ ⇒ ↥ ↧ ⇂` consume the next non-blank glyph as their argument.
-   For `≔`/`⇒` the glyph must not be reserved (an operation, digit, or
+5. `≔ ⇒ ↥ ↧ ⇂ ⇈ ⇟` consume the next non-blank glyph as their argument;
+   `⇉` consumes the next two (source channel, then destination channel).
+   Argument glyphs must not be reserved (an operation, digit, or
    structural glyph) — load error otherwise.
 6. Any glyph in the operation table (§5) is that operation.
 7. Any other glyph is a **name reference**, resolved at execution time:
@@ -137,7 +140,20 @@ a *copy* of the spawner's locals, returning the new strand's id (ids
 continue after the main strands). `⋈` blocks until the given strand id has
 finished (normally or by glitch).
 
-### 4.4 Glitches
+### 4.4 Streams
+
+`∅` is the conventional end-of-stream marker on channels, and the stream
+combinators build it in: `⇈` (pour) sends a whole list then `∅` in one
+step; `⇉` (pump) receives from its source one value at a time — blocking
+as needed — runs its body on each value, sends the single result to its
+destination, and on receiving `∅` forwards it and stops; `⇟` (drain)
+receives until `∅` and pushes the collected list. Pump bodies interleave
+with other strands like any code; one pumped value is processed per
+iteration. If a pump's body glitches uncaught, the pump dies with its
+strand and does **not** forward `∅` — downstream stages then show up in
+the deadlock report, pointing at the broken stage.
+
+### 4.5 Glitches
 
 A **glitch** is a fault carrying an arbitrary value — raised by the runtime
 (with a message string) or by `↯` (with any value). Runtime glitch sources
@@ -225,6 +241,9 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `↥X` | `v →` | send `v` on channel `X` (never blocks) |
 | `↧X` | `→ v` | receive from `X` (blocks) |
 | `⇂X` | `→ v 1 \| 0` | try-receive |
+| `⇈X` | `L →` | pour: send each item of a list/string on `X`, then `∅` |
+| `⇉XY` | `[f] →` | pump: for each value from `X` run `f` (`v → v′`), send to `Y`; on `∅`, forward it and stop |
+| `⇟X` | `→ L` | drain: collect from `X` until `∅` into a list (blocks) |
 | `⚡` | `[q] → id` | spawn |
 | `⋈` | `id →` | join |
 | `⍳` | `→ id` | this strand's id (boot: `¯1`) |
@@ -234,7 +253,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 ### Glitches
 | glyph | effect | |
 |---|---|---|
-| `⍥` | `[b] [h] → …` | try/catch (§4.4) |
+| `⍥` | `[b] [h] → …` | try/catch (§4.5) |
 | `↯` | `v →` | raise `v` |
 
 ### I/O

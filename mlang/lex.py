@@ -9,7 +9,7 @@ of the physical line in flat form, to the end of the column in rain form).
 from collections import namedtuple
 
 from .errors import LoadError
-from .sigils import ARG_OPS, DIGITS, OPS, RESERVED
+from .sigils import ARG2_OPS, ARG_OPS, DIGITS, OPS, RESERVED
 from .values import NIL, Quot
 
 Cell = namedtuple("Cell", "ch row col")
@@ -136,6 +136,11 @@ class Lexer:
                 self.i += 1
                 arg = self._arg_char(cell, ch)
                 code.append(Instr(ch, arg, self._pos(cell)))
+            elif ch in ARG2_OPS:
+                self.i += 1
+                a = self._arg_char(cell, ch)
+                b = self._arg_char(cell, ch)
+                code.append(Instr(ch, (a, b), self._pos(cell)))
             elif ch in OPS:
                 self.i += 1
                 code.append(Instr(ch, None, self._pos(cell)))

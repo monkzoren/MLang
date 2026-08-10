@@ -79,6 +79,11 @@
   "stderr": "✗ weave error at 1:4: number has two . points\n",
   "stdout": ""
  },
+ "drain-cross-strand": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨0 1 2⟩\n"
+ },
  "dup-swap-drop": {
   "exit": 0,
   "stderr": "",
@@ -118,6 +123,11 @@
   "exit": 0,
   "stderr": "",
   "stdout": "500500\n"
+ },
+ "example:pipeline-manual.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
  },
  "example:pipeline.ml": {
   "exit": 0,
@@ -253,6 +263,36 @@
   "exit": 0,
   "stderr": "",
   "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "pour-drain": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨1 2 3⟩\n⟨⟩\n⟨«x» «y»⟩\n"
+ },
+ "pour-type-error": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇈ expects a list or string, got int\n",
+  "stdout": ""
+ },
+ "pump-chained": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨10 20 30 40 50⟩\n"
+ },
+ "pump-empty": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n"
+ },
+ "pump-pipeline": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "pump-type-error": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇉ expects a [quotation], got int\n",
+  "stdout": ""
  },
  "quot-identity-eq": {
   "exit": 0,
