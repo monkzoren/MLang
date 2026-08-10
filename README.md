@@ -61,7 +61,7 @@ spec): the same commands via `python3 -m mlang …`, or `pip install .` for an
 `mlang` entry point.
 
 Both engines are verified byte-for-byte against a shared conformance corpus
-(99 cases: stdout, stderr, and exit codes, including glitch coordinates and
+(104 cases: stdout, stderr, and exit codes, including glitch coordinates and
 scheduler interleaving):
 
 ```sh
@@ -130,9 +130,9 @@ rust/             the native engine (Rust) — the primary implementation
 mlang/            the reference implementation (pure Python, stdlib only) —
                   the executable specification the native engine is held to
 conformance/      shared corpus: record.py snapshots the reference,
-                  run.py verifies any engine byte-for-byte (99 cases)
+                  run.py verifies any engine byte-for-byte (104 cases)
 examples/         runnable programs (hello, fizzbuzz, pipeline, spawn, …)
-tests/            84 tests: python3 -m unittest discover -s tests
+tests/            85 tests: python3 -m unittest discover -s tests
 SPEC.md           the full language specification
 ```
 

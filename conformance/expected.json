@@ -114,6 +114,11 @@
   "stderr": "✗ glitch in strand 2 (row 8) at 8:11: @ index 99 out of bounds (length 3)\n",
   "stdout": "caught: ÷ by zero\nstrand 0 alive\ncaught: custom glitch\nstrand 1 alive\n"
  },
+ "example:hello-rain.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hello, Matrix\n"
+ },
  "example:hello.ml": {
   "exit": 0,
   "stderr": "",
@@ -217,6 +222,26 @@
  "lone-negative": {
   "exit": 2,
   "stderr": "✗ weave error at 1:1: lone ¯ — negatives are written like ¯5\n",
+  "stdout": ""
+ },
+ "loose-continuation": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:3: ⋮ continues a strand and must start a line\n",
+  "stdout": ""
+ },
+ "loose-divider": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:2: ⇊ is the boot divider and must stand alone on its own line (or row, in rain form)\n",
+  "stdout": ""
+ },
+ "loose-newline-glyph": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: ⏎ is only meaningful inside « » strings\n",
+  "stdout": ""
+ },
+ "loose-rain-marker": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: ⇓ marks rain form and must be alone on the first line of the file (flat form needs no marker)\n",
   "stdout": ""
  },
  "mixed-compare-glitch": {

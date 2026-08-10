@@ -213,6 +213,22 @@ impl Lexer {
                 code.push(Instr { op: Op::B(ch, '\0', '\0'), pos: self.pos(&cell) });
             } else if ch == '.' {
                 return self.err("stray . — floats are written like 1.5 or .5", &cell);
+            } else if ch == '⇓' {
+                return self.err(
+                    "⇓ marks rain form and must be alone on the first line \
+                     of the file (flat form needs no marker)",
+                    &cell,
+                );
+            } else if ch == '⇊' {
+                return self.err(
+                    "⇊ is the boot divider and must stand alone on \
+                     its own line (or row, in rain form)",
+                    &cell,
+                );
+            } else if ch == '⋮' {
+                return self.err("⋮ continues a strand and must start a line", &cell);
+            } else if ch == '⏎' {
+                return self.err("⏎ is only meaningful inside « » strings", &cell);
             } else {
                 self.i += 1;
                 code.push(Instr { op: Op::Name(ch), pos: self.pos(&cell) });

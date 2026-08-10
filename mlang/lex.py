@@ -146,6 +146,18 @@ class Lexer:
                 code.append(Instr(ch, None, self._pos(cell)))
             elif ch == ".":
                 self._err("stray . — floats are written like 1.5 or .5", cell)
+            elif ch == "⇓":
+                self._err(
+                    "⇓ marks rain form and must be alone on the first line "
+                    "of the file (flat form needs no marker)", cell
+                )
+            elif ch == "⇊":
+                self._err("⇊ is the boot divider and must stand alone on "
+                          "its own line (or row, in rain form)", cell)
+            elif ch == "⋮":
+                self._err("⋮ continues a strand and must start a line", cell)
+            elif ch == "⏎":
+                self._err("⏎ is only meaningful inside « » strings", cell)
             else:
                 # Any other Unicode character is a user sigil reference.
                 self.i += 1

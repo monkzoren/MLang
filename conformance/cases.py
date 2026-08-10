@@ -75,6 +75,10 @@ CASES = [
     ("double-dot", "1.2.3⍞", ""),
     ("unmatched-close", "1]⍞", ""),
     ("tabs-rejected", "1\t2+⍞", ""),
+    ("loose-rain-marker", "⇓«Hello, Matrix»⍞", ""),
+    ("loose-divider", "1⇊2", ""),
+    ("loose-continuation", "1 ⋮⍞", ""),
+    ("loose-newline-glyph", "⏎⍞", ""),
     # ── strands & channels ──
     ("pipeline", "9⍸[1+∂×↥α]∀∅↥α\n[↧α∂∅≠][2×↥β]⟳⌫∅↥β\n[↧β∂∅≠][⍞]⟳⌫", ""),
     ("fifo", "1↥c 2↥c 3↥c\n↧c⍞↧c⍞↧c⍞", ""),
@@ -117,6 +121,7 @@ CASES = [
 # Example programs are also conformance cases, verified as files.
 EXAMPLE_FILES = [
     "hello.ml",
+    "hello-rain.ml",
     "fibonacci.ml",
     "fizzbuzz.ml",
     "pipeline.ml",

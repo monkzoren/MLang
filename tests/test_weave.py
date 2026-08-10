@@ -127,6 +127,20 @@ class TestForms(unittest.TestCase):
     def test_comment_only_lines_are_not_strands(self):
         self.assertEqual(out_of("※ a comment\n⍳⍞\n"), "0\n")
 
+    def test_loose_structural_glyphs_get_clear_errors(self):
+        code, _, err = run("⇓«Hello, Matrix»⍞")
+        self.assertEqual(code, 2)
+        self.assertIn("⇓ marks rain form", err)
+        code, _, err = run("1⇊2")
+        self.assertEqual(code, 2)
+        self.assertIn("boot divider", err)
+        code, _, err = run("1 ⋮⍞")
+        self.assertEqual(code, 2)
+        self.assertIn("⋮ continues a strand", err)
+        code, _, err = run("⏎⍞")
+        self.assertEqual(code, 2)
+        self.assertIn("only meaningful inside", err)
+
     def test_tabs_rejected(self):
         code, _, err = run("1\t2+⍞")
         self.assertEqual(code, 2)
@@ -140,6 +154,7 @@ class TestForms(unittest.TestCase):
 class TestExamples(unittest.TestCase):
     GOLDEN = {
         "hello.ml": "Hello, Matrix\n",
+        "hello-rain.ml": "Hello, Matrix\n",
         "fibonacci.ml": "1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987",
         "parallel-sum.ml": "500500\n",
         "pipeline.ml": "2 8 18 32 50 72 98 128 162",
