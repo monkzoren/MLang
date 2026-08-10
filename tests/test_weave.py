@@ -188,6 +188,28 @@ class TestExamples(unittest.TestCase):
         self.assertEqual(lines[4], "Buzz")
         self.assertEqual(lines[0], "1")
 
+    def test_mandelbrot(self):
+        code, out, err = self._run_file("mandelbrot.ml")
+        self.assertEqual(code, 0, err)
+        lines = out.splitlines()
+        self.assertEqual(len(lines), 24)
+        self.assertTrue(all(len(l) == 70 for l in lines))
+        self.assertIn("█", out)                     # interior of the set
+        self.assertEqual(lines[3], lines[21])       # mirror pair around ci=0
+
+    def test_calc(self):
+        path = os.path.join(ROOT, "examples", "calc.ml")
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        code, out, err = run(src, stdin="3 4 +\n1 0 ÷\noops\n5 5\n")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(out.splitlines(), [
+            "7",
+            "✗ ÷ by zero",
+            "✗ ⍎ cannot parse «oops» as a number",
+            "5",
+        ])
+
     def test_glitch_example_fails_but_survives(self):
         code, out, err = self._run_file("glitch.ml")
         self.assertEqual(code, 1)

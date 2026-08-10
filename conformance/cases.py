@@ -129,6 +129,10 @@ EXAMPLE_FILES = [
     "parallel-sum.ml",
     "spawn.ml",
     "glitch.ml",
+    "mandelbrot.ml",
+    "calc.ml",
 ]
 
-EXAMPLE_STDIN = {}
+EXAMPLE_STDIN = {
+    "calc.ml": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n",
+}

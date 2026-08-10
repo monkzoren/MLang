@@ -119,6 +119,14 @@ partial sum down `σ`; the reducer adds them (`examples/parallel-sum.ml`,
 prints 500500). At runtime, `⚡` spawns new strands to scale beyond the
 grid's static width.
 
+The showpiece is `examples/mandelbrot.ml`: the full Mandelbrot set,
+rendered as ASCII shading by four worker strands that shard the rows by
+strand id while a reducer reassembles them in order — escape-time
+iteration, palette lookup, and row assembly in 5 strands and two boot
+definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
+calculator that evaluates every input line on a freshly spawned strand:
+a bad line reports `✗ …` and dies alone; the calculator keeps answering.
+
 ## Repository
 
 ```
