@@ -1,0 +1,71 @@
+MLang sigils — every operation is one character.
+
+sigil  name          effect              description
+──────────────────────────────────────────────────────────────────────────────
+∂      dup           a → a a             duplicate top of stack
+⇅      swap          a b → b a           swap top two values
+⌫      drop          a →                 discard top of stack
+⊚      over          a b → a b a         copy second value to top
+⥀      rot           a b c → b c a       rotate third value to top
+≢      depth         → n                 push current stack depth
++      add           a b → a+b           add numbers
+-      sub           a b → a−b           subtract (binary only; write negatives as ¯5)
+×      mul           a b → a×b           multiply numbers
+÷      div           a b → a÷b           divide; int÷int stays int when exact, else float; ÷0 glitches
+%      mod           a b → a%b           modulo; %0 glitches
+^      pow           a b → aᵇ            exponentiation
+√      sqrt          a → √a              square root (float); negative glitches
+⌊      floor         a → ⌊a⌋             floor to int
+⌈      ceil          a → ⌈a⌉             ceiling to int
+±      neg           a → −a              negate a number
+=      eq            a b → 1|0           equal (any types; deep for lists)
+≠      ne            a b → 1|0           not equal
+<      lt            a b → 1|0           less than (numbers or strings)
+≤      le            a b → 1|0           less or equal
+>      gt            a b → 1|0           greater than
+≥      ge            a b → 1|0           greater or equal
+∧      and           a b → 1|0           logical and
+∨      or            a b → 1|0           logical or
+¬      not           a → 1|0             logical not
+⊻      xor           a b → 1|0           logical exclusive or
+!      apply         [q] ! → …           run a quotation
+?      if            c t e ? → …         if c truthy take t else e; a quotation runs, a value is pushed
+⟳      while         [c] [b] ⟳ → …       run [c]; while it leaves truthy, run [b] and repeat
+⍣      repeat        n [b] ⍣ → …         run [b] n times
+∵      map           L [f] ∵ → L′        run [f] on each item, collect results into a list
+∀      each          L [f] ∀ → …         run [f] on each item for its effects
+⌿      filter        L [f] ⌿ → L′        keep items for which [f] leaves truthy
+⍀      fold          L a [f] ⍀ → a′      fold: for each item run [f] as a x → a′
+⍸      range         n ⍸ → ⟨0…n−1⟩       push the list 0,1,…,n−1
+#      length        s # → n             length of a string or list
+⧺      concat        a b → ab            concatenate two strings or two lists
+@      index         s i @ → v           item at 0-based index; out of bounds glitches
+⊂      slice         s i j ⊂ → s′        slice [i, j) with clamping
+⊆      split         s sep ⊆ → L         split string by sep; empty sep splits into characters
+⊇      join          L sep ⊇ → s         join list items (stringified) with sep
+⍕      to-str        v ⍕ → s             format any value as a string
+⍎      parse-num     s ⍎ → n             parse a string as int/float; glitches if malformed
+⌗      codepoint     c ⌗ → n             Unicode code point of a 1-char string
+⍘      char          n ⍘ → c             1-char string from a Unicode code point
+⚡      spawn         [q] ⚡ → id          spawn a new strand running [q]; inherits a copy of locals
+⋈      join          id ⋈ →              block until strand id has finished
+⍳      strand-id     → id                this strand's id (grid columns are 0,1,2,…; boot is ¯1)
+≣      strand-count  → n                 number of main strands (the grid's width)
+⌛      yield         →                   end this strand's scheduler slice early
+⍥      try           [b] [h] ⍥ → …       run [b]; on glitch restore stack, push the glitch value, run [h]
+↯      raise         v ↯ →               raise v as a glitch
+⍞      println       v ⍞ →               print v and a newline
+⊸      print         v ⊸ →               print v without a newline
+⌨      readline      → s|∅               read a line from stdin (∅ at end of input)
+⍟      debug         →                   dump this strand's stack to stderr
+≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
+⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
+↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)
+↧X     recv          ↧X → v              receive from channel X; blocks until a value arrives
+⇂X     try-recv      ⇂X → v 1 | 0        non-blocking receive: value and 1, or just 0
+
+literals:  123  ¯5  2.5  «string»  (⏎ = newline)  ⟨1 2 3⟩  [quotation]  ∅
+layout:    ⇓ first line = rain form (columns are strands, read downward)
+           ⇊ divider = boot section above, strands below
+           ⋮ line prefix = continue previous strand (flat form)
+           ※ comment to end of line (flat) / end of column (rain)

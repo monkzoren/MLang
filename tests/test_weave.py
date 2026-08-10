@@ -48,6 +48,11 @@ class TestStrands(unittest.TestCase):
         self.assertIn("channel a", err)
         self.assertIn("channel b", err)
 
+    def test_yield_advances(self):
+        # regression: ⌛ must not re-execute forever after its slice ends
+        self.assertEqual(out_of("2⍸[⌫«A»⍞⌛]∀\n2⍸[⌫«B»⍞⌛]∀"),
+                         "A\nB\nA\nB\n")
+
     def test_deterministic_interleaving(self):
         src = "5⍸[«A»⍞]∀\n5⍸[«B»⍞]∀\n"
         first = out_of(src)

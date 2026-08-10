@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  reference:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,11 +15,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Run tests
+      - name: Unit tests
         run: python -m unittest discover -s tests -v
-      - name: Run examples
-        run: |
-          for f in examples/*.ml; do
-            echo "── $f"
-            python -m mlang run "$f" || [ "$f" = "examples/glitch.ml" ]
-          done
+      - name: Conformance (reference engine)
+        run: python conformance/run.py python -m mlang
+
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build native engine
+        run: cargo build --release --manifest-path rust/Cargo.toml
+      - name: Conformance (native engine)
+        run: python conformance/run.py rust/target/release/mlang

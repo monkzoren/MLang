@@ -47,7 +47,11 @@ class CF:
             strand.frames.pop()
             return
         instr = self.code[self.ip]
-        execute(vm, strand, instr)  # on BlockSignal the ip stays put
+        try:
+            execute(vm, strand, instr)  # on BlockSignal the ip stays put
+        except YieldSignal:
+            self.ip += 1  # yield completed — resume at the next instruction
+            raise
         self.ip += 1
 
 

@@ -38,16 +38,31 @@ the program scales horizontally, exactly like feeding more tape readers.
 
 ## Try it
 
-No dependencies. Python ≥ 3.9.
+**Native engine** (Rust — the primary implementation):
 
 ```sh
-python3 -m mlang run examples/pipeline.ml     # run a program
-python3 -m mlang eval '«Hello, Matrix»⍞'      # run inline source
-python3 -m mlang rain examples/pipeline.ml    # render the vertical rain view
-python3 -m mlang ops                          # the full sigil reference
+cd rust && cargo build --release && cd ..
+rust/target/release/mlang run examples/pipeline.ml   # run a program
+rust/target/release/mlang eval '«Hello, Matrix»⍞'    # run inline source
+rust/target/release/mlang rain examples/pipeline.ml  # render the rain view
+rust/target/release/mlang ops                        # the sigil reference
 ```
 
-Or install the `mlang` command: `pip install .`
+**Reference implementation** (pure Python, no dependencies — the executable
+spec): the same commands via `python3 -m mlang …`, or `pip install .` for an
+`mlang` entry point.
+
+Both engines are verified byte-for-byte against a shared conformance corpus
+(91 cases: stdout, stderr, and exit codes, including glitch coordinates and
+scheduler interleaving):
+
+```sh
+python3 conformance/run.py rust/target/release/mlang
+python3 conformance/run.py python3 -m mlang
+```
+
+On a 10⁶-iteration loop the native engine runs ~15× faster than the
+reference (0.45s vs 6.9s on the machine this was developed on).
 
 ## The idea
 
@@ -96,14 +111,17 @@ grid's static width.
 ## Repository
 
 ```
-mlang/            the reference implementation (pure Python, stdlib only)
-  sigils.py       the instruction set — single source of truth
-  lex.py          glyph stream → instructions
-  forms.py        rain/flat grid parsing and rendering
-  vm.py           strands, channels, glitches, deterministic scheduler
-  cli.py          mlang run | eval | rain | flat | ops
+rust/             the native engine (Rust) — the primary implementation
+  src/values.rs   immutable values (bignum ints, floats, strings, lists, quotations)
+  src/lex.rs      glyph stream → instructions
+  src/forms.rs    rain/flat grid parsing and rendering
+  src/vm.rs       strands, channels, glitches, deterministic scheduler
+mlang/            the reference implementation (pure Python, stdlib only) —
+                  the executable specification the native engine is held to
+conformance/      shared corpus: record.py snapshots the reference,
+                  run.py verifies any engine byte-for-byte (91 cases)
 examples/         runnable programs (hello, fizzbuzz, pipeline, spawn, …)
-tests/            79 tests: python3 -m unittest discover -s tests
+tests/            80 tests: python3 -m unittest discover -s tests
 SPEC.md           the full language specification
 ```
 
@@ -115,13 +133,14 @@ SPEC.md           the full language specification
   makes a dedicated tokenizer trivial (one token per sigil). Density also
   buys correctness: there is no syntax to misindent and no identifier to
   misspell twice.
-* **Determinism over raw parallelism.** The reference interpreter
-  interleaves strands deterministically rather than using OS threads.
-  The language model (immutable values, channel-only communication) is
-  exactly the one that compiles to true parallel execution without data
-  races; the scheduler is an implementation choice, and reproducibility is
-  worth more to a machine author than wall-clock speedups in a reference
-  implementation.
+* **Determinism over raw parallelism.** Both engines interleave strands
+  deterministically (round-robin, fixed slice) rather than using OS
+  threads. The language model (immutable values, channel-only
+  communication) is exactly the one that admits true parallel execution
+  without data races; the scheduler is an implementation choice, and
+  reproducibility is worth more to a machine author than nondeterministic
+  wall-clock wins. A parallel scheduler can be added without changing a
+  single program's meaning where interleaving is unobservable.
 
 ## Name
 
