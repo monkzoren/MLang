@@ -610,7 +610,7 @@
   {
    "name": "mandelbrot.ml",
    "file": "examples/mandelbrot.ml",
-   "stdin": ""
+   "stdin": "z\nw\nr\nq\n"
   },
   {
    "name": "calc.ml",
