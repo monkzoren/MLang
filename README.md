@@ -52,6 +52,8 @@ implemented in Rust — the way C's first compilers were implemented in
 assembly — but MLang programs never touch Rust, and nothing else is
 involved: no C compiler, no linker, no interpreter dependency.)
 
+Linux / macOS:
+
 ```sh
 cd compiler && cargo build --release && cd ..   # build the toolchain once
 alias mlang=$PWD/compiler/target/release/mlang
@@ -65,6 +67,17 @@ mlang check examples/calc.ml         # compile only, report weave errors
 mlang rain examples/pipeline.ml      # render the vertical rain view
 mlang ops                            # the sigil reference
 mlang std                            # the standard library source
+```
+
+Windows (PowerShell) — same commands, but name the output `.exe`:
+
+```powershell
+cd compiler; cargo build --release; cd ..
+Set-Alias mlang "$PWD\compiler\target\release\mlang.exe"
+
+mlang build examples\mandelbrot.ml -o mandelbrot.exe
+.\mandelbrot.exe
+mlang run examples\edit.ml
 ```
 
 `mlang build` compiles source to MLang bytecode and welds it into a copy
@@ -151,6 +164,26 @@ iteration, palette lookup, and row assembly in 5 strands and two boot
 definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
+
+And `examples/edit.ml` is a real application: a text editor in the
+`ed`/`edlin` lineage — the Notepad of the punch-tape era. Append, insert,
+change, and delete lines; search; save and open files (the `⍇`/`⍈` file
+primitives); every command runs inside `⍥`, so a bad line number or an
+unreadable file prints `✗ …` and the session continues. Compile it to a
+standalone binary and edit away:
+
+```
+$ mlang build examples/edit.ml -o edit && ./edit
+MLang edit ⋅ h for help ⋅ q to quit
+* a The Matrix has you.
+* a Follow the white rabbit.
+* p
+1│The Matrix has you.
+2│Follow the white rabbit.
+* i 2 Wake up, Neo.
+* w neo.txt
+wrote neo.txt
+```
 
 ## Repository
 
