@@ -438,6 +438,11 @@ pub struct VM<'io> {
     /// side cannot ever complete a handoff — the fingerprint of a mistyped
     /// or renamed channel name, and the most common cause of deadlock.
     chan_sites: HashMap<char, (usize, usize)>,
+    /// The canvas the GUI ops (⌸ ▦ ⌶ ⎙) draw into, once ⌸ opens it.
+    pub gui: Option<crate::gui::Gui>,
+    /// Recorded runs (conformance, benches) set this so ⌸ never opens a
+    /// real window even when the process has a terminal and a display.
+    pub force_headless: bool,
 }
 
 /// Count send and receive sites per channel, descending into quotations.
@@ -623,6 +628,8 @@ impl<'io> VM<'io> {
             open_requests: HashSet::new(),
             src_lines: Vec::new(),
             chan_sites: HashMap::new(),
+            gui: None,
+            force_headless: false,
         }
     }
 
@@ -1100,17 +1107,28 @@ fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>
     }
 }
 
-/// Does this program execute ⌥ anywhere? Decides whether the runner
-/// should switch a real terminal into raw/mouse-reporting mode.
-pub fn uses_interactive(prog: &CompiledProgram) -> bool {
-    fn has_event_op(code: &[Instr]) -> bool {
+/// Does this program execute `op` anywhere (including inside quotations)?
+fn program_uses(prog: &CompiledProgram, op: char) -> bool {
+    fn has_op(code: &[Instr], op: char) -> bool {
         code.iter().any(|i| match &i.op {
-            Op::B('⌥', _, _) => true,
-            Op::Push(Value::Quot(q)) => has_event_op(q),
+            Op::B(c, _, _) if *c == op => true,
+            Op::Push(Value::Quot(q)) => has_op(q, op),
             _ => false,
         })
     }
-    has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
+    has_op(&prog.boot, op) || prog.strands.iter().any(|(_, c)| has_op(c, op))
+}
+
+/// Does this program execute ⌥ anywhere? Decides whether the runner
+/// should switch a real terminal into raw/mouse-reporting mode.
+pub fn uses_interactive(prog: &CompiledProgram) -> bool {
+    program_uses(prog, '⌥')
+}
+
+/// Does this program open a canvas (⌸)? A canvas program's input comes
+/// from its window, so the runner leaves the terminal alone.
+pub fn uses_gui(prog: &CompiledProgram) -> bool {
+    program_uses(prog, '⌸')
 }
 
 /// Shift every position row (including inside nested quotations) into a
@@ -2042,6 +2060,87 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let v = s.pop(pos, "a value to raise")?;
             return Err(Sig::Glitch(v, pos));
         }
+        // ── the canvas ──
+        '⌸' => {
+            if vm.bus.is_some() {
+                return glitch("⌸ needs the deterministic scheduler — drop --parallel", pos);
+            }
+            if vm.gui.is_some() {
+                return glitch("⌸ — a canvas is already open", pos);
+            }
+            let t = s.pop(pos, "a window title")?;
+            let Value::Str(title) = &t else {
+                return glitch(
+                    format!("⌸ expects a title string, got {}", type_name(&t)),
+                    pos,
+                );
+            };
+            let h = s.pop_i64(pos, "⌸")?;
+            let w = s.pop_i64(pos, "⌸")?;
+            if !(1..=4096).contains(&w) || !(1..=4096).contains(&h) {
+                return glitch("⌸ size must be 1…4096 pixels on each side", pos);
+            }
+            let gui = crate::gui::Gui::open(w as usize, h as usize, title, vm.force_headless);
+            if !gui.is_windowed() {
+                let _ = writeln!(vm.out, "⌸ {w}×{h} «{title}»");
+            }
+            vm.gui = Some(gui);
+        }
+        '▦' => {
+            let color = s.pop_i64(pos, "▦")?;
+            let rh = s.pop_i64(pos, "▦")?;
+            let rw = s.pop_i64(pos, "▦")?;
+            let y = s.pop_i64(pos, "▦")?;
+            let x = s.pop_i64(pos, "▦")?;
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("▦ — no canvas; open one with ⌸ first", pos);
+            };
+            gui.rect(x, y, rw, rh, (color & 0xff_ffff) as u32);
+        }
+        '⌶' => {
+            let color = s.pop_i64(pos, "⌶")?;
+            let y = s.pop_i64(pos, "⌶")?;
+            let x = s.pop_i64(pos, "⌶")?;
+            let v = s.pop_any(pos)?;
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("⌶ — no canvas; open one with ⌸ first", pos);
+            };
+            gui.text(&fmt(&v, false), x, y, (color & 0xff_ffff) as u32);
+        }
+        '⎙' => {
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("⎙ — no canvas; open one with ⌸ first", pos);
+            };
+            if let Err(e) = gui.present(&mut *vm.out) {
+                return glitch(format!("⎙ {e}"), pos);
+            }
+        }
+        '⌹' => {
+            let v = s.pop(pos, "a directory path")?;
+            let Value::Str(path) = &v else {
+                return glitch(
+                    format!("⌹ expects a path string, got {}", type_name(&v)),
+                    pos,
+                );
+            };
+            let Ok(rd) = std::fs::read_dir(path.as_str()) else {
+                return glitch(format!("⌹ cannot read «{path}»"), pos);
+            };
+            // Sorted, directories marked with a trailing /: the listing is
+            // deterministic for a fixed tree, like every other observable.
+            let mut names: Vec<String> = Vec::new();
+            for entry in rd.flatten() {
+                let mut name = entry.file_name().to_string_lossy().into_owned();
+                if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    name.push('/');
+                }
+                names.push(name);
+            }
+            names.sort();
+            s.push(Value::List(Arc::new(
+                names.into_iter().map(Value::str).collect(),
+            )));
+        }
         // ── i/o ──
         '⍞' => {
             let v = s.pop_any(pos)?;
@@ -2222,7 +2321,14 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
             // Prompts written with ⊸ must appear before blocking, like ⌨.
             let _ = vm.out.flush();
-            let event = vm.read_event();
+            // A windowed canvas owns the input: events come from its
+            // keyboard and mouse. Headless (and windowless) programs keep
+            // reading the stdin byte stream, which is what recorded
+            // goldens replay.
+            let event = match vm.gui.as_mut() {
+                Some(gui) if gui.is_windowed() => gui.wait_event(),
+                _ => vm.read_event(),
+            };
             s.push(event);
         }
         '⌂' => {

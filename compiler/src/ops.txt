@@ -77,6 +77,17 @@ sigil  name          effect              description
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
+⌹      readdir       path ⌹ → L          sorted directory listing; directory names end with /
+⌸      canvas        w h title ⌸ →       open a w×h pixel canvas — a real window when the
+                                         session has a display, else headless: ⌸ and each ⎙
+                                         print one line (size/title, frame hash) so recorded
+                                         runs stay byte-exact; MLANG_FRAMES=dir dumps PPMs
+▦      rect          x y w h c ▦ →       fill a rectangle with color c (0xRRGGBB as an int)
+⌶      text          v x y c ⌶ →         draw v (stringified) in color c from the baked 8×16
+                                         font; ⏎ wraps to the next glyph row
+⎙      present       →                   show the frame: blit to the window, or print the
+                                         frame's hash when headless; ⌥ then reads the window's
+                                         keys and mouse (⟨«⌖» x y⟩ in pixels) instead of stdin
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)
