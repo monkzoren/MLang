@@ -264,7 +264,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
-| `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
+| `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |

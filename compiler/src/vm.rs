@@ -1354,6 +1354,11 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                     if line.ends_with('\n') {
                         line.pop();
                     }
+                    // Windows consoles hand lines to programs CRLF-terminated;
+                    // the terminator is not part of the line's content.
+                    if line.ends_with('\r') {
+                        line.pop();
+                    }
                     s.push(Value::str(line));
                 }
                 Err(_) => s.push(Value::Nil),

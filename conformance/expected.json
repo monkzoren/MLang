@@ -504,6 +504,11 @@
     "stderr": "",
     "stdout": "⟨⟨1 «a»⟩ ⟨2 «b»⟩⟩\n"
   },
+  "stdin-crlf": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "1\n1\n3\n"
+  },
   "stdin-echo": {
     "exit": 0,
     "stderr": "",
