@@ -204,10 +204,17 @@ columns. The first line of each report keeps the fixed shape shown above
 **source excerpt**: the offending physical line, windowed to at most 61
 glyphs around the fault (`…` marks a trimmed side), prefixed `  row│ `,
 with a caret line beneath marking the exact glyph and repeating the
-coordinates. A glitch report then adds the strand's **stack as the fault
-left it** (`  stack: …`, deepest first, capped to the topmost eight
-values, `(empty)` when bare); deadlock reports add an excerpt for every
-waiting strand, and weave errors carry the same excerpt treatment.
+coordinates. A glitch report then adds the **call chain** — one `  in X, called at
+row:col` line per active named definition, innermost first, so a fault
+inside a definition or a library word names its caller — followed by the
+strand's **stack as the fault left it** (`  stack: …`, deepest first,
+capped to the topmost eight values and to a readable width each,
+`(empty)` when bare). Deadlock reports add an excerpt for every waiting
+strand and then a **channel census**: any channel with send sites but no
+receive sites (or the reverse) is named as a `⚠` line, since a channel
+that can never complete a handoff is almost always a misspelled or
+renamed name. Weave errors carry the same excerpt treatment, and a
+`]` without an opener reports the strand's bracket tally.
 
 Positions in woven library code report with the library's own file name
 and coordinates (`std.ml 26:7`, `ui.ml 3:12`) and excerpt the library's

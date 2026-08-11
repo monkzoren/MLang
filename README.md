@@ -23,7 +23,7 @@ naturally write with threads and queues):
 ```
 9⍸[1+∂×]∵⇈α                ※ machine 1: pour the squares of 1..9 into α
 [∂25=[«boom»↯][]?2×]⇉αβ    ※ machine 2: double each value α→β — dies at 25
-[∂⍞]⇉βγ                    ※ machine 3: print each value as it arrives
+[↧β∂∅≠][⍞]⟳⌫               ※ machine 3: print each value as it arrives
 ```
 
 ```
@@ -37,9 +37,9 @@ $ mlang run examples/deadlock.ml
                  ↑ 2:13
   stack: 25
 ✗ deadlock — every remaining strand is blocked:
-  strand 2 (row 3) waiting on channel β at 3:5
-  3│ [∂⍞]⇉βγ
-         ↑ 3:5
+  strand 2 (row 3) waiting on channel β at 3:2
+  3│ [↧β∂∅≠][⍞]⟳⌫
+      ↑ 3:2
 ```
 
 The glitch quotes the offending line, points a caret at the exact glyph,

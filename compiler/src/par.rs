@@ -72,10 +72,20 @@ pub struct Bus {
     fail: AtomicBool,
     main_count: usize,
     args: Vec<String>,
+    /// The program's source lines and channel census, so parallel-mode
+    /// fault reports carry the same excerpts, call chains, and orphaned-
+    /// channel warnings as the sequential engine.
+    source: Vec<String>,
+    chan_sites: HashMap<char, (usize, usize)>,
 }
 
 impl Bus {
-    fn new(main_count: usize, args: Vec<String>) -> Bus {
+    fn new(
+        main_count: usize,
+        args: Vec<String>,
+        source: Vec<String>,
+        chan_sites: HashMap<char, (usize, usize)>,
+    ) -> Bus {
         Bus {
             state: Mutex::new(State {
                 chans: HashMap::new(),
@@ -91,6 +101,8 @@ impl Bus {
             stdin: Mutex::new(std::io::BufReader::new(std::io::stdin())),
             fail: AtomicBool::new(false),
             main_count,
+            source,
+            chan_sites,
             args,
         }
     }
@@ -274,7 +286,20 @@ impl Bus {
                 what,
                 coords(*pos)
             ));
+            if let Some(x) = crate::vm::excerpt(&self.source, *pos) {
+                report.push_str(&x);
+                report.push('\n');
+            }
         }
+        let waited: Vec<char> = st
+            .waiting
+            .values()
+            .filter_map(|(_, what, _)| match what {
+                WaitOn::Chan(c) => Some(*c),
+                _ => None,
+            })
+            .collect();
+        report.push_str(&crate::vm::channel_census(&self.chan_sites, &waited));
         let _ = self.stdout.lock().unwrap().flush();
         {
             let mut err = self.stderr.lock().unwrap();
@@ -353,6 +378,8 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
                 coords(pos),
                 fmt(&v, false)
             );
+            let _ = write!(vm.err, "{}", crate::vm::fault_detail(
+                &bus.source, pos, &s.glitch_chain, s.stack_view()));
             bus.set_failed();
         }
     }
@@ -366,7 +393,17 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
 /// anything it spawned — before the main strands start, same as the
 /// sequential engine.
 pub fn run_parallel(prog: &CompiledProgram, args: Vec<String>) -> i32 {
-    let bus = Arc::new(Bus::new(prog.strands.len(), args));
+    let mut chan_sites = HashMap::new();
+    crate::vm::channel_sites(&prog.boot, &mut chan_sites);
+    for (_, code) in &prog.strands {
+        crate::vm::channel_sites(code, &mut chan_sites);
+    }
+    let bus = Arc::new(Bus::new(
+        prog.strands.len(),
+        args,
+        prog.source.clone(),
+        chan_sites,
+    ));
     bus.add_live(1);
     drive(
         bus.clone(),

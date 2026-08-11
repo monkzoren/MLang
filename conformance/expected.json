@@ -51,7 +51,7 @@
  },
  "deadlock": {
   "exit": 1,
-  "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  1│ ↧a\n     ↑ 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n  2│ ↧b\n     ↑ 2:1\n",
+  "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  1│ ↧a\n     ↑ 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n  2│ ↧b\n     ↑ 2:1\n  ⚠ channel a is received at 1 site and never sent to — check for a misspelled channel name\n  ⚠ channel b is received at 1 site and never sent to — check for a misspelled channel name\n",
   "stdout": ""
  },
  "debug-stderr": {
@@ -146,7 +146,7 @@
  },
  "example:deadlock.ml": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 1 (row 2) at 2:13: boom\n  2│ [∂25=[«boom»↯][]?2×]⇉αβ\n                 ↑ 2:13\n  stack: 25\n✗ deadlock — every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel β at 3:5\n  3│ [∂⍞]⇉βγ\n         ↑ 3:5\n",
+  "stderr": "✗ glitch in strand 1 (row 2) at 2:13: boom\n  2│ [∂25=[«boom»↯][]?2×]⇉αβ\n                 ↑ 2:13\n  stack: 25\n✗ deadlock — every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel β at 3:2\n  3│ [↧β∂∅≠][⍞]⟳⌫\n      ↑ 3:2\n",
   "stdout": "2\n8\n18\n32\n"
  },
  "example:editor.ml": {
@@ -756,12 +756,12 @@
  },
  "underflow": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — needed a number\n  1│ +\n     ↑ 1:1\n  stack: (empty)\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — + needed a number but the stack was empty\n  1│ +\n     ↑ 1:1\n  stack: (empty)\n",
   "stdout": ""
  },
  "unmatched-close": {
   "exit": 2,
-  "stderr": "✗ weave error at 1:2: ] without matching [\n",
+  "stderr": "✗ weave error at 1:2: ] without matching [ — this strand has 0 [ and 1 ]\n",
   "stdout": ""
  },
  "unmatched-list-close": {
