@@ -1316,6 +1316,9 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 Ok(_) => {
                     if line.ends_with('\n') {
                         line.pop();
+                        if line.ends_with('\r') {
+                            line.pop();
+                        }
                     }
                     s.push(Value::str(line));
                 }

@@ -521,6 +521,11 @@
    "stdin": "a\nb\n"
   },
   {
+   "name": "stdin-crlf",
+   "source": "[⌨∂∅≠][∂⍞#⍞]⟳⌫",
+   "stdin": "wake\r\nup\r\n"
+  },
+  {
    "name": "debug-stderr",
    "source": "1«s»⟨2 3⟩⍟",
    "stdin": ""

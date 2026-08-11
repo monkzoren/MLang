@@ -75,7 +75,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 122 cases covering every operation, concurrency, glitches, both
+corpus — 123 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -169,7 +169,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 122 recorded goldens, the
+conformance/      cases.json + expected.json: 123 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification

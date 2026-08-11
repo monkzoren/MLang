@@ -489,6 +489,11 @@
   "stderr": "",
   "stdout": "⟨⟨1 «a»⟩ ⟨2 «b»⟩⟩\n"
  },
+ "stdin-crlf": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "wake\n4\nup\n2\n"
+ },
  "stdin-echo": {
   "exit": 0,
   "stderr": "",
