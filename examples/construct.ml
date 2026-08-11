@@ -27,4 +27,4 @@
   «Exit»«q»[◼]Ⓑ
  ⟩Ⓥ«Nebuchadnezzar — operator console»Ⓦ]≔V
 ⇊
-3⇒s «Neo»⇒n 0⇒r ⟨«Morpheus» «Trinity»⟩⇒c [V]▶ «Connection terminated.»⍞
+3⇒s «Neo»⇒n 0⇒r ⟨«Morpheus» «Trinity»⟩⇒c [V]⏵ «Connection terminated.»⍞
