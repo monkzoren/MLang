@@ -606,6 +606,11 @@
    "name": "std-tour.ml",
    "file": "examples/std-tour.ml",
    "stdin": ""
+  },
+  {
+   "name": "editor.ml",
+   "file": "examples/editor.ml",
+   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nq\n"
   }
  ]
 }

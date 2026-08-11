@@ -104,6 +104,11 @@
   "stderr": "",
   "stdout": "7\n48\n9223372036854775808\n1\n✗ ÷ by zero\n✗ ⍎ cannot parse «oops» as a number\n"
  },
+ "example:editor.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w:write q:quit (. ends input)\n1 │ WAKE UP, NEO...\n2 │ THE MATRIX HAS YOU\n3 │ follow the white rabbit\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n3 │ FOLLOW THE WHITE RABBIT\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\nTHE MATRIX HAS YOU\nKNOCK, KNOCK, NEO.\nFOLLOW THE WHITE RABBIT\n"
+ },
  "example:fibonacci.ml": {
   "exit": 0,
   "stderr": "",
