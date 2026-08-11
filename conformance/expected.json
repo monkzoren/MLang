@@ -104,10 +104,10 @@
     "stderr": "",
     "stdout": "7\n48\n9223372036854775808\n1\n✗ ÷ by zero\n✗ ⍎ cannot parse «oops» as a number\n"
   },
-  "example:edit.ml": {
+  "example:editor.ml": {
     "exit": 0,
     "stderr": "",
-    "stdout": "MLang edit ⋅ h for help ⋅ q to quit\n* * * 1│The Matrix has you.\n2│Follow the white rabbit.\n* * * 3│Follow the white rabbit!\n* wrote /tmp/mlang-edit-demo.txt\n* * 1│Wake up, Neo.\n2│Follow the white rabbit!\n* opened /tmp/mlang-edit-demo.txt\n* 1│The Matrix has you.\n2│Wake up, Neo.\n3│Follow the white rabbit!\n* ✗ no such line\n* ? unknown ⋅ h for help\n* a text │ append   i N text │ insert   c N text │ change   d N │ delete\np │ print   /text │ find   w [file] │ save   o file │ open   q │ quit\n* "
+    "stdout": "MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w [file]:write/save o file:open q:quit (. ends input)\n1 │ WAKE UP, NEO...\n2 │ THE MATRIX HAS YOU\n3 │ follow the white rabbit\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n3 │ FOLLOW THE WHITE RABBIT\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\nTHE MATRIX HAS YOU\nKNOCK, KNOCK, NEO.\nFOLLOW THE WHITE RABBIT\nwrote /tmp/mlang-matrixpad.txt\n1 │ FOLLOW THE WHITE RABBIT\nopened /tmp/mlang-matrixpad.txt\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\n? ⍇ cannot read «/no/such»\n"
   },
   "example:fibonacci.ml": {
     "exit": 0,

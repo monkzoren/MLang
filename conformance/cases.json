@@ -623,9 +623,9 @@
    "stdin": ""
   },
   {
-   "name": "edit.ml",
-   "file": "examples/edit.ml",
-   "stdin": "a The Matrix has you.\na Follow the white rabbit.\np\ni 2 Wake up, Neo.\nc 3 Follow the white rabbit!\n/rabbit\nw /tmp/mlang-edit-demo.txt\nd 1\np\no /tmp/mlang-edit-demo.txt\np\nd 99\nx bogus\nh\nq\n"
+   "name": "editor.ml",
+   "file": "examples/editor.ml",
+   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nw /tmp/mlang-matrixpad.txt\nd 1\nd 1\np\no /tmp/mlang-matrixpad.txt\np\no /no/such\nq\n"
   }
  ]
 }

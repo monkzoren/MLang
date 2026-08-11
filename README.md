@@ -65,7 +65,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
 ./mandelbrot                                         # standalone: no toolchain needed
 
-./mlang run examples/edit.ml         # or compile-and-run in one step
+./mlang run examples/editor.ml         # or compile-and-run in one step
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
@@ -79,7 +79,7 @@ output `.exe`:
 ```powershell
 .\mlang.cmd build examples\mandelbrot.ml -o mandelbrot.exe
 .\mandelbrot.exe
-.\mlang.cmd run examples\edit.ml
+.\mlang.cmd run examples\editor.ml
 ```
 
 Windows notes: WSL is *not* required — the toolchain and welded binaries
@@ -96,7 +96,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 121 cases covering every operation, concurrency, glitches, both
+corpus — 125 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -172,25 +172,34 @@ iteration, palette lookup, and row assembly in 5 strands and two boot
 definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-
-And `examples/edit.ml` is a real application: a text editor in the
-`ed`/`edlin` lineage — the Notepad of the punch-tape era. Append, insert,
-change, and delete lines; search; save and open files (the `⍇`/`⍈` file
-primitives); every command runs inside `⍥`, so a bad line number or an
-unreadable file prints `✗ …` and the session continues. Compile it to a
-standalone binary and edit away:
+And `examples/editor.ml` is **MatrixPad** — a real application: a
+Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
+editor's event loop. Keyboard, editor core, and screen are three strands
+joined by channels; the document is an immutable list of lines, so every
+edit (append, insert, replace, delete) is slice-and-concat and a stray
+command can never corrupt it; `w file` and `o file` save and open real
+files with the `⍇`/`⍈` primitives; and dispatch runs inside `⍥`, so a bad
+command or an unreadable file answers `? …` while the editor and the
+document survive untouched. Compile it to a standalone binary and edit
+away:
 
 ```
-$ mlang build examples/edit.ml -o edit && ./edit
-MLang edit ⋅ h for help ⋅ q to quit
-* a The Matrix has you.
-* a Follow the white rabbit.
-* p
-1│The Matrix has you.
-2│Follow the white rabbit.
-* i 2 Wake up, Neo.
-* w neo.txt
+$ mlang build examples/editor.ml -o matrixpad && ./matrixpad
+MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find …
+a
+The Matrix has you.
+Follow the white rabbit.
+.
+i 2
+Wake up, Neo.
+.
+p
+1 │ The Matrix has you.
+2 │ Wake up, Neo.
+3 │ Follow the white rabbit.
+w neo.txt
 wrote neo.txt
+q
 ```
 
 ## Repository
@@ -204,9 +213,9 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 121 recorded goldens, the
+conformance/      cases.json + expected.json: 122 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
-examples/         runnable programs (mandelbrot, calc, pipeline, spawn, …)
+examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification
 ```
 
