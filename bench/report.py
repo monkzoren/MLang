@@ -80,7 +80,7 @@ def render_heal(pair):
         row("**healed (byte-exact output)**",
             lambda s: "{:.0f}%".format(s["pct"]), bold=True),
         row("healed in one round", lambda s: "{:.0f}%".format(s["r1pct"])),
-        row("median rounds to green", lambda s: str(s["median"])),
+        row("median rounds to green", lambda s: "{:g}".format(s["median"])),
     ]
 
     cls_ml = by_class(ml) if ml else {}
