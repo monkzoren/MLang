@@ -289,6 +289,8 @@ pub struct VM<'io> {
     pub stdin: &'io mut dyn BufRead,
     pub out: &'io mut dyn Write,
     pub err: &'io mut dyn Write,
+    /// The program's command-line arguments, pushed as a string list by ⌂.
+    pub args: Vec<String>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -316,6 +318,7 @@ impl<'io> VM<'io> {
             stdin,
             out,
             err,
+            args: Vec::new(),
         }
     }
 
@@ -1323,6 +1326,36 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                     s.push(Value::str(line));
                 }
                 Err(_) => s.push(Value::Nil),
+            }
+        }
+        '⌂' => {
+            let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
+            s.push(Value::List(Rc::new(items)));
+        }
+        '⍇' => {
+            let v = s.pop(pos, "a file path")?;
+            let Value::Str(path) = &v else {
+                return glitch(format!("⍇ expects a path string, got {}", type_name(&v)), pos);
+            };
+            match std::fs::read_to_string(path.as_str()) {
+                Ok(text) => s.push(Value::str(text)),
+                Err(_) => return glitch(format!("⍇ cannot read «{path}»"), pos),
+            }
+        }
+        '⍈' => {
+            let p = s.pop(pos, "a file path")?;
+            let Value::Str(path) = &p else {
+                return glitch(format!("⍈ expects a path string, got {}", type_name(&p)), pos);
+            };
+            let c = s.pop(pos, "a string to write")?;
+            let Value::Str(text) = &c else {
+                return glitch(
+                    format!("⍈ expects a string to write, got {}", type_name(&c)),
+                    pos,
+                );
+            };
+            if std::fs::write(path.as_str(), text.as_bytes()).is_err() {
+                return glitch(format!("⍈ cannot write «{path}»"), pos);
             }
         }
         '⍟' => {

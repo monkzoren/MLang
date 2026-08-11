@@ -266,6 +266,18 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⊸` | `v →` | print without newline |
 | `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF |
 | `⍟` | `→` | dump this strand's stack to stderr |
+| `⌂` | `→ L` | the program's command-line arguments, a list of strings |
+| `⍇` | `path → s` | read the file at `path` into a string; unreadable path glitches |
+| `⍈` | `s path →` | write string `s` to the file at `path`; failure glitches |
+
+Command-line arguments and the file system are part of a run's *input*:
+determinism means identical program, stdin, arguments, and file contents
+produce an identical run. `⌂` sees the arguments after the source file
+(`mlang run prog.ml a b`) or, in a welded binary, everything after the
+executable name — which is how a file dropped onto a built editor arrives
+as its argument. `⍇`/`⍈` glitch with a stable message that names only the
+path, never an OS error string, so failures are reproducible byte for
+byte.
 
 ## 6. The standard library
 

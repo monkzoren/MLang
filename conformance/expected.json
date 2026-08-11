@@ -4,6 +4,11 @@
   "stderr": "",
   "stdout": "3\n3\n"
  },
+ "args-empty": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨⟩\n0\n"
+ },
  "arith": {
   "exit": 0,
   "stderr": "",
@@ -107,7 +112,7 @@
  "example:editor.ml": {
   "exit": 0,
   "stderr": "",
-  "stdout": "MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w:write q:quit (. ends input)\n1 │ WAKE UP, NEO...\n2 │ THE MATRIX HAS YOU\n3 │ follow the white rabbit\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n3 │ FOLLOW THE WHITE RABBIT\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\nTHE MATRIX HAS YOU\nKNOCK, KNOCK, NEO.\nFOLLOW THE WHITE RABBIT\n"
+  "stdout": "MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  d N M:delete  r N txt:retype  m N M:move  s/old/new:substitute  f txt:find  p:view  u:undo  U:redo  h:help  q:quit  (. ends input)\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, NEO...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ follow the white rabbit   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n2 replaced\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, N30...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ KNOCK, KNOCK, N30.        │\n│ 4 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 4 lines · 14 words · 74 chars │\n└───────────────────────────────┘\n↶ undo\n↶ undo\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, NEO...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n↷ redo\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n┌─ MatrixPad ───────────────────┐\n│ 1 │ THE MATRIX HAS YOU        │\n│ 2 │ WAKE UP, NEO...           │\n│ 3 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n? no file name — try: w name.txt\n"
  },
  "example:fibonacci.ml": {
   "exit": 0,
@@ -168,6 +173,11 @@
   "exit": 0,
   "stderr": "",
   "stdout": "1\n2\n3\n"
+ },
+ "file-read-missing": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "caught: ⍇ cannot read «no-such-file.mlang-test»\n"
  },
  "filter": {
   "exit": 0,

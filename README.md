@@ -75,7 +75,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 123 cases covering every operation, concurrency, glitches, both
+corpus — 125 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -151,12 +151,18 @@ iteration, palette lookup, and row assembly in 5 strands and two boot
 definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-`examples/editor.ml` is MatrixPad, a Notepad-style line editor wired
-like a real editor's event loop — keyboard, editor core, and screen are
-three strands joined by channels. The document is an immutable list of
-lines; every edit (insert, delete, replace) is slice-and-concat, and
-command dispatch runs inside `⍥`, so a bad command answers `? …` while
-the editor and the document survive untouched.
+`examples/editor.ml` is MatrixPad, a full Notepad in the Matrix:
+`mlang build examples/editor.ml -o matrixpad.exe` welds a standalone
+editor, and dropping a .txt file onto it opens that file — the path
+arrives as an argument (`⌂`), `⍇` reads it, and `w` saves it back with
+`⍈`. Keyboard, editor core, and screen are three strands joined by
+channels. The document is an immutable list of lines and every edit is
+a slice-and-concat that swaps in a new value, so multi-level undo/redo
+is literally a list of old buffers. It views the document in a
+box-drawn frame with a live status bar, substitutes with `s/old/new`
+across the whole document, and runs command dispatch inside `⍥`: a bad
+command answers `? …` and dies alone — the editor, and the document,
+cannot be corrupted.
 
 ## Repository
 
@@ -169,7 +175,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 123 recorded goldens, the
+conformance/      cases.json + expected.json: 125 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification

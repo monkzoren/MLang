@@ -526,6 +526,16 @@
    "stdin": "wake\r\nup\r\n"
   },
   {
+   "name": "args-empty",
+   "source": "⌂⍞ ⌂#⍞",
+   "stdin": ""
+  },
+  {
+   "name": "file-read-missing",
+   "source": "[«no-such-file.mlang-test»⍇][«caught: »⇅⧺⍞]⍥",
+   "stdin": ""
+  },
+  {
    "name": "debug-stderr",
    "source": "1«s»⟨2 3⟩⍟",
    "stdin": ""
@@ -615,7 +625,7 @@
   {
    "name": "editor.ml",
    "file": "examples/editor.ml",
-   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nq\n"
+   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\ns/NEO/N30\np\nu\nu\np\nU\nm 2 1\nd 3\nz\nd oops\nf MATRIX\np\nw\nq\n"
   }
  ]
 }

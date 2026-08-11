@@ -63,6 +63,9 @@ sigil  name          effect              description
 ⊸      print         v ⊸ →               print v without a newline
 ⌨      readline      → s|∅               read a line from stdin (∅ at end of input)
 ⍟      debug         →                   dump this strand's stack to stderr
+⌂      args          → L                 the program's command-line arguments, a list of strings
+⍇      fread         path ⍇ → s          read the file at path into a string; unreadable glitches
+⍈      fwrite        s path ⍈ →          write string s to the file at path; failure glitches
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)

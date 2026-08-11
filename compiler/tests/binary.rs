@@ -56,3 +56,45 @@ fn welded_binary_runs_standalone() {
     let run2 = std::process::Command::new(&bin).arg("ops").output().unwrap();
     assert_eq!(String::from_utf8(run2.stdout).unwrap(), "woven\n720\n3\n");
 }
+
+#[test]
+fn welded_editor_opens_and_saves_a_dropped_file() {
+    let exe = env!("CARGO_BIN_EXE_mlang");
+    let dir = std::env::temp_dir().join("mlang-editor-test");
+    std::fs::create_dir_all(&dir).unwrap();
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../examples/editor.ml");
+    let bin = dir.join("matrixpad");
+    let note = dir.join("note.txt");
+    std::fs::write(&note, "There is no spoon.\n").unwrap();
+
+    let build = std::process::Command::new(exe)
+        .args(["build", src.to_str().unwrap(), "-o", bin.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(build.status.success(), "build failed: {:?}", build);
+
+    // Dropping a .txt onto the executable launches it with the file's path
+    // as the argument; the session below types Windows-style \r\n lines.
+    use std::io::Write;
+    let mut child = std::process::Command::new(&bin)
+        .arg(note.to_str().unwrap())
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .as_mut()
+        .unwrap()
+        .write_all(b"a\r\nFree your mind.\r\n.\r\nw\r\nq\r\n")
+        .unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert_eq!(out.status.code(), Some(0));
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("opened"), "stdout: {stdout}");
+    assert!(stdout.contains("saved"), "stdout: {stdout}");
+    assert_eq!(
+        std::fs::read_to_string(&note).unwrap(),
+        "There is no spoon.\nFree your mind.\n"
+    );
+}
