@@ -176,6 +176,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mandelbrot                                         # standalone: no toolchain needed
 
 ./mlang run examples/editor.ml         # or compile-and-run in one step
+./mlang run --parallel examples/mandelbrot.ml   # strands on OS threads
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
@@ -282,7 +283,9 @@ each frame in parallel; a navigator strand owns the viewport, streams
 render jobs to the workers over channels, reassembles their rows in
 order, and reads commands from stdin — `a d w s` pan, `z x` zoom (the
 escape-time depth rises as you dive), `r` reset, `q` quit — a full
-interactive event loop in 5 strands and two boot definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
+interactive event loop in 5 strands and two boot definitions. Run it
+with `mlang run --parallel` and the four workers land on four cores:
+same bytes on screen, ~3.4× faster frames. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
@@ -413,6 +416,29 @@ SPEC.md           the full language specification
 
 ## Honest notes
 
+<<<<<<< HEAD
+* **Glyphs vs. tokens.** Today's BPE tokenizers may spend more than one
+  token on a rare glyph. MLang optimizes *characters and context density* —
+  the number of atoms a model must emit correctly — and one-glyph-one-op
+  makes a dedicated tokenizer trivial (one token per sigil). Density also
+  buys correctness: there is no syntax to misindent and no identifier to
+  misspell twice.
+* **Determinism first, parallelism on demand.** By default the runtime
+  interleaves strands deterministically (round-robin, fixed slice):
+  identical input ⇒ identical bytes out, which is what makes
+  machine-written concurrent code debuggable by a machine, and is what
+  the conformance corpus pins. Because the language model (immutable
+  values, channel-only communication) admits true parallelism without
+  data races, the toolchain also ships it: `mlang run --parallel` (or
+  `MLANG_PAR=1` for welded binaries) puts every strand on its own OS
+  thread. Per-strand order, FIFO channels, glitch isolation, and
+  deadlock detection carry over; only cross-strand interleaving becomes
+  timing-dependent — and programs wired as single-producer
+  single-consumer pipelines with one printing strand (the Mandelbrot
+  explorer, `pipeline.ml`) produce byte-identical output either way,
+  just faster: the four-worker Mandelbrot renders ~3.4× quicker on four
+  cores.
+=======
 * **Glyphs vs. tokens.** MLang optimizes *characters* — the number of
   atoms a model must emit correctly — not today's BPE token counts, and
   on those it currently loses: rare Unicode glyphs cost 2–3 BPE tokens
@@ -444,6 +470,7 @@ SPEC.md           the full language specification
   programs. Models have seen enormous amounts of Python and essentially
   zero MLang — the MLang arm leans entirely on an op-reference primer in
   the prompt. `bench/README.md` spells out the protocol and every caveat.
+>>>>>>> origin/main
 
 ## Name
 
