@@ -1,8 +1,8 @@
-//! MLang runtime values — immutable, cheaply clonable via Rc.
+//! MLang runtime values — immutable, cheaply clonable via Arc.
 
 use num_bigint::BigInt;
 use num_traits::ToPrimitive;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// 1-based (row, col) in the original source file; (0, 0) means unknown.
 pub type Pos = (u32, u32);
@@ -30,11 +30,11 @@ pub enum Op {
 #[derive(Clone, Debug)]
 pub enum Value {
     Int(i64),
-    Big(Rc<BigInt>),
+    Big(Arc<BigInt>),
     Float(f64),
-    Str(Rc<String>),
-    List(Rc<Vec<Value>>),
-    Quot(Rc<Vec<Instr>>),
+    Str(Arc<String>),
+    List(Arc<Vec<Value>>),
+    Quot(Arc<Vec<Instr>>),
     Nil,
     Mark,
 }
@@ -46,11 +46,11 @@ impl Value {
     pub fn from_big(b: BigInt) -> Value {
         match b.to_i64() {
             Some(i) => Value::Int(i),
-            None => Value::Big(Rc::new(b)),
+            None => Value::Big(Arc::new(b)),
         }
     }
     pub fn str(s: impl Into<String>) -> Value {
-        Value::Str(Rc::new(s.into()))
+        Value::Str(Arc::new(s.into()))
     }
     pub fn as_f64(&self) -> Option<f64> {
         match self {
@@ -93,7 +93,7 @@ pub fn val_eq(a: &Value, b: &Value) -> bool {
         (Value::List(x), Value::List(y)) => {
             x.len() == y.len() && x.iter().zip(y.iter()).all(|(p, q)| val_eq(p, q))
         }
-        (Value::Quot(x), Value::Quot(y)) => Rc::ptr_eq(x, y),
+        (Value::Quot(x), Value::Quot(y)) => Arc::ptr_eq(x, y),
         _ => false,
     }
 }

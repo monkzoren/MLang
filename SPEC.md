@@ -145,6 +145,23 @@ interleaving remains deterministic because it never depends on input
 timing. (A strand waiting its turn at stdin is not deadlocked — its read
 can always proceed once the grid goes quiet.)
 
+The toolchain additionally offers an opt-in **parallel scheduler**
+(`mlang run --parallel`; welded binaries honor the `MLANG_PAR=1`
+environment variable): every strand runs on its own OS thread, sharing
+only what the language itself shares — channels and single-assignment
+globals. Per-strand execution order, FIFO channel delivery per sender,
+blocking semantics, glitch isolation, deadlock detection, and exit codes
+are all preserved, and output is atomic per line. What is *not* preserved
+is cross-strand interleaving: the order output from different strands
+mixes, the outcome of `⇂`, and id assignment among concurrently spawning
+strands follow real thread timing and vary run to run. (Stdin priority
+carries over naturally: a strand reading `⌨` blocks on the OS while the
+other threads run on.) The deterministic scheduler remains the language
+default and the conformance corpus's ground truth. Programs whose
+channels each have one sender and one receiver and that print from a
+single strand observe no difference — their parallel output is
+byte-identical to the deterministic run.
+
 ### 4.3 Spawning
 
 `⚡` pops a quotation and starts it as a new strand with an empty stack and

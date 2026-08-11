@@ -19,7 +19,7 @@
 use crate::values::{Instr, Op, Value};
 use crate::vm::CompiledProgram;
 use num_bigint::BigInt;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub const MAGIC: &[u8; 8] = b"MLANGBIN";
 const FORMAT_VERSION: u32 = 1;
@@ -168,16 +168,16 @@ impl<'a> R<'a> {
             0 => Value::Nil,
             1 => Value::from_big(BigInt::from_signed_bytes_le(self.bytes()?)),
             2 => Value::Float(f64::from_bits(self.u64()?)),
-            3 => Value::Str(Rc::new(self.string()?)),
+            3 => Value::Str(Arc::new(self.string()?)),
             4 => {
                 let n = self.u64()? as usize;
                 let mut items = Vec::with_capacity(n);
                 for _ in 0..n {
                     items.push(self.value()?);
                 }
-                Value::List(Rc::new(items))
+                Value::List(Arc::new(items))
             }
-            5 => Value::Quot(Rc::new(self.code()?)),
+            5 => Value::Quot(Arc::new(self.code()?)),
             t => return Err(format!("bad value tag {t}")),
         })
     }
