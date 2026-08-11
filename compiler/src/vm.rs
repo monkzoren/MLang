@@ -289,6 +289,8 @@ pub struct VM<'io> {
     pub stdin: &'io mut dyn BufRead,
     pub out: &'io mut dyn Write,
     pub err: &'io mut dyn Write,
+    /// The program's command-line arguments, pushed as a string list by ⌂.
+    pub args: Vec<String>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -316,6 +318,7 @@ impl<'io> VM<'io> {
             stdin,
             out,
             err,
+            args: Vec::new(),
         }
     }
 
@@ -1363,6 +1366,10 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 }
                 Err(_) => s.push(Value::Nil),
             }
+        }
+        '⌂' => {
+            let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
+            s.push(Value::List(Rc::new(items)));
         }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();

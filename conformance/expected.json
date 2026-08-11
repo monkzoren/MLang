@@ -1,632 +1,637 @@
 {
-  "apply": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "3\n3\n"
-  },
-  "arith": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n7\n42\n1024\n"
-  },
-  "bignum": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1267650600228229401496703205376\n1606938044258990275541962092341162602522202993782792835301376\n"
-  },
-  "boot-defs": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "50\n"
-  },
-  "boot-glitch-stops": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand ¯1 (boot) at 1:4: ÷ by zero\n",
-    "stdout": ""
-  },
-  "codepoints": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "65\nB\n9075\n"
-  },
-  "comment-lines": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n"
-  },
-  "compare": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n1\n0\n1\n1\n1\n"
-  },
-  "continuation": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "3\n"
-  },
-  "deadlock": {
-    "exit": 1,
-    "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n",
-    "stdout": ""
-  },
-  "debug-stderr": {
-    "exit": 0,
-    "stderr": "⍟ strand 0 (row 1): 1 «s» ⟨2 3⟩\n",
-    "stdout": ""
-  },
-  "define-call": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "81\n3.14\n"
-  },
-  "digit-runs": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "6\n"
-  },
-  "div-zero": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
-    "stdout": ""
-  },
-  "division": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "4\n3.5\n¯4\n0.3333333333333333\n"
-  },
-  "double-dot": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:4: number has two . points\n",
-    "stdout": ""
-  },
-  "drain-cross-strand": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨0 1 2⟩\n"
-  },
-  "dup-swap-drop": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n1\n1\n"
-  },
-  "each": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n1\n2\n"
-  },
-  "empty-things-falsy": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "f\nf\nf\n"
-  },
-  "example:calc.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n48\n9223372036854775808\n1\n✗ ÷ by zero\n✗ ⍎ cannot parse «oops» as a number\n"
-  },
-  "example:editor.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w [file]:write/save o file:open q:quit (. ends input)\n1 │ WAKE UP, NEO...\n2 │ THE MATRIX HAS YOU\n3 │ follow the white rabbit\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n3 │ FOLLOW THE WHITE RABBIT\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\nTHE MATRIX HAS YOU\nKNOCK, KNOCK, NEO.\nFOLLOW THE WHITE RABBIT\nwrote /tmp/mlang-matrixpad.txt\n1 │ FOLLOW THE WHITE RABBIT\nopened /tmp/mlang-matrixpad.txt\n1 │ THE MATRIX HAS YOU\n2 │ KNOCK, KNOCK, NEO.\n3 │ FOLLOW THE WHITE RABBIT\n? ⍇ cannot read «/no/such»\n"
-  },
-  "example:fibonacci.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
-  },
-  "example:fizzbuzz.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
-  },
-  "example:glitch.ml": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 2 (row 8) at 8:11: @ index 99 out of bounds (length 3)\n",
-    "stdout": "caught: ÷ by zero\nstrand 0 alive\ncaught: custom glitch\nstrand 1 alive\n"
-  },
-  "example:hello-rain.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "Hello, Matrix\n"
-  },
-  "example:hello.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "Hello, Matrix\n"
-  },
-  "example:mandelbrot.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "                 .........................:...........                \n             ............................::█:::...........            \n           .............................:::-+-::............          \n        ..............................::*%+███=+:..............       \n       ...........................::::::-██████=::::............      \n     ..........................::██---█=@*%███%██=█::::#:.........    \n    .........................:::-=██@███████████████#██*+:.........   \n   .......................::::-%█#████████████████████+-::..........  \n  ..............:--::::=::::::=+███████████████████████+██:.......... \n ..............:::-+█++█#*=---██████████████████████████=::...........\n .............:::*%█████████*+██████████████████████████=:............\n ......::::::-==++██████████████████████████████████████::............\n█████████████████████████████████████████████████████*-:::............\n ......::::::-==++██████████████████████████████████████::............\n .............:::*%█████████*+██████████████████████████=:............\n ..............:::-+█++█#*=---██████████████████████████=::...........\n  ..............:--::::=::::::=+███████████████████████+██:.......... \n   .......................::::-%█#████████████████████+-::..........  \n    .........................:::-=██@███████████████#██*+:.........   \n     ..........................::██---█=@*%███%██=█::::#:.........    \n       ...........................::::::-██████=::::............      \n        ..............................::*%+███=+:..............       \n           .............................:::-+-::............          \n             ............................::█:::...........            \ncenter ¯0.5 0  width 3  depth 30  [a/d/w/s pan  z/x zoom  r reset  q quit] >         .......................:*████+██████████████████████████████==\n   ..........................:::--+███████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n   ..........................:::--+███████████████████████████████████\ncenter ¯0.5 0  width 1.5  depth 50  [a/d/w/s pan  z/x zoom  r reset  q quit] >                                   ..........:--=--**%█%#+:--..........\n                               ...............:-██████████#:..........\n                            .................:-%██████████+:..........\n                        ..........:.........:::-*████████+-::.........\n                   ...........:#**-::.::-@█:*+*==+*████*===█-█::%#:...\n              ................--██@#█-:==██████████████████████#██::::\n        .......................:*████+██████████████████████████████==\n   ..........................:::--+███████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\ncenter ¯0.5 ¯0.28125  width 1.5  depth 50  [a/d/w/s pan  z/x zoom  r reset  q quit] >                  .........................:...........                \n             ............................::█:::...........            \n           .............................:::-+-::............          \n        ..............................::*%+███=+:..............       \n       ...........................::::::-██████=::::............      \n     ..........................::██---█=@*%███%██=█::::#:.........    \n    .........................:::-=██@███████████████#██*+:.........   \n   .......................::::-%█#████████████████████+-::..........  \n  ..............:--::::=::::::=+███████████████████████+██:.......... \n ..............:::-+█++█#*=---██████████████████████████=::...........\n .............:::*%█████████*+██████████████████████████=:............\n ......::::::-==++██████████████████████████████████████::............\n█████████████████████████████████████████████████████*-:::............\n ......::::::-==++██████████████████████████████████████::............\n .............:::*%█████████*+██████████████████████████=:............\n ..............:::-+█++█#*=---██████████████████████████=::...........\n  ..............:--::::=::::::=+███████████████████████+██:.......... \n   .......................::::-%█#████████████████████+-::..........  \n    .........................:::-=██@███████████████#██*+:.........   \n     ..........................::██---█=@*%███%██=█::::#:.........    \n       ...........................::::::-██████=::::............      \n        ..............................::*%+███=+:..............       \n           .............................:::-+-::............          \n             ............................::█:::...........            \ncenter ¯0.5 0  width 3  depth 30  [a/d/w/s pan  z/x zoom  r reset  q quit] > "
-  },
-  "example:parallel-sum.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "500500\n"
-  },
-  "example:pipeline-manual.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
-  },
-  "example:pipeline.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
-  },
-  "example:spawn.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "machine 1 online\nmachine 2 online\nmachine 3 online\nmachine 4 online\nids sum: 10\n"
-  },
-  "example:std-tour.ml": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨2 4 6 9 15 31⟩\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n⟨⟨«red» «pill»⟩ ⟨«blue» «shift»⟩⟩\n1\n62\n"
-  },
-  "fifo": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n2\n3\n"
-  },
-  "file-io-roundtrip": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨«neo» «trinity»⟩\n"
-  },
-  "file-missing-glitch": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "✗ ⍇ cannot read «/definitely/not/here.ml»\nalive\n"
-  },
-  "file-op-type-errors": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⍇ expects a path string, got int\n⍈ expects a path string, got int\n"
-  },
-  "filter": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨0 2 4 6 8⟩\n"
-  },
-  "float": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2.5\n1.0\n3.0\n"
-  },
-  "fold": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "5050\n"
-  },
-  "if": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "y\nn\n5\n"
-  },
-  "index-oob": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:5: @ index 5 out of bounds (length 1)\n",
-    "stdout": ""
-  },
-  "int": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "42\n"
-  },
-  "interleave-deterministic": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "A\nB\nA\nA\nB\nB\nA\nA\nB\nB\n"
-  },
-  "iterate-string": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "a\nb\nc\n⟨«a!» «b!»⟩\n"
-  },
-  "join-unknown": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:3: ⋈ no strand with id 99\n",
-    "stdout": ""
-  },
-  "list": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨1 «two» ⟨3 4⟩ 2.5⟩\n"
-  },
-  "list-build-nested": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n"
-  },
-  "list-deep-eq": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n0\n"
-  },
-  "locals": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n"
-  },
-  "logic": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n1\n1\n0\n1\n"
-  },
-  "lone-negative": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: lone ¯ — negatives are written like ¯5\n",
-    "stdout": ""
-  },
-  "loose-continuation": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:3: ⋮ continues a strand and must start a line\n",
-    "stdout": ""
-  },
-  "loose-divider": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:2: ⇊ is the boot divider and must stand alone on its own line (or row, in rain form)\n",
-    "stdout": ""
-  },
-  "loose-newline-glyph": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: ⏎ is only meaningful inside « » strings\n",
-    "stdout": ""
-  },
-  "loose-rain-marker": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: ⇓ marks rain form and must be alone on the first line of the file (flat form needs no marker)\n",
-    "stdout": ""
-  },
-  "mixed-compare-glitch": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:5: < compares two numbers or two strings, got int str\n",
-    "stdout": ""
-  },
-  "mod-zero": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:4: % by zero\n",
-    "stdout": ""
-  },
-  "modulo": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n2\n¯2\n1.5\n"
-  },
-  "negative": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "¯5\n¯2\n"
-  },
-  "nested-try": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "re-inner\n"
-  },
-  "nil": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "∅\n1\n0\n1\n"
-  },
-  "over-rot-depth": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n2\n1\n1\n3\n2\n2\n"
-  },
-  "parse-garbage": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:7: ⍎ cannot parse «nope» as a number\n",
-    "stdout": ""
-  },
-  "pipeline": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
-  },
-  "pour-drain": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨1 2 3⟩\n⟨⟩\n⟨«x» «y»⟩\n"
-  },
-  "pour-type-error": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇈ expects a list or string, got int\n",
-    "stdout": ""
-  },
-  "prim-contains-find": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n2\n¯1\n"
-  },
-  "prim-reverse": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "xirtam\n⟨3 2 1⟩\n\n"
-  },
-  "prim-search-type-error": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:6: ∈ searching a string needs a string, got int\n",
-    "stdout": ""
-  },
-  "prim-sort": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨1.5 2 3⟩\nabc\n⟨«a» «b»⟩\n"
-  },
-  "prim-sort-mixed": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:8: ⍋ needs all numbers or all strings\n",
-    "stdout": ""
-  },
-  "prim-type": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "int\n5\nfloat\nstr\nlist\nquot\n∅\n"
-  },
-  "pump-chained": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨10 20 30 40 50⟩\n"
-  },
-  "pump-empty": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n"
-  },
-  "pump-pipeline": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
-  },
-  "pump-type-error": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇉ expects a [quotation], got int\n",
-    "stdout": ""
-  },
-  "quot-identity-eq": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n0\n"
-  },
-  "rain-boot": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "36\n"
-  },
-  "rain-comment-column": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n"
-  },
-  "rain-hello": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "Hi\n"
-  },
-  "rain-two-strands": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\nA\n"
-  },
-  "raise-custom": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨1 2⟩\n"
-  },
-  "range-map": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨0 1 4 9 16⟩\n⟨⟩\n"
-  },
-  "redefine-glitch": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:6: sigil 'x' is already defined\n",
-    "stdout": ""
-  },
-  "repeat": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "5\n0\n"
-  },
-  "reserved-sigil": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:3: '+' is reserved and cannot follow ≔\n",
-    "stdout": ""
-  },
-  "seq-basics": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "3\n⟨1 2 3⟩\nabcd\n8\nz\n"
-  },
-  "slice": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "atr\nab\n⟨2 3⟩\n"
-  },
-  "spawn-join": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "42\n"
-  },
-  "spawn-locals-copy": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n9\n"
-  },
-  "split-join": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨«a» «b» «c»⟩\n⟨«a» «b»⟩\n1-2-3\n"
-  },
-  "sqrt-negative": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:3: √ of a negative number\n",
-    "stdout": ""
-  },
-  "std-aggregates": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "10\n24\n2.5\n"
-  },
-  "std-constants": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n¯inf\n"
-  },
-  "std-in-boot-and-strands": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n⟨2 4⟩\n"
-  },
-  "std-list-helpers": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n9\n⟨8 9⟩\n⟨7 8⟩\n⟨9⟩\n⟨3 2 1⟩\n"
-  },
-  "std-numbers": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n3\n9\n720\n21\n"
-  },
-  "std-redefine-glitches": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:2: sigil 'π' is already defined\n",
-    "stdout": ""
-  },
-  "std-text": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "NEO!\nneo\n⟨«the» «matrix»⟩\n3\n"
-  },
-  "std-zip": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "⟨⟨1 «a»⟩ ⟨2 «b»⟩⟩\n"
-  },
-  "stdin-crlf": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n3\n"
-  },
-  "stdin-echo": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "x\ny\n"
-  },
-  "stdin-eof": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "a\nb\n∅\n"
-  },
-  "str-parse": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "42!\n¯3\n2.5\n5\n"
-  },
-  "strand-id-count": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n1\n3\n"
-  },
-  "stray-dot": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:3: stray . — floats are written like 1.5 or .5\n",
-    "stdout": ""
-  },
-  "string": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "Hello, Matrix\na\nb\n"
-  },
-  "string-compare": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n1\n"
-  },
-  "string-raw-print": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "xy"
-  },
-  "tabs-rejected": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: tab characters break the grid — use spaces\n",
-    "stdout": ""
-  },
-  "try-catch": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "got: ÷ by zero\nafter\n"
-  },
-  "try-disarms": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n"
-  },
-  "try-recv": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "0\n1\n5\n"
-  },
-  "try-restores-stack": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "7\n"
-  },
-  "type-error-add": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:5: + expects numbers, got str\n",
-    "stdout": ""
-  },
-  "unary-math": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1.4142135623730951\n2\n3\n¯5\n¯3\n"
-  },
-  "uncaught-kills-strand": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
-    "stdout": "survivor\n"
-  },
-  "unclosed-quotation": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: unclosed [ quotation\n",
-    "stdout": ""
-  },
-  "undefined-sigil": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:1: undefined sigil 'Ω'\n",
-    "stdout": ""
-  },
-  "underflow": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — needed a number\n",
-    "stdout": ""
-  },
-  "unmatched-close": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:2: ] without matching [\n",
-    "stdout": ""
-  },
-  "unmatched-list-close": {
-    "exit": 1,
-    "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⟩ without matching ⟨\n",
-    "stdout": ""
-  },
-  "unterminated-string": {
-    "exit": 2,
-    "stderr": "✗ weave error at 1:1: unterminated « string\n",
-    "stdout": ""
-  },
-  "while-fib": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
-  },
-  "yield": {
-    "exit": 0,
-    "stderr": "",
-    "stdout": "A\nB\nA\nB\nA\nB\n"
-  }
+ "apply": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "3\n3\n"
+ },
+ "args-empty": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨⟩\n0\n"
+ },
+ "arith": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n7\n42\n1024\n"
+ },
+ "bignum": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1267650600228229401496703205376\n1606938044258990275541962092341162602522202993782792835301376\n"
+ },
+ "boot-defs": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "50\n"
+ },
+ "boot-glitch-stops": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand ¯1 (boot) at 1:4: ÷ by zero\n",
+  "stdout": ""
+ },
+ "codepoints": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "65\nB\n9075\n"
+ },
+ "comment-lines": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n"
+ },
+ "compare": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n1\n0\n1\n1\n1\n"
+ },
+ "continuation": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "3\n"
+ },
+ "deadlock": {
+  "exit": 1,
+  "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n",
+  "stdout": ""
+ },
+ "debug-stderr": {
+  "exit": 0,
+  "stderr": "⍟ strand 0 (row 1): 1 «s» ⟨2 3⟩\n",
+  "stdout": ""
+ },
+ "define-call": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "81\n3.14\n"
+ },
+ "digit-runs": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "6\n"
+ },
+ "div-zero": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
+  "stdout": ""
+ },
+ "division": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "4\n3.5\n¯4\n0.3333333333333333\n"
+ },
+ "double-dot": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:4: number has two . points\n",
+  "stdout": ""
+ },
+ "drain-cross-strand": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨0 1 2⟩\n"
+ },
+ "dup-swap-drop": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n1\n1\n"
+ },
+ "each": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\n2\n"
+ },
+ "empty-things-falsy": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "f\nf\nf\n"
+ },
+ "example:calc.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n48\n9223372036854775808\n1\n✗ ÷ by zero\n✗ ⍎ cannot parse «oops» as a number\n"
+ },
+ "example:editor.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  d N M:delete  r N txt:retype  m N M:move  s/old/new:substitute  f txt:find  p:view  u:undo  U:redo  h:help  q:quit  (. ends input)\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, NEO...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ follow the white rabbit   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n2 replaced\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, N30...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ KNOCK, KNOCK, N30.        │\n│ 4 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 4 lines · 14 words · 74 chars │\n└───────────────────────────────┘\n↶ undo\n↶ undo\n┌─ MatrixPad ───────────────────┐\n│ 1 │ WAKE UP, NEO...           │\n│ 2 │ THE MATRIX HAS YOU        │\n│ 3 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n↷ redo\n? z\n? ⍎ cannot parse «oops» as a number\n1 │ THE MATRIX HAS YOU\n┌─ MatrixPad ───────────────────┐\n│ 1 │ THE MATRIX HAS YOU        │\n│ 2 │ WAKE UP, NEO...           │\n│ 3 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\n? no file name — try: w name.txt\nsaved mlang-editor-conf.tmp · 3 lines\nnew buffer\n┌─ MatrixPad ─────────────────┐\n├─────────────────────────────┤\n│ 0 lines · 0 words · 0 chars │\n└─────────────────────────────┘\nopened mlang-editor-conf.tmp · 3 lines\n┌─ mlang-editor-conf.tmp ───────┐\n│ 1 │ THE MATRIX HAS YOU        │\n│ 2 │ WAKE UP, NEO...           │\n│ 3 │ FOLLOW THE WHITE RABBIT   │\n├───────────────────────────────┤\n│ 3 lines · 11 words · 56 chars │\n└───────────────────────────────┘\nnew file mlang-no-such.tmp\n"
+ },
+ "example:fibonacci.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+ },
+ "example:fizzbuzz.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+ },
+ "example:glitch.ml": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 2 (row 8) at 8:11: @ index 99 out of bounds (length 3)\n",
+  "stdout": "caught: ÷ by zero\nstrand 0 alive\ncaught: custom glitch\nstrand 1 alive\n"
+ },
+ "example:hello-rain.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hello, Matrix\n"
+ },
+ "example:hello.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hello, Matrix\n"
+ },
+ "example:mandelbrot.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "                 .........................:...........                \n             ............................::█:::...........            \n           .............................:::-+-::............          \n        ..............................::*%+███=+:..............       \n       ...........................::::::-██████=::::............      \n     ..........................::██---█=@*%███%██=█::::#:.........    \n    .........................:::-=██@███████████████#██*+:.........   \n   .......................::::-%█#████████████████████+-::..........  \n  ..............:--::::=::::::=+███████████████████████+██:.......... \n ..............:::-+█++█#*=---██████████████████████████=::...........\n .............:::*%█████████*+██████████████████████████=:............\n ......::::::-==++██████████████████████████████████████::............\n█████████████████████████████████████████████████████*-:::............\n ......::::::-==++██████████████████████████████████████::............\n .............:::*%█████████*+██████████████████████████=:............\n ..............:::-+█++█#*=---██████████████████████████=::...........\n  ..............:--::::=::::::=+███████████████████████+██:.......... \n   .......................::::-%█#████████████████████+-::..........  \n    .........................:::-=██@███████████████#██*+:.........   \n     ..........................::██---█=@*%███%██=█::::#:.........    \n       ...........................::::::-██████=::::............      \n        ..............................::*%+███=+:..............       \n           .............................:::-+-::............          \n             ............................::█:::...........            \ncenter ¯0.5 0  width 3  depth 30  [a/d/w/s pan  z/x zoom  r reset  q quit] >         .......................:*████+██████████████████████████████==\n   ..........................:::--+███████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n   ..........................:::--+███████████████████████████████████\ncenter ¯0.5 0  width 1.5  depth 50  [a/d/w/s pan  z/x zoom  r reset  q quit] >                                   ..........:--=--**%█%#+:--..........\n                               ...............:-██████████#:..........\n                            .................:-%██████████+:..........\n                        ..........:.........:::-*████████+-::.........\n                   ...........:#**-::.::-@█:*+*==+*████*===█-█::%#:...\n              ................--██@#█-:==██████████████████████#██::::\n        .......................:*████+██████████████████████████████==\n   ..........................:::--+███████████████████████████████████\n.........................:*+=#-=██████████████████████████████████████\n..........................:-#█████████████████████████████████████████\n:.........::.............:#-██████████████████████████████████████████\n=::::::.::=-:::::......::-████████████████████████████████████████████\n.::-*██-+-*@█=-==:::::::@█████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n██████████████████████████████████████████████████████████████████████\n+██████████████████████*██████████████████████████████████████████████\n-+████████████████████==██████████████████████████████████████████████\n:+-██████████████████---██████████████████████████████████████████████\n.:==███@█████████*@-::::*█████████████████████████████████████████████\ncenter ¯0.5 ¯0.28125  width 1.5  depth 50  [a/d/w/s pan  z/x zoom  r reset  q quit] >                  .........................:...........                \n             ............................::█:::...........            \n           .............................:::-+-::............          \n        ..............................::*%+███=+:..............       \n       ...........................::::::-██████=::::............      \n     ..........................::██---█=@*%███%██=█::::#:.........    \n    .........................:::-=██@███████████████#██*+:.........   \n   .......................::::-%█#████████████████████+-::..........  \n  ..............:--::::=::::::=+███████████████████████+██:.......... \n ..............:::-+█++█#*=---██████████████████████████=::...........\n .............:::*%█████████*+██████████████████████████=:............\n ......::::::-==++██████████████████████████████████████::............\n█████████████████████████████████████████████████████*-:::............\n ......::::::-==++██████████████████████████████████████::............\n .............:::*%█████████*+██████████████████████████=:............\n ..............:::-+█++█#*=---██████████████████████████=::...........\n  ..............:--::::=::::::=+███████████████████████+██:.......... \n   .......................::::-%█#████████████████████+-::..........  \n    .........................:::-=██@███████████████#██*+:.........   \n     ..........................::██---█=@*%███%██=█::::#:.........    \n       ...........................::::::-██████=::::............      \n        ..............................::*%+███=+:..............       \n           .............................:::-+-::............          \n             ............................::█:::...........            \ncenter ¯0.5 0  width 3  depth 30  [a/d/w/s pan  z/x zoom  r reset  q quit] > "
+ },
+ "example:parallel-sum.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "500500\n"
+ },
+ "example:pipeline-manual.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "example:pipeline.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "example:spawn.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "machine 1 online\nmachine 2 online\nmachine 3 online\nmachine 4 online\nids sum: 10\n"
+ },
+ "example:std-tour.ml": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨2 4 6 9 15 31⟩\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n⟨⟨«red» «pill»⟩ ⟨«blue» «shift»⟩⟩\n1\n62\n"
+ },
+ "fifo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\n3\n"
+ },
+ "file-io-roundtrip": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨«neo» «trinity»⟩\n"
+ },
+ "file-missing-glitch": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "✗ ⍇ cannot read «no-such-dir/definitely-not-here.ml»\nalive\n"
+ },
+ "file-op-type-errors": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⍇ expects a path string, got int\n⍈ expects a path string, got int\n"
+ },
+ "filter": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨0 2 4 6 8⟩\n"
+ },
+ "float": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2.5\n1.0\n3.0\n"
+ },
+ "fold": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "5050\n"
+ },
+ "if": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "y\nn\n5\n"
+ },
+ "index-oob": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: @ index 5 out of bounds (length 1)\n",
+  "stdout": ""
+ },
+ "int": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "42\n"
+ },
+ "interleave-deterministic": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "A\nB\nA\nA\nB\nB\nA\nA\nB\nB\n"
+ },
+ "iterate-string": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "a\nb\nc\n⟨«a!» «b!»⟩\n"
+ },
+ "join-unknown": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: ⋈ no strand with id 99\n",
+  "stdout": ""
+ },
+ "list": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨1 «two» ⟨3 4⟩ 2.5⟩\n"
+ },
+ "list-build-nested": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n"
+ },
+ "list-deep-eq": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n0\n"
+ },
+ "locals": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n"
+ },
+ "logic": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\n1\n0\n1\n"
+ },
+ "lone-negative": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: lone ¯ — negatives are written like ¯5\n",
+  "stdout": ""
+ },
+ "loose-continuation": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:3: ⋮ continues a strand and must start a line\n",
+  "stdout": ""
+ },
+ "loose-divider": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:2: ⇊ is the boot divider and must stand alone on its own line (or row, in rain form)\n",
+  "stdout": ""
+ },
+ "loose-newline-glyph": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: ⏎ is only meaningful inside « » strings\n",
+  "stdout": ""
+ },
+ "loose-rain-marker": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: ⇓ marks rain form and must be alone on the first line of the file (flat form needs no marker)\n",
+  "stdout": ""
+ },
+ "mixed-compare-glitch": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: < compares two numbers or two strings, got int str\n",
+  "stdout": ""
+ },
+ "mod-zero": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: % by zero\n",
+  "stdout": ""
+ },
+ "modulo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\n¯2\n1.5\n"
+ },
+ "negative": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "¯5\n¯2\n"
+ },
+ "nested-try": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "re-inner\n"
+ },
+ "nil": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "∅\n1\n0\n1\n"
+ },
+ "over-rot-depth": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\n1\n1\n3\n2\n2\n"
+ },
+ "parse-garbage": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:7: ⍎ cannot parse «nope» as a number\n",
+  "stdout": ""
+ },
+ "pipeline": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "pour-drain": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨1 2 3⟩\n⟨⟩\n⟨«x» «y»⟩\n"
+ },
+ "pour-type-error": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇈ expects a list or string, got int\n",
+  "stdout": ""
+ },
+ "prim-contains-find": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n2\n¯1\n"
+ },
+ "prim-reverse": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "xirtam\n⟨3 2 1⟩\n\n"
+ },
+ "prim-search-type-error": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: ∈ searching a string needs a string, got int\n",
+  "stdout": ""
+ },
+ "prim-sort": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨1.5 2 3⟩\nabc\n⟨«a» «b»⟩\n"
+ },
+ "prim-sort-mixed": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:8: ⍋ needs all numbers or all strings\n",
+  "stdout": ""
+ },
+ "prim-type": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "int\n5\nfloat\nstr\nlist\nquot\n∅\n"
+ },
+ "pump-chained": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨10 20 30 40 50⟩\n"
+ },
+ "pump-empty": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n"
+ },
+ "pump-pipeline": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "pump-type-error": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇉ expects a [quotation], got int\n",
+  "stdout": ""
+ },
+ "quot-identity-eq": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n0\n"
+ },
+ "rain-boot": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "36\n"
+ },
+ "rain-comment-column": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n"
+ },
+ "rain-hello": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hi\n"
+ },
+ "rain-two-strands": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\nA\n"
+ },
+ "raise-custom": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨1 2⟩\n"
+ },
+ "range-map": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨0 1 4 9 16⟩\n⟨⟩\n"
+ },
+ "redefine-glitch": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: sigil 'x' is already defined\n",
+  "stdout": ""
+ },
+ "repeat": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "5\n0\n"
+ },
+ "reserved-sigil": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:3: '+' is reserved and cannot follow ≔\n",
+  "stdout": ""
+ },
+ "seq-basics": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "3\n⟨1 2 3⟩\nabcd\n8\nz\n"
+ },
+ "slice": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "atr\nab\n⟨2 3⟩\n"
+ },
+ "spawn-join": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "42\n"
+ },
+ "spawn-locals-copy": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n9\n"
+ },
+ "split-join": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨«a» «b» «c»⟩\n⟨«a» «b»⟩\n1-2-3\n"
+ },
+ "sqrt-negative": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: √ of a negative number\n",
+  "stdout": ""
+ },
+ "std-aggregates": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "10\n24\n2.5\n"
+ },
+ "std-constants": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n¯inf\n"
+ },
+ "std-in-boot-and-strands": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n⟨2 4⟩\n"
+ },
+ "std-list-helpers": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n9\n⟨8 9⟩\n⟨7 8⟩\n⟨9⟩\n⟨3 2 1⟩\n"
+ },
+ "std-numbers": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n3\n9\n720\n21\n"
+ },
+ "std-redefine-glitches": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: sigil 'π' is already defined\n",
+  "stdout": ""
+ },
+ "std-text": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "NEO!\nneo\n⟨«the» «matrix»⟩\n3\n"
+ },
+ "std-zip": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "⟨⟨1 «a»⟩ ⟨2 «b»⟩⟩\n"
+ },
+ "stdin-crlf": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n3\n"
+ },
+ "stdin-echo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "x\ny\n"
+ },
+ "stdin-eof": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "a\nb\n∅\n"
+ },
+ "str-parse": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "42!\n¯3\n2.5\n5\n"
+ },
+ "strand-id-count": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\n3\n"
+ },
+ "stray-dot": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:3: stray . — floats are written like 1.5 or .5\n",
+  "stdout": ""
+ },
+ "string": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hello, Matrix\na\nb\n"
+ },
+ "string-compare": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n1\n"
+ },
+ "string-raw-print": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "xy"
+ },
+ "tabs-rejected": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: tab characters break the grid — use spaces\n",
+  "stdout": ""
+ },
+ "try-catch": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "got: ÷ by zero\nafter\n"
+ },
+ "try-disarms": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n"
+ },
+ "try-recv": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\n5\n"
+ },
+ "try-restores-stack": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n"
+ },
+ "type-error-add": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: + expects numbers, got str\n",
+  "stdout": ""
+ },
+ "unary-math": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1.4142135623730951\n2\n3\n¯5\n¯3\n"
+ },
+ "uncaught-kills-strand": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
+  "stdout": "survivor\n"
+ },
+ "unclosed-quotation": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: unclosed [ quotation\n",
+  "stdout": ""
+ },
+ "undefined-sigil": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: undefined sigil 'Ω'\n",
+  "stdout": ""
+ },
+ "underflow": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — needed a number\n",
+  "stdout": ""
+ },
+ "unmatched-close": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:2: ] without matching [\n",
+  "stdout": ""
+ },
+ "unmatched-list-close": {
+  "exit": 1,
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⟩ without matching ⟨\n",
+  "stdout": ""
+ },
+ "unterminated-string": {
+  "exit": 2,
+  "stderr": "✗ weave error at 1:1: unterminated « string\n",
+  "stdout": ""
+ },
+ "while-fib": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+ },
+ "yield": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "A\nB\nA\nB\nA\nB\n"
+ }
 }

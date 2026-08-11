@@ -28,7 +28,7 @@ pub enum Axis {
     Col,
 }
 
-pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⍟⍙⌽⍋∈⍷⍇⍈";
+pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⍟⍙⌽⍋∈⍷⍇⍈⌂";
 pub const ARG_OP_CHARS: &str = "≔⇒↥↧⇂⇈⇟";
 pub const ARG2_OP_CHARS: &str = "⇉";
 const STRUCTURAL: &str = "«»⟨⟩[]⏎¯.※⋮⇓⇊∅ \t";

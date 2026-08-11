@@ -268,9 +268,16 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |
+| `⌂` | `→ L` | the program's command-line arguments, a list of strings |
 
-File-operation glitch messages carry no operating-system detail — they are
-part of the language's deterministic, conformance-pinned output.
+Command-line arguments and the file system are part of a run's *input*:
+determinism means identical program, stdin, arguments, and file contents
+produce an identical run. `⌂` sees the arguments after the source file
+(`mlang run prog.ml a b`) or, in a welded binary, everything after the
+executable name — which is how a file dropped onto a built editor arrives
+as its argument. File-operation glitch messages name only the path, never
+an operating-system error string — they are part of the language's
+deterministic, conformance-pinned output.
 
 ## 6. The standard library
 

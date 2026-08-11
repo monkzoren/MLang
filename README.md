@@ -82,11 +82,11 @@ output `.exe`:
 .\mlang.cmd run examples\editor.ml
 ```
 
-Windows notes: WSL is *not* required — the toolchain and welded binaries
-are fully native on Windows. Use Windows Terminal (not legacy conhost)
-with a Unicode-capable font so the glyphs render. The `cargo test` suite,
-however, assumes a Unix-like filesystem (`/tmp` paths in the recorded
-file-I/O goldens; CI runs Ubuntu) — run it on Linux, macOS, or WSL.
+Windows notes: WSL is *not* required — the toolchain, the welded
+binaries, and the `cargo test` suite are fully native on Windows (the
+recorded file-I/O goldens use relative paths, and `⌨` strips `\r\n` line
+endings). Use Windows Terminal (not legacy conhost) with a
+Unicode-capable font so the glyphs render.
 
 `mlang build` compiles source to MLang bytecode and welds it into a copy
 of the toolchain's own runtime image — the same shape as a Go binary,
@@ -96,7 +96,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 126 cases covering every operation, concurrency, glitches, both
+corpus — 127 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -178,16 +178,19 @@ And `examples/editor.ml` is **MatrixPad** — a real application: a
 Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
 editor's event loop. Keyboard, editor core, and screen are three strands
 joined by channels; the document is an immutable list of lines, so every
-edit (append, insert, replace, delete) is slice-and-concat and a stray
-command can never corrupt it; `w file` and `o file` save and open real
-files with the `⍇`/`⍈` primitives; and dispatch runs inside `⍥`, so a bad
-command or an unreadable file answers `? …` while the editor and the
-document survive untouched. Compile it to a standalone binary and edit
-away:
+edit (append, insert, replace, move, delete) is slice-and-concat, and
+multi-level undo/redo (`u`/`U`) is literally a list of old buffers;
+`s/old/new` substitutes across the whole document and reports the count;
+`o file` and `w file` open and save real files with the `⍇`/`⍈`
+primitives; and dispatch runs inside `⍥`, so a bad command or an
+unreadable file answers `? …` while the editor and the document survive
+untouched. Weld it into a standalone binary and it opens any file passed
+as an argument (`⌂`) — on Windows, dropping a .txt onto `matrixpad.exe`
+opens it in the editor:
 
 ```
 $ mlang build examples/editor.ml -o matrixpad && ./matrixpad
-MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find …
+MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  …
 a
 The Matrix has you.
 Follow the white rabbit.
@@ -196,11 +199,15 @@ i 2
 Wake up, Neo.
 .
 p
-1 │ The Matrix has you.
-2 │ Wake up, Neo.
-3 │ Follow the white rabbit.
+┌─ MatrixPad ───────────────────┐
+│ 1 │ The Matrix has you.       │
+│ 2 │ Wake up, Neo.             │
+│ 3 │ Follow the white rabbit.  │
+├───────────────────────────────┤
+│ 3 lines · 11 words · 56 chars │
+└───────────────────────────────┘
 w neo.txt
-wrote neo.txt
+saved neo.txt · 3 lines
 q
 ```
 
@@ -215,7 +222,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 126 recorded goldens, the
+conformance/      cases.json + expected.json: 127 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification
