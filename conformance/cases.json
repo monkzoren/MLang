@@ -536,6 +536,11 @@
    "stdin": "a\nb\n"
   },
   {
+   "name": "stdin-crlf",
+   "source": "⌨∂#⍞«z»=⍞⌨#⍞",
+   "stdin": "z\r\nab \r\n"
+  },
+  {
    "name": "debug-stderr",
    "source": "1«s»⟨2 3⟩⍟",
    "stdin": ""
