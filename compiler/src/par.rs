@@ -27,6 +27,11 @@ use std::io::{BufRead, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
+/// A network tap on an exported channel: `mlang hub`/`mlang worker`
+/// (net.rs) register one per bridged channel, and sends to that channel
+/// go to the tap — that is, onto the wire — instead of the local queue.
+pub(crate) type ExportTap = Box<dyn Fn(Value) + Send + Sync>;
+
 fn coords(pos: Pos) -> String {
     if pos == (0, 0) {
         "?".into()
@@ -50,6 +55,10 @@ struct State {
     /// Finished strand ids, for ⋈.
     done: HashSet<i64>,
     next_spawn_sid: i64,
+    /// Channels fed by the network (net.rs) whose stream has not ended.
+    /// A wait on one is always satisfiable — the wire may yet deliver —
+    /// so the deadlock verdict stays sound with a remote peer attached.
+    open_imports: HashSet<char>,
 }
 
 /// Could this wait complete right now? A notified-but-not-yet-rescheduled
@@ -58,7 +67,10 @@ struct State {
 /// sequential engine's try-unblock-then-check.
 fn wait_satisfiable(st: &State, w: &WaitOn) -> bool {
     match w {
-        WaitOn::Chan(c) => st.chans.get(c).map(|q| !q.is_empty()).unwrap_or(false),
+        WaitOn::Chan(c) => {
+            st.open_imports.contains(c)
+                || st.chans.get(c).map(|q| !q.is_empty()).unwrap_or(false)
+        }
         WaitOn::Strand(id) => *id == -1 || st.done.contains(id),
     }
 }
@@ -72,10 +84,25 @@ pub struct Bus {
     fail: AtomicBool,
     main_count: usize,
     args: Vec<String>,
+    /// Channels bridged outward by net.rs: a send goes to the tap, not
+    /// the local queue. Empty except under `mlang hub` / `mlang worker`.
+    exports: HashMap<char, ExportTap>,
 }
 
 impl Bus {
     fn new(main_count: usize, args: Vec<String>) -> Bus {
+        Bus::with_net(main_count, args, HashMap::new(), HashSet::new())
+    }
+
+    /// A Bus with network bridging: sends to an exported channel go to
+    /// its tap, and imported channels stay deadlock-exempt until the
+    /// wire delivers their ∅ (close_import).
+    pub(crate) fn with_net(
+        main_count: usize,
+        args: Vec<String>,
+        exports: HashMap<char, ExportTap>,
+        imports: HashSet<char>,
+    ) -> Bus {
         Bus {
             state: Mutex::new(State {
                 chans: HashMap::new(),
@@ -84,6 +111,7 @@ impl Bus {
                 waiting: HashMap::new(),
                 done: HashSet::new(),
                 next_spawn_sid: main_count as i64,
+                open_imports: imports,
             }),
             cv: Condvar::new(),
             stdout: Mutex::new(std::io::stdout()),
@@ -92,15 +120,33 @@ impl Bus {
             fail: AtomicBool::new(false),
             main_count,
             args,
+            exports,
         }
     }
 
     // ── channels ───────────────────────────────────────────────────────
 
     pub fn send(&self, c: char, v: Value) {
+        // Exported channels leave the process here. The tap runs without
+        // the state lock held: taps take their own locks (net.rs) and may
+        // re-enter send() for a different channel.
+        if let Some(tap) = self.exports.get(&c) {
+            tap(v);
+            return;
+        }
         let mut st = self.state.lock().unwrap();
         st.chans.entry(c).or_default().push_back(v);
         self.cv.notify_all();
+    }
+
+    /// The network's end of an imported channel has closed (its ∅ is
+    /// delivered): waits on it are no longer exempt from the deadlock
+    /// verdict, and the verdict is re-checked in case every remaining
+    /// strand was already parked.
+    pub(crate) fn close_import(&self, c: char) {
+        let mut st = self.state.lock().unwrap();
+        st.open_imports.remove(&c);
+        self.maybe_deadlock(&st);
     }
 
     pub fn try_recv(&self, c: char) -> Option<Value> {
@@ -367,6 +413,13 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
 /// sequential engine.
 pub fn run_parallel(prog: &CompiledProgram, args: Vec<String>) -> i32 {
     let bus = Arc::new(Bus::new(prog.strands.len(), args));
+    run_with_bus(bus, prog)
+}
+
+/// The strand-startup sequence on an already-configured Bus — net.rs
+/// builds a Bus with taps and imports, attaches its threads, then runs
+/// the program through here exactly as run_parallel would.
+pub(crate) fn run_with_bus(bus: Arc<Bus>, prog: &CompiledProgram) -> i32 {
     bus.add_live(1);
     drive(
         bus.clone(),
