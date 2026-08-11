@@ -1500,6 +1500,23 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
             s.push(Value::List(Rc::new(items)));
         }
+        '⌦' => {
+            // Same lowest scheduling priority as ⌨ (§4.2): the grid's
+            // pending work flushes before the program waits on a keystroke.
+            if vm.others_active(s.sid) {
+                return Err(Sig::Block(BlockOn::Stdin, pos));
+            }
+            let _ = vm.out.flush();
+            crate::term::enter_raw();
+            match crate::term::read_key(vm.stdin) {
+                Some(k) => s.push(Value::str(k)),
+                None => s.push(Value::Nil),
+            }
+        }
+        '⍜' => {
+            let (rows, cols) = crate::term::size();
+            s.push(Value::List(Rc::new(vec![Value::int(rows), Value::int(cols)])));
+        }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();
             let _ = writeln!(

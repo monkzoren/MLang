@@ -66,6 +66,8 @@ sigil  name          effect              description
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
+⌦      readkey       → k|∅               one raw keystroke: characters as themselves; ⏎ ⌫ ⇥ ⎋ ↑ ↓ ← → ⇱ ⇲ ⇞ ⇟ ⌦ ⎀; «^A»…«^Z»; ∅ at end of input (waits for the grid to go quiet, like ⌨)
+⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)

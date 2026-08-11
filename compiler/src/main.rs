@@ -42,6 +42,7 @@ fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>) -> ExitCode 
         machine.run_compiled(prog)
     };
     let _ = out.flush();
+    mlang::term::restore(); // leave the terminal cooked if ⌦ made it raw
     ExitCode::from(code as u8)
 }
 

@@ -96,7 +96,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 127 cases covering every operation, concurrency, glitches, both
+corpus — 129 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -174,42 +174,36 @@ escape-time depth rises as you dive), `r` reset, `q` quit — a full
 interactive event loop in 5 strands and two boot definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-And `examples/editor.ml` is **MatrixPad** — a real application: a
-Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
-editor's event loop. Keyboard, editor core, and screen are three strands
-joined by channels; the document is an immutable list of lines, so every
-edit (append, insert, replace, move, delete) is slice-and-concat, and
-multi-level undo/redo (`u`/`U`) is literally a list of old buffers;
-`s/old/new` substitutes across the whole document and reports the count;
-`o file` and `w file` open and save real files with the `⍇`/`⍈`
-primitives; and dispatch runs inside `⍥`, so a bad command or an
-unreadable file answers `? …` while the editor and the document survive
-untouched. Weld it into a standalone binary and it opens any file passed
-as an argument (`⌂`) — on Windows, dropping a .txt onto `matrixpad.exe`
-opens it in the editor:
+And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
+editor. The document fills the terminal, you type to insert, the cursor
+keys move you around: `↑ ↓ ← → Home End PgUp PgDn`, Enter/Backspace/
+Delete edit, `^S` saves (asking for a name if there is none), `^O`
+opens, `^Z`/`^Y` undo and redo, `^F` finds (wrapping around), and `^X`
+exits — warning once if there are unsaved changes. The screen looks
+like an editor because it is one:
 
 ```
-$ mlang build examples/editor.ml -o matrixpad && ./matrixpad
-MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  …
-a
+ MatrixPad — neo.txt ×
 The Matrix has you.
+Wake up, Neo.█
 Follow the white rabbit.
-.
-i 2
-Wake up, Neo.
-.
-p
-┌─ MatrixPad ───────────────────┐
-│ 1 │ The Matrix has you.       │
-│ 2 │ Wake up, Neo.             │
-│ 3 │ Follow the white rabbit.  │
-├───────────────────────────────┤
-│ 3 lines · 11 words · 56 chars │
-└───────────────────────────────┘
-w neo.txt
-saved neo.txt · 3 lines
-q
+
+ ^S save  ^O open  ^Z undo  ^Y redo  ^F find  ^X exit · Ln 2 Col 14
 ```
+
+Under the hood it is the same three-strand event loop — keyboard (`⌦`
+raw keys), editor core, and screen (ANSI frames) joined by channels —
+and the whole editor rests on the language's guarantees: the document
+is an immutable list of lines, every edit a slice-and-concat, so
+undo/redo is literally a list of old `⟨buffer cursor⟩` snapshots;
+dispatch runs inside `⍥`, so a glitch becomes a status-bar message and
+the document survives by construction. Because `⌦` decodes piped bytes
+exactly like live keys, the *same recorded keystrokes always produce
+the same screens* — the conformance corpus drives this editor with a
+scripted session and pins every frame it draws. Weld it
+(`mlang build examples/editor.ml -o matrixpad.exe`) and dropping a
+.txt onto the executable opens that file (`⌂`), on any platform —
+the runtime enables ANSI processing even in a legacy Windows console.
 
 ## Repository
 
@@ -222,7 +216,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 127 recorded goldens, the
+conformance/      cases.json + expected.json: 129 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification

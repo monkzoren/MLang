@@ -569,6 +569,16 @@
    "name": "empty-things-falsy",
    "source": "«»[«t»][«f»]?⍞ ⟨⟩[«t»][«f»]?⍞ 0.0[«t»][«f»]?⍞",
    "stdin": ""
+  },
+  {
+   "name": "readkey-decode",
+   "source": "[⌦∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "aZ\u001b[A\u001b[D\u001b[H\u001b[3~\u001b[6~\r\t\u0011q \u001bxπ"
+  },
+  {
+   "name": "termsize-fallback",
+   "source": "⍜⍞",
+   "stdin": ""
   }
  ],
  "examples": [
@@ -635,7 +645,7 @@
   {
    "name": "editor.ml",
    "file": "examples/editor.ml",
-   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\ns/NEO/N30\np\nu\nu\np\nU\nm 2 1\nd 3\nz\nd oops\nf MATRIX\np\nw\nw mlang-editor-conf.tmp\nn\np\no mlang-editor-conf.tmp\np\no mlang-no-such.tmp\nq\n"
+   "stdin": "Wake up, Neo.\rThe Matrix has you.\u001b[A\u001b[H* \u001b[F!\u0006Matrix\r\u001a\u001a\u0019\u0013mlang-pad-conf.tmp\r\u001b[3~\u0018\u0018"
   }
  ]
 }

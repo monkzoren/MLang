@@ -137,8 +137,8 @@ point every live strand is blocked, the runtime reports the full wait graph
 an internal deadlock.
 
 Reading stdin has the **lowest scheduling priority**: a strand executing
-`⌨` waits until no other strand can make progress (each is blocked,
-waiting on `⌨` itself, or finished) before the read happens. An
+`⌨` (or `⌦`) waits until no other strand can make progress (each is
+blocked, waiting on stdin itself, or finished) before the read happens. An
 interactive pipeline therefore flushes all pending work — greetings,
 prompts, responses — before the program waits on the user, and the
 interleaving remains deterministic because it never depends on input
@@ -278,6 +278,21 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
+| `⌦` | `→ k \| ∅` | read one raw keystroke (see below); `∅` at end of input |
+| `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
+
+`⌦` reads a single keystroke. Its first use puts the controlling
+terminal into raw mode — no echo, no line buffering, no `^C`/`^S`/`^Q`
+processing — and enables ANSI escape processing on output (the runner
+restores the terminal when the program ends). Keys decode to: printable
+characters as themselves (UTF-8 aware); `«⏎»` for Enter — exactly the
+newline string, the same value `⏎` denotes in a literal; `«⌫»`
+backspace, `«⇥»` tab, `«⎋»` escape (alt-chords arrive as `⎋` plus the
+key); `«↑» «↓» «←» «→» «⇱» «⇲» «⇞» «⇟» «⌦» «⎀»` for the navigation
+block; `«^A»`…`«^Z»` for control chords. When stdin is not a terminal
+the same byte → key decoding applies to the stream (VT escape sequences
+in a pipe decode like live keys), so recorded runs stay deterministic.
+Like `⌨`, `⌦` waits until the grid is quiet (§4.2) before reading.
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
