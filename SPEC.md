@@ -136,6 +136,15 @@ point every live strand is blocked, the runtime reports the full wait graph
 (strand, what it awaits, coordinates) and exits 1. Programs never hang on
 an internal deadlock.
 
+Reading stdin has the **lowest scheduling priority**: a strand executing
+`⌨` (or `⌥`) waits until no other strand can make progress (each is
+blocked, waiting on stdin itself, or finished) before the read happens.
+An interactive pipeline therefore flushes all pending work — greetings,
+prompts, responses — before the program waits on the user, and the
+interleaving remains deterministic because it never depends on input
+timing. (A strand waiting its turn at stdin is not deadlocked — its read
+can always proceed once the grid goes quiet.)
+
 ### 4.3 Spawning
 
 `⚡` pops a quotation and starts it as a new strand with an empty stack and
@@ -264,11 +273,13 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
-| `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
+| `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF; runs only once every other strand is quiet (§4.2), with pending `⊸` output flushed first, so prompts appear |
+| `⌥` | `→ e` | read one input event (§5.1): a key, or a mouse press `⟨«⌖» x y⟩`; `∅` at end of input; same lowest scheduling priority as `⌨` |
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
+| `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
@@ -278,6 +289,35 @@ executable name — which is how a file dropped onto a built editor arrives
 as its argument. File-operation glitch messages name only the path, never
 an operating-system error string — they are part of the language's
 deterministic, conformance-pinned output.
+
+### 5.1 Input events
+
+`⌥` parses the standard input byte stream into one event per call:
+
+* A printable key arrives as a one-character string («a», «é», …).
+* Enter is `«↵»`, tab `«⇥»`, backspace `«⌫»` (BS or DEL), delete
+  `«⌦»`; the arrow keys are `«↑» «↓» «←» «→»`. (Enter is deliberately
+  not `⏎` — inside string literals that glyph denotes a newline, so an
+  event named `«⏎»` could never be written or compared.)
+* Enter is `«↵»`, and Home/End/PgUp/PgDn/Insert arrive as
+  `«⇱» «⇲» «⇞» «⇟» «⎀»`.
+* Any other control character arrives as a caret-notation chord:
+  Ctrl-C is `«^C»`, Ctrl-S `«^S»`.
+* The bytes `⎋[` open a CSI sequence. An SGR mouse press becomes
+  `⟨«⌖» column row⟩` (1-based). Release, wheel, and motion reports, and
+  unrecognized sequences, are consumed silently — `⌥` keeps reading
+  until it has a deliverable event. An escape byte not followed by `[`
+  is delivered as `«⎋»`, and the byte after it is kept for the next
+  event.
+* End of input is `∅`, including inside an unfinished sequence.
+
+The mapping is a pure function of the byte stream, so a recorded pipe
+replays exactly what a live terminal produced. When a program that
+executes `⌥` runs with stdin and stdout on a real terminal, the runtime
+— not the program — switches the terminal to raw input with SGR mouse
+reporting on the alternate screen for the duration of the run, and
+restores it afterwards. None of that scaffolding appears in the
+program's own output, which stays byte-identical to a piped run.
 
 ## 6. The standard library
 
@@ -309,6 +349,54 @@ operation set, §5): `⍙` type-of, `⌽` reverse, `⍋` sort, `∈` contains,
 absent for now: MLang guarantees bit-identical runs across engines, and
 platform `libm` implementations are not correctly-rounded — they enter
 the library only alongside a correctly-rounded implementation.
+
+### 6.1 Bundled libraries
+
+Beyond std, the toolchain bundles further libraries written in MLang.
+There is no import statement: a bundled library is woven into the boot
+strand — after the standard library, before the program's own boot
+section — **exactly when the program references at least one sigil the
+library defines without defining that sigil itself** (with `≔` or `⇒`,
+anywhere in the program, including inside quotations). Only name
+references count; using a library sigil as a channel or binding argument
+(`↥Ⓛ`, `⇒Ⓛ`) does not trigger the weave. The decision is made at
+compile time, so a welded binary carries exactly the libraries its
+program uses.
+
+Weaving a library reserves all of its sigils, exactly as std's are
+reserved: a program that pulls in a library and also tries to `≔` one of
+that library's sigils glitches with «already defined». A program that
+defines a library sigil itself and never references the library's others
+is left alone — its own definition wins and nothing is woven.
+
+One library is currently bundled: **the Construct** (`std/ui.ml`,
+printed by `mlang ui`) — a widget toolkit in the lineage of Qt/PySide.
+Public sigils: `Ⓛ` label, `Ⓑ` button, `Ⓔ` line edit, `Ⓒ` checkbox,
+`Ⓟ` progress bar, `Ⓘ` item list, `Ⓢ` separator, `Ⓥ`/`Ⓗ` vertical and
+horizontal layouts, `Ⓦ` window, `⌺` draw, `▶` event loop, `◼` quit,
+`✎` status bar. Widgets are immutable tagged lists; interactive widgets
+carry a **slot** (a quotation) that `▶` runs in the application's own
+strand when the widget's key arrives as the first word of a stdin line
+(line edits receive the rest of the line on the stack). A glitch in a
+slot is caught by the loop and shown as a `✗` status message. The
+Construct's internals use circled-lowercase sigils (`ⓐ ⓑ …`) and
+additional fullwidth-letter strand-locals; programs must treat both as
+reserved, and must not nest `▶` or `⏵` inside a slot. Its observable
+behavior is pinned by the conformance corpus like everything else.
+
+The Construct has two event loops, one widget model. `▶` (scripted)
+reads stdin lines as above. `⏵` (live) reads `⌥` events instead:
+`⇥`/`↓`/`→` and `↑`/`←` move focus through the keymap in layout order
+— the focused widget draws `⟦ ⟧` instead of `[ ]`, a focused line edit
+shows a `▏` caret — `«↵»` or space activates, printable keys type into
+the focused line edit (its slot runs after every keystroke with the new
+text), `«⌫»` deletes, any other key activates the widget carrying that
+mnemonic, and a mouse press `⟨«⌖» x y⟩` lands on the widget that drew
+the `(key)` affordance under the pointer. `«^C»`, `«⎋»`, end of input,
+or `◼` in a slot ends the loop. Each `⏵` frame is preceded by the
+cursor-home and clear-screen escape sequences. Views and slots are
+identical under both loops: a scripted application becomes a live one
+by changing that one glyph.
 
 ## 7. Exit status
 

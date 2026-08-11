@@ -569,6 +569,126 @@
    "name": "empty-things-falsy",
    "source": "«»[«t»][«f»]?⍞ ⟨⟩[«t»][«f»]?⍞ 0.0[«t»][«f»]?⍞",
    "stdin": ""
+  },
+  {
+   "name": "event-decode",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "aZ\u001b[A\u001b[D\u001b[H\u001b[3~\u001b[6~\r\t\u0011q \u001bxπ"
+  },
+  {
+   "name": "termsize-fallback",
+   "source": "⍜⍞",
+   "stdin": ""
+  },
+  {
+   "name": "ui-label-draw",
+   "source": "«two⏎lines»Ⓛ⌺ «»Ⓛ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-widgets-render",
+   "source": "⟨«Boost»«b»[1]Ⓑ «n»«Name»«Neo»[⌫]Ⓔ «Red pill»«r»1[⌫]Ⓒ «Blue pill»«u»0[⌫]Ⓒ 7 10Ⓟ ⟨«a» 2 «c»⟩Ⓘ⟩Ⓥ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-window-titled",
+   "source": "⟨«Signal»Ⓛ Ⓢ 14 20Ⓟ⟩Ⓥ«Nebuchadnezzar»Ⓦ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-window-untitled-and-title-wide",
+   "source": "⟨«x»Ⓛ⟩Ⓥ«»Ⓦ⌺ ⟨«a»Ⓛ⟩Ⓥ«a very long title»Ⓦ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-hbox-heights-and-nesting",
+   "source": "⟨⟨«left⏎column»Ⓛ⟩Ⓥ ⟨«right»Ⓛ «tall»«t»[1]Ⓑ⟩Ⓥ⟩Ⓗ⌺ ⟨⟨⟨«a»Ⓛ⟩Ⓥ ⟨«b»Ⓛ⟩Ⓥ⟩Ⓗ ⟨«c»Ⓛ⟩Ⓥ⟩Ⓗ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-window-nested",
+   "source": "⟨⟨«inner»Ⓛ⟩Ⓥ«in»Ⓦ⟩Ⓥ«out»Ⓦ⌺",
+   "stdin": ""
+  },
+  {
+   "name": "ui-not-a-widget",
+   "source": "[42⌺][⍞]⍥ [⟨⟩⌺][⍞]⍥ [⟨«X» 1⟩⌺][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "ui-exec-counter",
+   "source": "0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]▶«bye»⍞",
+   "stdin": "+\nz\nq\n"
+  },
+  {
+   "name": "ui-exec-edit-toggle-glitch",
+   "source": "«Neo»⇒n 0⇒r [⟨«n»«Name»n[⇒n]Ⓔ «Red pill»«r»r[r¬⇒r]Ⓒ «Crash»«boom»[«oops»↯]Ⓑ⟩Ⓥ]▶",
+   "stdin": "n Trinity\nr\nboom\nn\n"
+  },
+  {
+   "name": "ui-exec-blank-lines-and-eof",
+   "source": "[⟨«hi»Ⓛ⟩Ⓥ]▶«done»⍞",
+   "stdin": "\n \n"
+  },
+  {
+   "name": "ui-weave-only-on-reference",
+   "source": "[«mine»]≔Ⓛ Ⓛ⍞",
+   "stdin": ""
+  },
+  {
+   "name": "ui-weave-reserves-sigils",
+   "source": "[«mine»]≔Ⓛ «Go»«g»[1]Ⓑ⌫",
+   "stdin": ""
+  },
+  {
+   "name": "ui-channel-sigil-no-weave",
+   "source": "7↥Ⓛ↧Ⓛ⍞",
+   "stdin": ""
+  },
+  {
+   "name": "event-keys",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "ab\n\té\b\u0003"
+  },
+  {
+   "name": "event-arrows-delete",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001b[A\u001b[B\u001b[C\u001b[D\u001b[3~"
+  },
+  {
+   "name": "event-mouse-sgr-press-only",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001b[<0;12;5M\u001b[<0;12;5m\u001b[<64;3;3M\u001b[<32;9;9Mx"
+  },
+  {
+   "name": "event-esc-pushback",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001bZq"
+  },
+  {
+   "name": "event-lone-esc-is-eof",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫ «·»⍞",
+   "stdin": "\u001b"
+  },
+  {
+   "name": "ui-live-counter",
+   "source": "0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]⏵«bye»⍞",
+   "stdin": "\r\r\t\r"
+  },
+  {
+   "name": "ui-live-typing-caret",
+   "source": "«»⇒n [⟨«n»«Name»n[⇒n]Ⓔ «Done»«d»[◼]Ⓑ⟩Ⓥ«Login»Ⓦ]⏵«name=»n⧺⍞",
+   "stdin": "Neoio be\t\r"
+  },
+  {
+   "name": "ui-live-mouse-click-buttons",
+   "source": "0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]⏵«c=»c⍕⧺⍞",
+   "stdin": "\u001b[<0;5;3M\u001b[<0;6;4M\u001b[<0;3;2M"
+  },
+  {
+   "name": "ui-live-toggle-wrap-glitch-deadclick",
+   "source": "0⇒r [⟨«Rain»«r»r[r¬⇒r]Ⓒ «Boom»«b»[«oops»↯]Ⓑ⟩Ⓥ]⏵«r=»r⍕⧺⍞",
+   "stdin": " \u001b[A x\u001b[<0;3;2M\u001b[<0;3;1M\u001b"
   }
  ],
  "examples": [
@@ -640,7 +760,17 @@
   {
    "name": "editor.ml",
    "file": "examples/editor.ml",
-   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\ns/NEO/N30\np\nu\nu\np\nU\nm 2 1\nd 3\nz\nd oops\nf MATRIX\np\nw\nw mlang-editor-conf.tmp\nn\np\no mlang-editor-conf.tmp\np\no mlang-no-such.tmp\nq\n"
+   "stdin": "Wake up, Neo.\rThe Matrix has you.\u001b[A\u001b[H* \u001b[F!\u0006Matrix\r\u001a\u001a\u0019\u0013mlang-pad-conf.tmp\r\u001b[3~\u0018\u0018"
+  },
+  {
+   "name": "construct.ml",
+   "file": "examples/construct.ml",
+   "stdin": "+\nn Trinity\nj\nr\nx y\nq\n"
+  },
+  {
+   "name": "jack-in.ml",
+   "file": "examples/jack-in.ml",
+   "stdin": "nity\u001b[<0;5;5M\t\t \u0003"
   }
  ]
 }

@@ -90,19 +90,19 @@ that should scare you, the silent one:
 
 | One-token mutation becomes | MLang | Python |
 |---|---|---|
-| caught before running (load error) | 11.3% | 72.5% |
-| caught at runtime, precise report | 49.8% | 19.2% |
-| deadlock — proven and reported | 3.2% | 0.0% |
-| **silent wrong output** | 31.0% | 6.3% |
-| hang (killed at timeout) | 1.0% | 1.4% |
-| no behavior change (equivalent mutant) | 3.6% | 0.6% |
+| caught before running (load error) | 13.2% | 72.5% |
+| caught at runtime, precise report | 50.4% | 19.2% |
+| deadlock — proven and reported | 2.8% | 0.0% |
+| **silent wrong output** | 28.6% | 6.3% |
+| hang (killed at timeout) | 0.7% | 1.4% |
+| no behavior change (equivalent mutant) | 4.4% | 0.6% |
 
-893 MLang mutants over 94 programs; 797 Python mutants over 28 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 7 of 11 Python hangs printed a thread traceback first — the process still never exited.
+1124 MLang mutants over 119 programs; 797 Python mutants over 28 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 7 of 11 Python hangs printed a thread traceback first — the process still never exited.
 
 The trade is visible and it cuts both ways. Python's redundant syntax
-stops 7 in 10 one-edit bugs at the parser; MLang's dense syntax lets 85%
-of mutants run. Of the mutants that do run, MLang faults loudly on 62%
-against Python's 71% — and fails silently on 36% against Python's 23% —
+stops 7 in 10 one-edit bugs at the parser; MLang's dense syntax lets 82%
+of mutants run. Of the mutants that do run, MLang faults loudly on 65%
+against Python's 71% — and fails silently on 35% against Python's 23% —
 so density genuinely costs silent failures, and the table says so. What
 density buys back is the *quality* of the loud failures: coordinates and
 proven wait graphs instead of a traceback or a frozen process — every
@@ -179,6 +179,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
 ./mlang ops                          # the sigil reference
 ./mlang std                          # the standard library source
+./mlang ui                           # the Construct — the UI library source
 ```
 
 Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
@@ -204,7 +205,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 128 cases covering every operation, concurrency, glitches, both
+corpus — 154 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -282,41 +283,109 @@ escape-time depth rises as you dive), `r` reset, `q` quit — a full
 interactive event loop in 5 strands and two boot definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-And `examples/editor.ml` is **MatrixPad** — a real application: a
-Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
-editor's event loop. Keyboard, editor core, and screen are three strands
-joined by channels; the document is an immutable list of lines, so every
-edit (append, insert, replace, move, delete) is slice-and-concat, and
-multi-level undo/redo (`u`/`U`) is literally a list of old buffers;
-`s/old/new` substitutes across the whole document and reports the count;
-`o file` and `w file` open and save real files with the `⍇`/`⍈`
-primitives; and dispatch runs inside `⍥`, so a bad command or an
-unreadable file answers `? …` while the editor and the document survive
-untouched. Weld it into a standalone binary and it opens any file passed
-as an argument (`⌂`) — on Windows, dropping a .txt onto `matrixpad.exe`
-opens it in the editor:
+And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
+editor. The document fills the terminal, you type to insert, the cursor
+keys move you around: `↑ ↓ ← → Home End PgUp PgDn` — or a mouse click, which places the
+cursor where you point — Enter/Backspace/Delete edit, `^S` saves (asking for a name if there is none), `^O`
+opens, `^Z`/`^Y` undo and redo, `^F` finds (wrapping around), and `^X`
+exits — warning once if there are unsaved changes. The screen looks
+like an editor because it is one:
 
 ```
-$ mlang build examples/editor.ml -o matrixpad && ./matrixpad
-MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  …
-a
+ MatrixPad — neo.txt ×
 The Matrix has you.
+Wake up, Neo.█
 Follow the white rabbit.
-.
-i 2
-Wake up, Neo.
-.
-p
-┌─ MatrixPad ───────────────────┐
-│ 1 │ The Matrix has you.       │
-│ 2 │ Wake up, Neo.             │
-│ 3 │ Follow the white rabbit.  │
-├───────────────────────────────┤
-│ 3 lines · 11 words · 56 chars │
-└───────────────────────────────┘
-w neo.txt
-saved neo.txt · 3 lines
-q
+
+ ^S save  ^O open  ^Z undo  ^Y redo  ^F find  ^X exit · Ln 2 Col 14
+```
+
+Under the hood it is the same three-strand event loop — keyboard (`⌥`
+raw input events), editor core, and screen (ANSI frames) joined by channels —
+and the whole editor rests on the language's guarantees: the document
+is an immutable list of lines, every edit a slice-and-concat, so
+undo/redo is literally a list of old `⟨buffer cursor⟩` snapshots;
+dispatch runs inside `⍥`, so a glitch becomes a status-bar message and
+the document survives by construction. Because `⌥` decodes piped bytes
+exactly like live keys, the *same recorded keystrokes always produce
+the same screens* — the conformance corpus drives this editor with a
+scripted session and pins every frame it draws. Weld it
+(`mlang build examples/editor.ml -o matrixpad.exe`) and dropping a
+.txt onto the executable opens that file (`⌂`), on any platform —
+the runtime enables ANSI processing even in a legacy Windows console.
+
+## The Construct — the UI library
+
+> "This is the Construct. It's our loading program. We can load anything…"
+
+MLang has a widget toolkit in the lineage of Qt/PySide, written in MLang
+itself: **the Construct** (`std/ui.ml`, printed by `mlang ui`). The Qt
+cast is all here, one glyph each — `Ⓛ` QLabel, `Ⓑ` QPushButton, `Ⓔ`
+QLineEdit, `Ⓒ` QCheckBox, `Ⓟ` QProgressBar, `Ⓘ` QListWidget, `Ⓥ`/`Ⓗ`
+box layouts, `Ⓦ` QMainWindow — plus `⌺` draw, `▶` `app.exec()`, `⏵`
+the live event loop, `◼` `quit()`, and `✎` the status bar. And there
+is no import statement: reference a Construct sigil and the loom
+weaves the library into your program's boot strand (SPEC §6.1).
+Libraries load like weapons racks in the Construct — you name them,
+they appear.
+
+Widgets are immutable values, so a PySide program's shape inverts, and
+Qt's signals-and-slots become the good kind of simple: a **slot** is a
+quotation carried by the widget, and the event loop runs it when the
+widget's key arrives on stdin (`key`, or `key argument` for a line
+edit). State lives in your strand's locals; the view quotation rebuilds
+the widget tree from them every frame, so a stray slot can corrupt
+nothing — the worst it can do is glitch, which `▶` catches and shows as
+a `✗` status message while the app keeps running. A whole application
+is a view and a handful of slots:
+
+```
+0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]▶
+```
+
+```
+┌─ Counter ───┐
+│ count: 0    │
+│ [ +1 ](+)   │
+│ [ Quit ](q) │
+└─────────────┘
+```
+
+And it is genuinely interactive — keyboard and mouse. The engine op
+`⌥` reads one input event: keys arrive as the glyph they are («↑»
+«↵» «⌫», Ctrl-C is «␃»), a mouse press as `⟨«⌖» x y⟩`. `⏵` is `▶`
+gone live: Tab and the arrow keys move focus (the focused widget wears
+`⟦brackets⟧`), typing lands in the focused line edit behind a `▏`
+caret, `↵` or space activates, a click lands on whatever drew the
+`(key)` under the pointer, and Ctrl-C jacks out. On a real terminal
+the runtime flips to raw input with mouse reporting on the alternate
+screen and restores everything on exit; piped, the same bytes replay
+the same session — which is exactly how the conformance corpus pins
+it. Views and slots don't change at all: `examples/jack-in.ml` is the
+operator console below with one glyph changed, `▶` → `⏵`.
+
+The showcase is `examples/construct.ml`, the Nebuchadnezzar's operator
+console — line edit, buttons, checkbox, progress bar, item list, status
+bar, all live (`printf '+⏎n Trinity⏎j⏎r⏎q⏎' | mlang run
+examples/construct.ml`, or weld it into a standalone binary like any
+other program):
+
+```
+┌─ Nebuchadnezzar — operator console ──────────┐
+│ Wake up, Neo…                                │
+│ ──────────────────────────────────────────── │
+│ Operator: Neo▁▁▁▁▁▁▁▁▁ (n)                   │
+│ [ Jack in ](j)  [ ] Red pill (r)             │
+│ ──────────────────────────────────────────── │
+│ Signal strength                              │
+│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │
+│ ──────────────────────────────────────────── │
+│ Crew aboard                                  │
+│ • Morpheus                                   │
+│ • Trinity                                    │
+│                                              │
+│ [ Exit ](q)                                  │
+└──────────────────────────────────────────────┘
 ```
 
 ## Repository
@@ -330,7 +399,8 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 128 recorded goldens, the
+std/ui.ml         the Construct — the UI library, also written in MLang
+conformance/      cases.json + expected.json: 154 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)

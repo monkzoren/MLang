@@ -25,7 +25,7 @@ import tokenize
 # The engine's op glyphs (from compiler/src/ops.txt) plus the std-library
 # sigils — the pool a swapped glyph is drawn from.
 MLANG_OPS = list(
-    "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸⍙⌽⍋∈⍷#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⍇⍈⍟⌂"
+    "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸⍙⌽⍋∈⍷#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⌥⍜⍇⍈⍟⌂"
     "≔⇒↥↧⇂⇈⇟⇉"
     "π τ ℯ ∞ ∣ ⊓ ⊔ ‼ ⟌ ∑ ∏ µ ⊃ ⌷ ⍫ ⊤ ⊥ ⍒ ⍚ ⇑ ⇩ ⍭ ⍖".replace(" ", "")
 )

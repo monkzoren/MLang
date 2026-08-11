@@ -4,6 +4,7 @@
 pub mod forms;
 pub mod lex;
 pub mod payload;
+pub mod term;
 pub mod values;
 pub mod vm;
 

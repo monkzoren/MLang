@@ -7,7 +7,8 @@ use crate::lex::{lex_strand, LoadError};
 use crate::values::{fmt, fmt_i64, truthy, type_name, val_eq, Instr, Op, Pos, Value};
 use num_bigint::BigInt;
 use num_traits::{Signed, ToPrimitive, Zero};
-use std::collections::{HashMap, VecDeque};
+use std::borrow::Cow;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, Write};
 use std::rc::Rc;
 
@@ -25,6 +26,7 @@ pub enum Status {
 pub enum BlockOn {
     Chan(char),
     Strand(i64),
+    Stdin,
 }
 
 pub enum Sig {
@@ -96,14 +98,16 @@ pub struct Strand {
     pub label: String,
     frames: Vec<Frame>,
     stack: Vec<Value>,
-    locals: HashMap<char, Value>,
+    // Strands hold a handful of single-glyph locals; a linear scan beats
+    // hashing at this size, and name references are the hottest path.
+    locals: Vec<(char, Value)>,
     pub status: Status,
     pub block: Option<(BlockOn, Pos)>,
     pub glitch: Option<(Value, Pos)>,
 }
 
 impl Strand {
-    fn new(sid: i64, label: String, code: Rc<Vec<Instr>>, locals: HashMap<char, Value>) -> Self {
+    fn new(sid: i64, label: String, code: Rc<Vec<Instr>>, locals: Vec<(char, Value)>) -> Self {
         Strand {
             sid,
             label,
@@ -117,11 +121,22 @@ impl Strand {
     }
 
     fn placeholder() -> Self {
-        Strand::new(i64::MIN, String::new(), Rc::new(Vec::new()), HashMap::new())
+        Strand::new(i64::MIN, String::new(), Rc::new(Vec::new()), Vec::new())
     }
 
     fn push(&mut self, v: Value) {
         self.stack.push(v);
+    }
+
+    fn local_get(&self, c: char) -> Option<&Value> {
+        self.locals.iter().find(|(k, _)| *k == c).map(|(_, v)| v)
+    }
+
+    fn local_set(&mut self, c: char, v: Value) {
+        match self.locals.iter_mut().find(|(k, _)| *k == c) {
+            Some(slot) => slot.1 = v,
+            None => self.locals.push((c, v)),
+        }
     }
 
     fn pop(&mut self, pos: Pos, what: &str) -> R<Value> {
@@ -146,7 +161,8 @@ impl Strand {
     fn pop_i64(&mut self, pos: Pos, op: &str) -> R<i64> {
         let v = self.pop_num(pos, op)?;
         Ok(match v {
-            Value::Int(i) => i.to_i64().unwrap_or(i64::MAX),
+            Value::Int(i) => i,
+            Value::Big(b) => b.to_i64().unwrap_or(i64::MAX),
             Value::Float(f) => f as i64,
             _ => unreachable!(),
         })
@@ -195,25 +211,78 @@ impl Strand {
 }
 
 // ── numeric helpers ────────────────────────────────────────────────────
-fn both_ints<'a>(a: &'a Value, b: &'a Value) -> Option<(&'a BigInt, &'a BigInt)> {
-    match (a, b) {
-        (Value::Int(x), Value::Int(y)) => Some((x, y)),
-        _ => None,
-    }
+/// Both operands are language-level ints, as BigInts (borrowed where the
+/// value is already big) for the arbitrary-precision path.
+fn both_big<'a>(a: &'a Value, b: &'a Value) -> Option<(Cow<'a, BigInt>, Cow<'a, BigInt>)> {
+    let big = |v: &'a Value| -> Option<Cow<'a, BigInt>> {
+        match v {
+            Value::Int(i) => Some(Cow::Owned(BigInt::from(*i))),
+            Value::Big(b) => Some(Cow::Borrowed(&**b)),
+            _ => None,
+        }
+    };
+    Some((big(a)?, big(b)?))
 }
 
 fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
-    if let Some((x, y)) = both_ints(a, b) {
+    // i64 fast path; overflow (and i64::MIN edge cases, where checked ops
+    // return None) falls through to the arbitrary-precision path below.
+    if let (Value::Int(x), Value::Int(y)) = (a, b) {
+        let (x, y) = (*x, *y);
+        match op {
+            '+' => {
+                if let Some(r) = x.checked_add(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '-' => {
+                if let Some(r) = x.checked_sub(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '×' => {
+                if let Some(r) = x.checked_mul(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '÷' => {
+                if y == 0 {
+                    return glitch("÷ by zero", pos);
+                }
+                match x.checked_rem(y) {
+                    Some(0) => return Ok(Value::Int(x / y)),
+                    Some(_) => return Ok(Value::Float(x as f64 / y as f64)),
+                    None => {}
+                }
+            }
+            '%' => {
+                if y == 0 {
+                    return glitch("% by zero", pos);
+                }
+                if let Some(mut r) = x.checked_rem(y) {
+                    if r != 0 && (r < 0) != (y < 0) {
+                        r += y;
+                    }
+                    return Ok(Value::Int(r));
+                }
+            }
+            // ^ keeps its semantics in one place, on the big path
+            '^' => {}
+            _ => unreachable!(),
+        }
+    }
+    if let Some((x, y)) = both_big(a, b) {
+        let (x, y) = (x.as_ref(), y.as_ref());
         return Ok(match op {
-            '+' => Value::Int(Rc::new(x + y)),
-            '-' => Value::Int(Rc::new(x - y)),
-            '×' => Value::Int(Rc::new(x * y)),
+            '+' => Value::from_big(x + y),
+            '-' => Value::from_big(x - y),
+            '×' => Value::from_big(x * y),
             '÷' => {
                 if y.is_zero() {
                     return glitch("÷ by zero", pos);
                 }
                 if (x % y).is_zero() {
-                    Value::Int(Rc::new(x / y))
+                    Value::from_big(x / y)
                 } else {
                     Value::Float(a.as_f64().unwrap() / b.as_f64().unwrap())
                 }
@@ -226,14 +295,14 @@ fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
                 if !r.is_zero() && (r.is_negative() != y.is_negative()) {
                     r += y;
                 }
-                Value::Int(Rc::new(r))
+                Value::from_big(r)
             }
             '^' => {
                 if y.is_negative() {
                     Value::Float(a.as_f64().unwrap().powf(b.as_f64().unwrap()))
                 } else {
                     match y.to_u32() {
-                        Some(e) => Value::Int(Rc::new(x.pow(e))),
+                        Some(e) => Value::from_big(x.pow(e)),
                         None => return glitch("^ exponent too large", pos),
                     }
                 }
@@ -268,8 +337,13 @@ fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
 }
 
 fn num_cmp(a: &Value, b: &Value) -> std::cmp::Ordering {
-    if let Some((x, y)) = both_ints(a, b) {
+    if let (Value::Int(x), Value::Int(y)) = (a, b) {
         return x.cmp(y);
+    }
+    if matches!(a, Value::Big(_)) || matches!(b, Value::Big(_)) {
+        if let Some((x, y)) = both_big(a, b) {
+            return x.as_ref().cmp(y.as_ref());
+        }
     }
     a.as_f64()
         .unwrap()
@@ -291,6 +365,9 @@ pub struct VM<'io> {
     pub err: &'io mut dyn Write,
     /// The program's command-line arguments, pushed as a string list by ⌂.
     pub args: Vec<String>,
+    /// Bytes pushed back by the ⌥ event parser (an ESC that turned out
+    /// not to open a CSI sequence hands its follower back).
+    pushback: VecDeque<u8>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -319,6 +396,135 @@ impl<'io> VM<'io> {
             out,
             err,
             args: Vec::new(),
+            pushback: VecDeque::new(),
+        }
+    }
+
+    // ── ⌥ input events ─────────────────────────────────────────────────
+    // One event per call, parsed from the same byte stream ⌨ reads, so a
+    // recorded pipe replays exactly what a live terminal produced. Keys
+    // become the glyph they are; a mouse press becomes ⟨«⌖» x y⟩.
+
+    fn read_byte(&mut self) -> Option<u8> {
+        if let Some(b) = self.pushback.pop_front() {
+            return Some(b);
+        }
+        let buf = self.stdin.fill_buf().ok()?;
+        if buf.is_empty() {
+            return None;
+        }
+        let b = buf[0];
+        self.stdin.consume(1);
+        Some(b)
+    }
+
+    /// Decode one UTF-8 scalar; malformed bytes become U+FFFD.
+    fn read_char(&mut self) -> Option<char> {
+        let b0 = self.read_byte()?;
+        let need = match b0 {
+            0x00..=0x7f => return Some(b0 as char),
+            0xc0..=0xdf => 1,
+            0xe0..=0xef => 2,
+            0xf0..=0xf7 => 3,
+            _ => return Some('\u{fffd}'),
+        };
+        let mut bytes = vec![b0];
+        for _ in 0..need {
+            match self.read_byte() {
+                Some(b) if b & 0xc0 == 0x80 => bytes.push(b),
+                Some(b) => {
+                    self.pushback.push_back(b);
+                    return Some('\u{fffd}');
+                }
+                None => return Some('\u{fffd}'),
+            }
+        }
+        match std::str::from_utf8(&bytes) {
+            Ok(s) => s.chars().next(),
+            Err(_) => Some('\u{fffd}'),
+        }
+    }
+
+    /// Parse one CSI sequence (the ⎋[ is already consumed). Returns a
+    /// deliverable event, or None for sequences ⌥ swallows (releases,
+    /// motion, wheel, unknown finals).
+    fn read_csi(&mut self) -> Option<Option<Value>> {
+        let mut params = String::new();
+        loop {
+            let b = self.read_byte()?;
+            if (0x40..=0x7e).contains(&b) {
+                let event = match b {
+                    b'A' => Some(Value::str("↑")),
+                    b'B' => Some(Value::str("↓")),
+                    b'C' => Some(Value::str("→")),
+                    b'D' => Some(Value::str("←")),
+                    b'H' => Some(Value::str("⇱")),
+                    b'F' => Some(Value::str("⇲")),
+                    b'~' if params == "1" || params == "7" => Some(Value::str("⇱")),
+                    b'~' if params == "4" || params == "8" => Some(Value::str("⇲")),
+                    b'~' if params == "2" => Some(Value::str("⎀")),
+                    b'~' if params == "3" => Some(Value::str("⌦")),
+                    b'~' if params == "5" => Some(Value::str("⇞")),
+                    b'~' if params == "6" => Some(Value::str("⇟")),
+                    b'M' if params.starts_with('<') => {
+                        let nums: Vec<i64> = params[1..]
+                            .split(';')
+                            .map(|p| p.parse().unwrap_or(-1))
+                            .collect();
+                        match nums.as_slice() {
+                            // SGR press: button < 32 (no motion/wheel bits)
+                            [b, x, y] if (0..32).contains(b) && *x >= 0 && *y >= 0 => {
+                                Some(Value::List(Rc::new(vec![
+                                    Value::str("⌖"),
+                                    Value::int(*x),
+                                    Value::int(*y),
+                                ])))
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                return Some(event);
+            }
+            params.push(b as char);
+            if params.len() > 32 {
+                return Some(None); // runaway sequence — bail out
+            }
+        }
+    }
+
+    /// Read the next input event for ⌥. ∅ at end of input.
+    fn read_event(&mut self) -> Value {
+        loop {
+            let Some(c) = self.read_char() else {
+                return Value::Nil;
+            };
+            match c {
+                // «↵», not «⏎»: inside MLang strings the ⏎ glyph denotes a
+                // newline, so a ⏎ event could never be written or compared.
+                '\r' | '\n' => return Value::str("↵"),
+                '\t' => return Value::str("⇥"),
+                '\u{8}' | '\u{7f}' => return Value::str("⌫"),
+                '\u{1b}' => match self.read_byte() {
+                    None => return Value::Nil,
+                    Some(b'[') => match self.read_csi() {
+                        None => return Value::Nil,
+                        Some(Some(event)) => return event,
+                        Some(None) => continue,
+                    },
+                    Some(other) => {
+                        self.pushback.push_back(other);
+                        return Value::str("⎋");
+                    }
+                },
+                c if (c as u32) < 32 => {
+                    // control chords in caret notation: Ctrl-C is «^C»
+                    let chord = char::from((c as u8) + 0x40);
+                    return Value::str(format!("^{chord}"));
+                }
+                c => return Value::str(c.to_string()),
+            }
         }
     }
 
@@ -350,6 +556,7 @@ impl<'io> VM<'io> {
             let what = match on {
                 BlockOn::Chan(c) => format!("channel {c}"),
                 BlockOn::Strand(id) => format!("strand {}", fmt_i64(id)),
+                BlockOn::Stdin => "stdin".into(),
             };
             let _ = writeln!(
                 self.err,
@@ -371,11 +578,46 @@ impl<'io> VM<'io> {
                 .get(&id)
                 .map(|&t| matches!(self.strands[t].status, Status::Done | Status::Dead))
                 .unwrap_or(false),
+            BlockOn::Stdin => !self.others_active(self.strands[i].sid),
         };
         if free {
             self.strands[i].status = Status::Run;
             self.strands[i].block = None;
         }
+    }
+
+    /// True if any strand other than `me` could make progress right now:
+    /// runnable, or blocked on something already available. Strands waiting
+    /// on ⌨ don't count — they would defer the same way. Stdin reads carry
+    /// the lowest scheduling priority (see the '⌨' arm), so this decides
+    /// both when a read must defer and when a deferred read may wake.
+    fn others_active(&self, me: i64) -> bool {
+        self.strands.iter().any(|t| {
+            t.sid != me
+                && t.sid != i64::MIN
+                && match t.status {
+                    // A Run strand whose frames have emptied is finished in all
+                    // but name — it is marked Done on its next visit and can
+                    // produce nothing more.
+                    Status::Run => !t.frames.is_empty(),
+                    Status::Blocked => match t.block {
+                        Some((BlockOn::Chan(c), _)) => self
+                            .channels
+                            .get(&c)
+                            .map(|q| !q.is_empty())
+                            .unwrap_or(false),
+                        Some((BlockOn::Strand(id), _)) => self
+                            .by_sid
+                            .get(&id)
+                            .map(|&x| {
+                                matches!(self.strands[x].status, Status::Done | Status::Dead)
+                            })
+                            .unwrap_or(false),
+                        Some((BlockOn::Stdin, _)) | None => false,
+                    },
+                    _ => false,
+                }
+        })
     }
 
     fn run_slice(&mut self, idx: usize) -> usize {
@@ -441,8 +683,16 @@ impl<'io> VM<'io> {
                     .filter(|&i| self.strands[i].status == Status::Blocked)
                     .collect();
                 if !blocked.is_empty() && blocked.len() == live.len() {
-                    self.report_deadlock(&blocked);
-                    return;
+                    // A strand waiting its turn at ⌨ is not deadlocked: the
+                    // grid has gone quiet, so the next round wakes it and the
+                    // read proceeds (blocking on the OS, not the scheduler).
+                    let stdin_waiter = blocked.iter().any(|&i| {
+                        matches!(self.strands[i].block, Some((BlockOn::Stdin, _)))
+                    });
+                    if !stdin_waiter {
+                        self.report_deadlock(&blocked);
+                        return;
+                    }
                 }
             }
         }
@@ -458,7 +708,7 @@ impl<'io> VM<'io> {
             -1,
             "boot".into(),
             Rc::new(prog.boot.clone()),
-            HashMap::new(),
+            Vec::new(),
         );
         self.register(boot);
         self.run_scheduler();
@@ -471,7 +721,7 @@ impl<'io> VM<'io> {
                 i as i64,
                 label.clone(),
                 Rc::new(code.clone()),
-                HashMap::new(),
+                Vec::new(),
             ));
         }
         self.run_scheduler();
@@ -502,10 +752,26 @@ pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
             strands.push((label.clone(), code));
         }
     }
+    let program_boot = match &prog.boot_cells {
+        Some(cells) => lex_strand(cells.clone(), prog.axis)?,
+        None => Vec::new(),
+    };
     let mut boot = std_code();
-    if let Some(cells) = &prog.boot_cells {
-        boot.extend(lex_strand(cells.clone(), prog.axis)?);
+    let mut refs = HashSet::new();
+    let mut defs = HashSet::new();
+    scan_names(&program_boot, &mut refs, &mut defs);
+    for (_, code) in &strands {
+        scan_names(code, &mut refs, &mut defs);
     }
+    for (_, source) in LIBS {
+        let lib = lib_code(source);
+        let mut lib_defs = HashSet::new();
+        scan_names(&lib, &mut HashSet::new(), &mut lib_defs);
+        if refs.iter().any(|c| lib_defs.contains(c) && !defs.contains(c)) {
+            boot.extend(lib);
+        }
+    }
+    boot.extend(program_boot);
     Ok(CompiledProgram { boot, strands })
 }
 
@@ -515,32 +781,72 @@ pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
 }
 
 pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
+pub const UI_SOURCE: &str = include_str!("../../std/ui.ml");
+
+/// Bundled libraries, in weave order. A library is woven into the boot
+/// strand — after std, before the program's own boot section — exactly
+/// when the program references a sigil the library defines without
+/// defining that sigil itself (§6.1). Weaving is decided at compile time,
+/// so welded binaries carry only the libraries they use.
+const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE)];
+
+/// Collect referenced names and defined sigils (≔ and ⇒ targets),
+/// recursing into quotations.
+fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>) {
+    for instr in code {
+        match &instr.op {
+            Op::Name(c) => {
+                refs.insert(*c);
+            }
+            Op::B('≔', c, _) | Op::B('⇒', c, _) => {
+                defs.insert(*c);
+            }
+            Op::Push(Value::Quot(q)) => scan_names(q, refs, defs),
+            _ => {}
+        }
+    }
+}
+
+/// Does this program execute ⌥ anywhere? Decides whether the runner
+/// should switch a real terminal into raw/mouse-reporting mode.
+pub fn uses_interactive(prog: &CompiledProgram) -> bool {
+    fn has_event_op(code: &[Instr]) -> bool {
+        code.iter().any(|i| match &i.op {
+            Op::B('⌥', _, _) => true,
+            Op::Push(Value::Quot(q)) => has_event_op(q),
+            _ => false,
+        })
+    }
+    has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
+}
+
+/// Lex a library source into one instruction strip. Infallible: bundled
+/// libraries are verified by CI.
+fn lib_code(source: &str) -> Vec<Instr> {
+    let prog = crate::forms::parse_source(source).expect("library parses");
+    let mut code = Vec::new();
+    for (_, cells) in prog.strands {
+        code.extend(lex_strand(cells, prog.axis).expect("library lexes"));
+    }
+    code
+}
 
 /// The standard library, lexed. Infallible: std.ml is verified by CI.
 fn std_code() -> Vec<Instr> {
-    let prog = crate::forms::parse_source(STD_SOURCE).expect("std.ml parses");
-    let mut code = Vec::new();
-    for (_, cells) in prog.strands {
-        code.extend(lex_strand(cells, prog.axis).expect("std.ml lexes"));
-    }
-    code
+    lib_code(STD_SOURCE)
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────
 fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
     let fi = s.frames.len() - 1;
     match &s.frames[fi] {
-        Frame::CF { .. } => {
-            let (code, ip) = match &s.frames[fi] {
-                Frame::CF { code, ip } => (code.clone(), *ip),
-                _ => unreachable!(),
-            };
+        Frame::CF { code, ip } => {
+            let (code, ip) = (code.clone(), *ip);
             if ip >= code.len() {
                 s.frames.pop();
                 return Ok(());
             }
-            let instr = code[ip].clone();
-            match execute(vm, s, &instr) {
+            match execute(vm, s, &code[ip]) {
                 Ok(()) => {}
                 Err(Sig::Yield) => {
                     // Yield completed — resume at the next instruction.
@@ -711,7 +1017,7 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             Ok(())
         }
         Op::Name(c) => {
-            let v = if let Some(v) = s.locals.get(c) {
+            let v = if let Some(v) = s.local_get(*c) {
                 v.clone()
             } else if let Some(v) = vm.globals.get(c) {
                 v.clone()
@@ -800,11 +1106,11 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '⌊' | '⌈' => {
             let v = s.pop_num(pos, &ch.to_string())?;
             match v {
-                Value::Int(i) => s.push(Value::Int(i)),
+                Value::Int(_) | Value::Big(_) => s.push(v),
                 Value::Float(f) => {
                     let r = if ch == '⌊' { f.floor() } else { f.ceil() };
                     let big = BigInt::from_f64(r).unwrap_or_default();
-                    s.push(Value::Int(Rc::new(big)));
+                    s.push(Value::from_big(big));
                 }
                 _ => unreachable!(),
             }
@@ -812,7 +1118,11 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '±' => {
             let v = s.pop_num(pos, "±")?;
             match v {
-                Value::Int(i) => s.push(Value::Int(Rc::new(-&*i))),
+                Value::Int(i) => match i.checked_neg() {
+                    Some(r) => s.push(Value::Int(r)),
+                    None => s.push(Value::from_big(-BigInt::from(i))),
+                },
+                Value::Big(b) => s.push(Value::from_big(-&*b)),
                 Value::Float(f) => s.push(Value::Float(-f)),
                 _ => unreachable!(),
             }
@@ -1065,7 +1375,10 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let parsed = if t.contains('.') || t.contains('e') || t.contains('E') {
                 t.parse::<f64>().ok().map(Value::Float)
             } else {
-                t.parse::<BigInt>().ok().map(|b| Value::Int(Rc::new(b)))
+                t.parse::<i64>()
+                    .ok()
+                    .map(Value::Int)
+                    .or_else(|| t.parse::<BigInt>().ok().map(Value::from_big))
             };
             match parsed {
                 Some(n) => s.push(n),
@@ -1218,7 +1531,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         '⇒' => {
             let v = s.pop(pos, "a value to store")?;
-            s.locals.insert(arg, v);
+            s.local_set(arg, v);
         }
         // ── strands & channels ──
         '↥' => {
@@ -1347,6 +1660,14 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
         }
         '⌨' => {
+            // Stdin has the lowest scheduling priority: the read happens
+            // only once no other strand can make progress, so a pipeline
+            // flushes its pending work — greetings, prompts, responses —
+            // before the program waits on the user. The interleaving stays
+            // deterministic because it never depends on input timing.
+            if vm.others_active(s.sid) {
+                return Err(Sig::Block(BlockOn::Stdin, pos));
+            }
             // An interactive prompt written with ⊸ must be visible before
             // the program blocks on input.
             let _ = vm.out.flush();
@@ -1367,9 +1688,24 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 Err(_) => s.push(Value::Nil),
             }
         }
+        '⌥' => {
+            // Stdin reads share ⌨'s lowest scheduling priority: other
+            // strands flush their pending work before the UI waits.
+            if vm.others_active(s.sid) {
+                return Err(Sig::Block(BlockOn::Stdin, pos));
+            }
+            // Prompts written with ⊸ must appear before blocking, like ⌨.
+            let _ = vm.out.flush();
+            let event = vm.read_event();
+            s.push(event);
+        }
         '⌂' => {
             let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
             s.push(Value::List(Rc::new(items)));
+        }
+        '⍜' => {
+            let (rows, cols) = crate::term::size();
+            s.push(Value::List(Rc::new(vec![Value::int(rows), Value::int(cols)])));
         }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();

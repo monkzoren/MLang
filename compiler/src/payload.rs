@@ -51,9 +51,14 @@ impl W {
     fn value(&mut self, v: &Value) {
         match v {
             Value::Nil => self.u8(0),
+            // Int and Big share the language-level int type and one wire tag.
             Value::Int(i) => {
                 self.u8(1);
-                self.bytes(&i.to_signed_bytes_le());
+                self.bytes(&BigInt::from(*i).to_signed_bytes_le());
+            }
+            Value::Big(b) => {
+                self.u8(1);
+                self.bytes(&b.to_signed_bytes_le());
             }
             Value::Float(f) => {
                 self.u8(2);
@@ -161,7 +166,7 @@ impl<'a> R<'a> {
     fn value(&mut self) -> PResult<Value> {
         Ok(match self.u8()? {
             0 => Value::Nil,
-            1 => Value::Int(Rc::new(BigInt::from_signed_bytes_le(self.bytes()?))),
+            1 => Value::from_big(BigInt::from_signed_bytes_le(self.bytes()?)),
             2 => Value::Float(f64::from_bits(self.u64()?)),
             3 => Value::Str(Rc::new(self.string()?)),
             4 => {

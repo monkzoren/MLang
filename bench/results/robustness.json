@@ -3,47 +3,47 @@
   "seeds_mlang": 10,
   "seeds_python": 32,
   "timeout_s": 3.0,
-  "mlang_programs": 94,
+  "mlang_programs": 119,
   "python_programs": 28
  },
  "mlang": {
-  "total": 893,
+  "total": 1124,
   "buckets": {
-   "before-run": 101,
-   "runtime-fault": 445,
-   "deadlock-proven": 29,
-   "wrong-output": 277,
-   "hang": 9,
-   "pass": 32
+   "before-run": 148,
+   "runtime-fault": 567,
+   "deadlock-proven": 31,
+   "wrong-output": 321,
+   "hang": 8,
+   "pass": 49
   },
   "hang_with_traceback": 0,
   "by_op": {
    "chan-rename": {
-    "deadlock-proven": 28,
+    "deadlock-proven": 29,
     "pass": 3,
     "runtime-fault": 1,
     "wrong-output": 1
    },
    "drop": {
-    "wrong-output": 95,
-    "runtime-fault": 69,
-    "before-run": 44,
-    "pass": 12,
+    "wrong-output": 106,
+    "runtime-fault": 93,
+    "before-run": 64,
+    "pass": 16,
     "hang": 2
    },
    "swap-op": {
-    "runtime-fault": 294,
-    "wrong-output": 119,
-    "before-run": 26,
-    "pass": 6,
-    "hang": 5,
-    "deadlock-proven": 1
+    "runtime-fault": 349,
+    "wrong-output": 147,
+    "before-run": 38,
+    "pass": 18,
+    "hang": 4,
+    "deadlock-proven": 2
    },
    "transpose": {
-    "wrong-output": 62,
-    "pass": 11,
-    "runtime-fault": 81,
-    "before-run": 31,
+    "wrong-output": 67,
+    "pass": 12,
+    "runtime-fault": 124,
+    "before-run": 46,
     "hang": 2
    }
   },
@@ -325,7 +325,7 @@
     "id": "mlang:bignum:4",
     "case": "bignum",
     "op": "swap-op",
-    "outcome": "glitch",
+    "outcome": "wrong-output",
     "stderr_seen": true
    },
    {
@@ -395,15 +395,15 @@
     "id": "mlang:string:6",
     "case": "string",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:string:7",
     "case": "string",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:string:8",
@@ -416,8 +416,8 @@
     "id": "mlang:string:9",
     "case": "string",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:string-raw-print:0",
@@ -458,8 +458,8 @@
     "id": "mlang:string-raw-print:5",
     "case": "string-raw-print",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:string-raw-print:6",
@@ -717,8 +717,8 @@
     "id": "mlang:over-rot-depth:2",
     "case": "over-rot-depth",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:over-rot-depth:3",
@@ -787,8 +787,8 @@
     "id": "mlang:arith:2",
     "case": "arith",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:arith:3",
@@ -843,7 +843,7 @@
     "id": "mlang:division:0",
     "case": "division",
     "op": "swap-op",
-    "outcome": "weave",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -927,8 +927,8 @@
     "id": "mlang:modulo:2",
     "case": "modulo",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:modulo:3",
@@ -1025,8 +1025,8 @@
     "id": "mlang:unary-math:6",
     "case": "unary-math",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:unary-math:7",
@@ -1102,8 +1102,8 @@
     "id": "mlang:compare:7",
     "case": "compare",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:compare:8",
@@ -1403,8 +1403,8 @@
     "id": "mlang:if:0",
     "case": "if",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:if:1",
@@ -1417,8 +1417,8 @@
     "id": "mlang:if:2",
     "case": "if",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:if:3",
@@ -1739,8 +1739,8 @@
     "id": "mlang:filter:2",
     "case": "filter",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:filter:3",
@@ -1942,8 +1942,8 @@
     "id": "mlang:seq-basics:4",
     "case": "seq-basics",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:seq-basics:5",
@@ -2026,8 +2026,8 @@
     "id": "mlang:slice:8",
     "case": "slice",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:slice:9",
@@ -2040,8 +2040,8 @@
     "id": "mlang:split-join:0",
     "case": "split-join",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:split-join:1",
@@ -2187,8 +2187,8 @@
     "id": "mlang:codepoints:1",
     "case": "codepoints",
     "op": "swap-op",
-    "outcome": "weave",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:codepoints:2",
@@ -2362,7 +2362,7 @@
     "id": "mlang:locals:8",
     "case": "locals",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -2390,8 +2390,8 @@
     "id": "mlang:try-catch:2",
     "case": "try-catch",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:try-catch:3",
@@ -2439,8 +2439,8 @@
     "id": "mlang:try-catch:9",
     "case": "try-catch",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:try-restores-stack:0",
@@ -2558,8 +2558,8 @@
     "id": "mlang:raise-custom:7",
     "case": "raise-custom",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:raise-custom:8",
@@ -2593,8 +2593,8 @@
     "id": "mlang:nested-try:2",
     "case": "nested-try",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:nested-try:3",
@@ -2845,8 +2845,8 @@
     "id": "mlang:file-op-type-errors:0",
     "case": "file-op-type-errors",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:file-op-type-errors:1",
@@ -3013,8 +3013,8 @@
     "id": "mlang:fifo:4",
     "case": "fifo",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:fifo:5",
@@ -3237,8 +3237,8 @@
     "id": "mlang:spawn-join:7",
     "case": "spawn-join",
     "op": "swap-op",
-    "outcome": "pass",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:spawn-join:8",
@@ -3461,8 +3461,8 @@
     "id": "mlang:yield:9",
     "case": "yield",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:pour-drain:0",
@@ -3671,8 +3671,8 @@
     "id": "mlang:pump-chained:1",
     "case": "pump-chained",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:pump-chained:2",
@@ -3783,7 +3783,14 @@
     "id": "mlang:drain-cross-strand:8",
     "case": "drain-cross-strand",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:drain-cross-strand:9",
+    "case": "drain-cross-strand",
+    "op": "swap-op",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -3860,8 +3867,8 @@
     "id": "mlang:prim-reverse:0",
     "case": "prim-reverse",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:prim-reverse:1",
@@ -3888,8 +3895,8 @@
     "id": "mlang:prim-reverse:4",
     "case": "prim-reverse",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:prim-reverse:5",
@@ -3902,8 +3909,8 @@
     "id": "mlang:prim-reverse:6",
     "case": "prim-reverse",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:prim-reverse:7",
@@ -3993,8 +4000,8 @@
     "id": "mlang:prim-contains-find:0",
     "case": "prim-contains-find",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:prim-contains-find:1",
@@ -4112,8 +4119,8 @@
     "id": "mlang:std-constants:9",
     "case": "std-constants",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:std-numbers:0",
@@ -4224,15 +4231,15 @@
     "id": "mlang:std-aggregates:5",
     "case": "std-aggregates",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:std-aggregates:6",
     "case": "std-aggregates",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:std-aggregates:7",
@@ -4287,8 +4294,8 @@
     "id": "mlang:std-list-helpers:4",
     "case": "std-list-helpers",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:std-list-helpers:5",
@@ -4343,14 +4350,14 @@
     "id": "mlang:std-zip:2",
     "case": "std-zip",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:std-zip:3",
     "case": "std-zip",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -4448,15 +4455,15 @@
     "id": "mlang:std-text:8",
     "case": "std-text",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:std-text:9",
     "case": "std-text",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:std-in-boot-and-strands:0",
@@ -4623,7 +4630,7 @@
     "id": "mlang:continuation:4",
     "case": "continuation",
     "op": "swap-op",
-    "outcome": "weave",
+    "outcome": "wrong-output",
     "stderr_seen": true
    },
    {
@@ -4672,8 +4679,8 @@
     "id": "mlang:comment-lines:1",
     "case": "comment-lines",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:comment-lines:2",
@@ -4721,14 +4728,14 @@
     "id": "mlang:rain-hello:0",
     "case": "rain-hello",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:rain-hello:1",
     "case": "rain-hello",
     "op": "swap-op",
-    "outcome": "weave",
+    "outcome": "wrong-output",
     "stderr_seen": true
    },
    {
@@ -4882,7 +4889,7 @@
     "id": "mlang:rain-comment-column:5",
     "case": "rain-comment-column",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -5029,8 +5036,8 @@
     "id": "mlang:stdin-echo:6",
     "case": "stdin-echo",
     "op": "swap-op",
-    "outcome": "hang",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:stdin-echo:7",
@@ -5204,8 +5211,8 @@
     "id": "mlang:args-empty:2",
     "case": "args-empty",
     "op": "swap-op",
-    "outcome": "weave",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:args-empty:3",
@@ -5316,8 +5323,8 @@
     "id": "mlang:quot-identity-eq:2",
     "case": "quot-identity-eq",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:quot-identity-eq:3",
@@ -5393,8 +5400,8 @@
     "id": "mlang:list-build-nested:3",
     "case": "list-build-nested",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:list-build-nested:4",
@@ -5428,7 +5435,7 @@
     "id": "mlang:list-build-nested:9",
     "case": "list-build-nested",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -5497,6 +5504,1476 @@
    {
     "id": "mlang:empty-things-falsy:9",
     "case": "empty-things-falsy",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:0",
+    "case": "event-decode",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:1",
+    "case": "event-decode",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:2",
+    "case": "event-decode",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-decode:3",
+    "case": "event-decode",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:4",
+    "case": "event-decode",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-decode:5",
+    "case": "event-decode",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:6",
+    "case": "event-decode",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:7",
+    "case": "event-decode",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-decode:8",
+    "case": "event-decode",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:0",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:1",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:2",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:3",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:4",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:5",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:6",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:7",
+    "case": "termsize-fallback",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:termsize-fallback:8",
+    "case": "termsize-fallback",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:termsize-fallback:9",
+    "case": "termsize-fallback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:0",
+    "case": "ui-label-draw",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:1",
+    "case": "ui-label-draw",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:2",
+    "case": "ui-label-draw",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:3",
+    "case": "ui-label-draw",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:4",
+    "case": "ui-label-draw",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:5",
+    "case": "ui-label-draw",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-label-draw:9",
+    "case": "ui-label-draw",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:0",
+    "case": "ui-widgets-render",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-widgets-render:1",
+    "case": "ui-widgets-render",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-widgets-render:2",
+    "case": "ui-widgets-render",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:3",
+    "case": "ui-widgets-render",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:4",
+    "case": "ui-widgets-render",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:5",
+    "case": "ui-widgets-render",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:6",
+    "case": "ui-widgets-render",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-widgets-render:7",
+    "case": "ui-widgets-render",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-widgets-render:8",
+    "case": "ui-widgets-render",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-titled:0",
+    "case": "ui-window-titled",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-titled:1",
+    "case": "ui-window-titled",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-window-titled:2",
+    "case": "ui-window-titled",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-titled:3",
+    "case": "ui-window-titled",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-window-titled:4",
+    "case": "ui-window-titled",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-titled:5",
+    "case": "ui-window-titled",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-window-titled:6",
+    "case": "ui-window-titled",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-titled:8",
+    "case": "ui-window-titled",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:0",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:1",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:2",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:3",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:4",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:5",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:6",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:8",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-untitled-and-title-wide:9",
+    "case": "ui-window-untitled-and-title-wide",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:0",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:2",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:3",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:4",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:5",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:6",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:7",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:8",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-hbox-heights-and-nesting:9",
+    "case": "ui-hbox-heights-and-nesting",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:0",
+    "case": "ui-window-nested",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:1",
+    "case": "ui-window-nested",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:2",
+    "case": "ui-window-nested",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:3",
+    "case": "ui-window-nested",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:4",
+    "case": "ui-window-nested",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:5",
+    "case": "ui-window-nested",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:7",
+    "case": "ui-window-nested",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-window-nested:8",
+    "case": "ui-window-nested",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-not-a-widget:0",
+    "case": "ui-not-a-widget",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-not-a-widget:1",
+    "case": "ui-not-a-widget",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-not-a-widget:2",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-not-a-widget:3",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-not-a-widget:4",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-not-a-widget:5",
+    "case": "ui-not-a-widget",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-not-a-widget:6",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-not-a-widget:7",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-not-a-widget:8",
+    "case": "ui-not-a-widget",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-not-a-widget:9",
+    "case": "ui-not-a-widget",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-counter:0",
+    "case": "ui-exec-counter",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-counter:1",
+    "case": "ui-exec-counter",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-counter:2",
+    "case": "ui-exec-counter",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-counter:3",
+    "case": "ui-exec-counter",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-counter:4",
+    "case": "ui-exec-counter",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-counter:5",
+    "case": "ui-exec-counter",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-counter:7",
+    "case": "ui-exec-counter",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-counter:8",
+    "case": "ui-exec-counter",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-counter:9",
+    "case": "ui-exec-counter",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:0",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:1",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:2",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:3",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:4",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:5",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:6",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-edit-toggle-glitch:7",
+    "case": "ui-exec-edit-toggle-glitch",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:0",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:1",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:2",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:3",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:4",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:5",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:7",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:8",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-exec-blank-lines-and-eof:9",
+    "case": "ui-exec-blank-lines-and-eof",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:0",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:1",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:2",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:3",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:4",
+    "case": "ui-weave-only-on-reference",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:5",
+    "case": "ui-weave-only-on-reference",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:6",
+    "case": "ui-weave-only-on-reference",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:7",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-weave-only-on-reference:9",
+    "case": "ui-weave-only-on-reference",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:0",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:1",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:2",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:3",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:4",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:5",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:6",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:7",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-channel-sigil-no-weave:9",
+    "case": "ui-channel-sigil-no-weave",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:0",
+    "case": "event-keys",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:1",
+    "case": "event-keys",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-keys:2",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-keys:3",
+    "case": "event-keys",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:4",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:5",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-keys:6",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:7",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:8",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-keys:9",
+    "case": "event-keys",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:0",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-arrows-delete:1",
+    "case": "event-arrows-delete",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-arrows-delete:2",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:3",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:4",
+    "case": "event-arrows-delete",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:5",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:6",
+    "case": "event-arrows-delete",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:7",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-arrows-delete:8",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-arrows-delete:9",
+    "case": "event-arrows-delete",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:0",
+    "case": "event-mouse-sgr-press-only",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:1",
+    "case": "event-mouse-sgr-press-only",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:2",
+    "case": "event-mouse-sgr-press-only",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:3",
+    "case": "event-mouse-sgr-press-only",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:4",
+    "case": "event-mouse-sgr-press-only",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:6",
+    "case": "event-mouse-sgr-press-only",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:7",
+    "case": "event-mouse-sgr-press-only",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-mouse-sgr-press-only:8",
+    "case": "event-mouse-sgr-press-only",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:0",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-esc-pushback:1",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:2",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:3",
+    "case": "event-esc-pushback",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-esc-pushback:4",
+    "case": "event-esc-pushback",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-esc-pushback:5",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:6",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:7",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:8",
+    "case": "event-esc-pushback",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-esc-pushback:9",
+    "case": "event-esc-pushback",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:0",
+    "case": "event-lone-esc-is-eof",
+    "op": "transpose",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:1",
+    "case": "event-lone-esc-is-eof",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:2",
+    "case": "event-lone-esc-is-eof",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:4",
+    "case": "event-lone-esc-is-eof",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:5",
+    "case": "event-lone-esc-is-eof",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:6",
+    "case": "event-lone-esc-is-eof",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:7",
+    "case": "event-lone-esc-is-eof",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:8",
+    "case": "event-lone-esc-is-eof",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:event-lone-esc-is-eof:9",
+    "case": "event-lone-esc-is-eof",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:0",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-counter:1",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:2",
+    "case": "ui-live-counter",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:3",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:4",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-counter:5",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:6",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-counter:7",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:8",
+    "case": "ui-live-counter",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-counter:9",
+    "case": "ui-live-counter",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:0",
+    "case": "ui-live-typing-caret",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:1",
+    "case": "ui-live-typing-caret",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:2",
+    "case": "ui-live-typing-caret",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:3",
+    "case": "ui-live-typing-caret",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:4",
+    "case": "ui-live-typing-caret",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:5",
+    "case": "ui-live-typing-caret",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:6",
+    "case": "ui-live-typing-caret",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:7",
+    "case": "ui-live-typing-caret",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:8",
+    "case": "ui-live-typing-caret",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-typing-caret:9",
+    "case": "ui-live-typing-caret",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:0",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:1",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:2",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:3",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:4",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:5",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:6",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:7",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:8",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-mouse-click-buttons:9",
+    "case": "ui-live-mouse-click-buttons",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:0",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:1",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:2",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:3",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:4",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:5",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:6",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:7",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:8",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:ui-live-toggle-wrap-glitch-deadclick:9",
+    "case": "ui-live-toggle-wrap-glitch-deadclick",
     "op": "transpose",
     "outcome": "weave",
     "stderr_seen": true
@@ -5589,8 +7066,8 @@
     "id": "mlang:example:hello-rain.ml:7",
     "case": "example:hello-rain.ml",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:example:hello-rain.ml:9",
@@ -5813,8 +7290,8 @@
     "id": "mlang:example:pipeline-manual.ml:0",
     "case": "example:pipeline-manual.ml",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:example:pipeline-manual.ml:1",
@@ -6037,7 +7514,7 @@
     "id": "mlang:example:mandelbrot.ml:2",
     "case": "example:mandelbrot.ml",
     "op": "swap-op",
-    "outcome": "weave",
+    "outcome": "glitch",
     "stderr_seen": true
    },
    {
@@ -6142,7 +7619,7 @@
     "id": "mlang:example:calc.ml:7",
     "case": "example:calc.ml",
     "op": "swap-op",
-    "outcome": "glitch",
+    "outcome": "deadlock",
     "stderr_seen": true
    },
    {
@@ -6198,8 +7675,8 @@
     "id": "mlang:example:std-tour.ml:5",
     "case": "example:std-tour.ml",
     "op": "swap-op",
-    "outcome": "glitch",
-    "stderr_seen": true
+    "outcome": "wrong-output",
+    "stderr_seen": false
    },
    {
     "id": "mlang:example:std-tour.ml:6",
@@ -6240,15 +7717,15 @@
     "id": "mlang:example:editor.ml:1",
     "case": "example:editor.ml",
     "op": "swap-op",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "glitch",
+    "stderr_seen": true
    },
    {
     "id": "mlang:example:editor.ml:2",
     "case": "example:editor.ml",
     "op": "drop",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:example:editor.ml:3",
@@ -6261,7 +7738,7 @@
     "id": "mlang:example:editor.ml:4",
     "case": "example:editor.ml",
     "op": "swap-op",
-    "outcome": "wrong-output",
+    "outcome": "pass",
     "stderr_seen": false
    },
    {
@@ -6282,8 +7759,8 @@
     "id": "mlang:example:editor.ml:7",
     "case": "example:editor.ml",
     "op": "transpose",
-    "outcome": "wrong-output",
-    "stderr_seen": false
+    "outcome": "weave",
+    "stderr_seen": true
    },
    {
     "id": "mlang:example:editor.ml:8",
@@ -6296,7 +7773,147 @@
     "id": "mlang:example:editor.ml:9",
     "case": "example:editor.ml",
     "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:construct.ml:0",
+    "case": "example:construct.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:1",
+    "case": "example:construct.ml",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:construct.ml:2",
+    "case": "example:construct.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:3",
+    "case": "example:construct.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:4",
+    "case": "example:construct.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:5",
+    "case": "example:construct.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:6",
+    "case": "example:construct.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:construct.ml:7",
+    "case": "example:construct.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:construct.ml:8",
+    "case": "example:construct.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:construct.ml:9",
+    "case": "example:construct.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:0",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:1",
+    "case": "example:jack-in.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:jack-in.ml:2",
+    "case": "example:jack-in.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:3",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:4",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:5",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:6",
+    "case": "example:jack-in.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:jack-in.ml:7",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
     "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:jack-in.ml:8",
+    "case": "example:jack-in.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:jack-in.ml:9",
+    "case": "example:jack-in.ml",
+    "op": "drop",
+    "outcome": "glitch",
     "stderr_seen": true
    }
   ]
