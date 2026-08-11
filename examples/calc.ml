@@ -1,19 +1,54 @@
-※ A fault-tolerant concurrent RPN calculator.
+※ RPN Calculator with UI, inspired by construct.ml
 ※
-※ Three-stage pipeline over channels l (lines) and o (output):
-※   strand 0 reads stdin lines            → l
-※   strand 1 evaluates each line          → o
-※   strand 2 prints results
+※ Like construct.ml, this is a PySide-style application. The view quotation V
+※ rebuilds the widget tree each frame from two strand-locals: stack (values)
+※ and entry (current digit input). Each button carries its slot: the quotation
+※ the event loop ▶ runs when that button's key arrives on stdin.
 ※
-※ Strand 1 spawns a FRESH strand per line (⚡): the line is evaluated
-※ on that strand's own clean stack — MLang evaluating MLang, since the
-※ input is postfix too. T dispatches one token: an operator applies,
-※ anything else must parse as a number. A bad line glitches inside ⍥,
-※ so it reports «✗ …» and the calculator keeps running; ⋈ keeps
-※ answers in input order. Try:
-※   printf '3 4 +⏎10 2 - 6 ×⏎1 0 ÷⏎2 63 ^⏎oops⏎' | mlang run examples/calc.ml
-[⇒t t«+»=[+][t«-»=[-][t«×»=[×][t«÷»=[÷][t«^»=[^][t«%»=[%][t⍎]?]?]?]?]?]?]≔T
+※ Keys: 0-9 (digits), +, -, ×, ÷, ^, % (operators), =, c (clear), q (quit)
+※ Try:
+※   printf '3⏎4⏎+⏎q⏎' | mlang run examples/calc.ml
+
+[⇒t t«+»=[[↓ ↓ +]][t«-»=[[↓ ↓ -]][t«×»=[[↓ ↓ ×]][t«÷»=[[↓ ↓ ÷]][t«^»=[[↓ ↓ ^]][t«%»=[[↓ ↓ %]][t⍎]?]?]?]?]?]?]≔T
+
 ⇊
-[⌨∂∅≠][↥l]⟳⌫∅↥l
-[↧l∂∅≠][⇒L[[L« »⊆[«»≠]⌿[T]∀⍕][«✗ »⇅⧺]⍥↥o]⚡⋈]⟳⌫∅↥o
-[↧o∂∅≠][⍞]⟳⌫
+
+[
+  ⟨«Stack»Ⓛ
+    ⟨stack ⇅ « » ⊆ [«»≠] ⌿ [⍕] ∀⟩Ⓘ
+    Ⓢ
+    «Entry: « ⍕entry »Ⓛ
+    Ⓢ
+    «Digits»Ⓛ
+    ⟨«0»«0»[entry«0»⇅⧺⇒entry]Ⓑ
+     «1»«1»[entry«1»⇅⧺⇒entry]Ⓑ
+     «2»«2»[entry«2»⇅⧺⇒entry]Ⓑ
+     «3»«3»[entry«3»⇅⧺⇒entry]Ⓑ
+     «4»«4»[entry«4»⇅⧺⇒entry]Ⓑ
+    ⟩Ⓗ
+    ⟨«5»«5»[entry«5»⇅⧺⇒entry]Ⓑ
+     «6»«6»[entry«6»⇅⧺⇒entry]Ⓑ
+     «7»«7»[entry«7»⇅⧺⇒entry]Ⓑ
+     «8»«8»[entry«8»⇅⧺⇒entry]Ⓑ
+     «9»«9»[entry«9»⇅⧺⇒entry]Ⓑ
+    ⟩Ⓗ
+    Ⓢ
+    «Operators»Ⓛ
+    ⟨«+»«+»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «+» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+     «−»«-»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «-» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+     «×»«*»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «×» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+     «÷»«/»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «÷» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+     «^»«^»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «^» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+     «%»«%»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? stack «%» T⟨⇅⟩⧺⇒stack «»⇒entry]Ⓑ
+    ⟩Ⓗ
+    Ⓢ
+    ⟨«=»«=»[entry«»≠ [entry⇐ stack⧺⇒stack] [] ? «»⇒entry]Ⓑ
+     «C»«c»[∅⇒stack «»⇒entry]Ⓑ
+     «Q»«q»[◼]Ⓑ
+    ⟩Ⓗ
+   ⟩Ⓥ«RPN Calculator»Ⓦ
+]≔V
+
+⇊
+
+∅⇒stack «»⇒entry [V]▶ «Done.»⍞
