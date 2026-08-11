@@ -618,6 +618,11 @@
    "stdin": ""
   },
   {
+   "name": "deadlock.ml",
+   "file": "examples/deadlock.ml",
+   "stdin": ""
+  },
+  {
    "name": "mandelbrot.ml",
    "file": "examples/mandelbrot.ml",
    "stdin": "z\nw\nr\nq\n"

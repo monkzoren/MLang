@@ -1,0 +1,142 @@
+{
+ "arith": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "7\n7\n42\n1024\n"
+ },
+ "compare": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "True\nTrue\nTrue\nFalse\nTrue\nTrue\nTrue\n"
+ },
+ "division": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "4.0\n3.5\n-4.0\n0.3333333333333333\n"
+ },
+ "each": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\n2\n"
+ },
+ "fifo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\n3\n"
+ },
+ "filter": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[0, 2, 4, 6, 8]\n"
+ },
+ "fizzbuzz": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+ },
+ "fold": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "5050\n"
+ },
+ "if": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "y\nn\n5\n"
+ },
+ "list": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[1, 'two', [3, 4], 2.5]\n"
+ },
+ "logic": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "0\n1\nTrue\nFalse\nTrue\n"
+ },
+ "modulo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n2\n-2\n1.5\n"
+ },
+ "pour-drain": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[1, 2, 3]\n[]\n['x', 'y']\n"
+ },
+ "pump-chained": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[10, 20, 30, 40, 50]\n"
+ },
+ "pump-pipeline": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+ },
+ "raise-custom": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[1, 2]\n"
+ },
+ "range-map": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "[0, 1, 4, 9, 16]\n[]\n"
+ },
+ "repeat": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "5\n0\n"
+ },
+ "seq-basics": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "3\n[1, 2, 3]\nabcd\n8\nz\n"
+ },
+ "slice": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "atr\nab\n[2, 3]\n"
+ },
+ "spawn-join": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "42\n"
+ },
+ "split-join": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "['a', 'b', 'c']\n['a', 'b']\n1-2-3\n"
+ },
+ "stdin-echo": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "x\ny\n"
+ },
+ "str-parse": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "42!\n-3\n2.5\n6\n"
+ },
+ "string": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "Hello, Matrix\na\nb\n"
+ },
+ "try-catch": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "got: division by zero\nafter\n"
+ },
+ "unary-math": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1.4142135623730951\n2\n3\n-5\n-3\n"
+ },
+ "while-fib": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+ }
+}
