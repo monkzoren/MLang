@@ -537,8 +537,8 @@
   },
   {
    "name": "stdin-crlf",
-   "source": "[⌨∂∅≠][∂⍞#⍞]⟳⌫",
-   "stdin": "wake\r\nup\r\n"
+   "source": "⌨∂#⍞«z»=⍞⌨#⍞",
+   "stdin": "z\r\nab \r\n"
   },
   {
    "name": "args-empty",

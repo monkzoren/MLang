@@ -512,7 +512,7 @@
  "stdin-crlf": {
   "exit": 0,
   "stderr": "",
-  "stdout": "wake\n4\nup\n2\n"
+  "stdout": "1\n1\n3\n"
  },
  "stdin-echo": {
   "exit": 0,
