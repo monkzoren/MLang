@@ -414,36 +414,50 @@ scripted session and pins every frame it draws. Weld it
 .txt onto the executable opens that file (`⌂`), on any platform —
 the runtime enables ANSI processing even in a legacy Windows console.
 
-MatrixPad has a big sibling. `examples/sublime.ml` is **SUBLIMINAL** —
-a Sublime Text clone in the same three strands, with the signature
-moves: syntax highlighting for MLang source, live as you type
-(comments, strings, numbers, brackets); **multiple cursors** — `^D`
-selects the word under the cursor, `^D` again adds its next occurrence
-(wrapping, skipping what's already selected), and typing replaces
-every selection at once; the **command palette** — `^P`, fuzzy-matched
+MatrixPad has a big sibling — and it does not live in the terminal.
+`examples/sublime.ml` is **SUBLIMINAL**, a Sublime Text clone that
+opens as a real desktop window, drawn pixel by pixel in MLang. Five
+ops are the whole graphics story: `⌸` opens a 960×600 canvas, `▦`
+fills rectangles, `⌶` draws text from a font baked into the runtime,
+`⎙` presents the frame, and `⌹` lists a directory — and out of them
+the program builds the Mariana-colored chrome: a **FOLDERS sidebar**
+of the working directory where clicking a file opens it (or jumps to
+its tab if it's already open), **tabs** with `●` unsaved dots and `✕`
+close buttons, a syntax-highlighted code pane — comments, strings,
+numbers, brackets, and every MLang sigil in its own color, live as
+you type — a **real minimap**, every line's words in miniature with
+the viewport shaded and click-to-jump, and a status bar. The Sublime
+signature moves are all in: **multiple cursors** — `^D` selects the
+word under the cursor, `^D` again adds its next occurrence (wrapping,
+skipping what's already selected), and typing replaces every
+selection at once; the **command palette** — `^P`, fuzzy-matched
 (`dup` finds *duplicate line*), with Goto Anything folded in (`:42`
-jumps to line 42, `#boom` finds boom); **tabs** — `^N`/`^E`/`^W`,
-every command-line argument opens as one, click a tab to switch; and a
-**minimap**, the document in miniature down the right edge with the
-viewport shaded — click it to jump. Line numbers, auto-indent,
-auto-closing `[ ⟨ «` pairs that type-over, and line
-cut/copy/paste/join/sort/comment round it out:
+jumps to line 42, `#boom` finds boom); line numbers, current-line
+highlight, auto-indent, auto-closing `[ ⟨ «` pairs that type-over,
+and line cut/copy/paste/join/sort/comment.
 
 ```
- boot.ml ● ▏ oracle.ml ▏
-  1 9⍸[1+∂×]∵⇈α ※ pour the squares                  ▏▄▄▄▄▄▄
-  2 [∂25=[«boom»↯][]?2×]⇉αβ                         ▏▄▄▄▄▄▄
-  3 [∂⍞]⇉βγ█                                        ▏▄▄▄
-                                                    ▏
- ^S save  ^P cmd  ^D multi  ^F find  ^Q quit ▏Ln 3 Col 10  ▲ SUBLIMINAL
+mlang run examples/sublime.ml [file …]        # opens a window
+mlang build examples/sublime.ml -o subl       # weld a standalone editor
 ```
 
 A multi-cursor selection is one integer (`row×2²⁰+column`), so the
 flat `⍋` sorts a selection set and an edit replays across it with
-per-line offsets — no new machinery, just lists and slices. The
-conformance corpus drives a full scripted tour — a multi-cursor
-replace, the palette, find, undo, a second tab, a save, a mouse click —
-and pins every highlighted frame, byte for byte.
+per-line offsets — no new machinery, just lists and slices.
+
+The window is the interesting part. The canvas has two backends that
+draw identical pixels (SPEC §5.2): on a desktop it is an OS window
+whose keyboard and mouse feed `⌥`; piped, the frame stays in memory
+and every `⎙` prints the frame's hash instead, so the conformance
+corpus drives a full scripted tour — typing, a multi-cursor replace,
+the palette, find, a second tab, clicks on the tab bar, sidebar,
+minimap, and text — and pins every pixel of all 59 frames, byte for
+byte, in CI with no display anywhere. Set `MLANG_FRAMES=dir` and the
+same run dumps each frame as an image; that is how the screenshots
+were made. Text is deterministic because the glyphs are, too: an
+8×16-pixel grayscale strip (`compiler/src/font.bin`) baked from
+DejaVu Sans Mono, covering ASCII, every sigil in the repo's sources,
+and the box-drawing set.
 
 ## The Construct — the UI library
 

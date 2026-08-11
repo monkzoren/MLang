@@ -1,38 +1,36 @@
-※ SUBLIMINAL — Sublime Text, jacked into the Matrix.
+※ SUBLIMINAL — Sublime Text as a real window, written in MLang.
 ※
-※ MatrixPad (examples/editor.ml) is Notepad; this is the power tool.
-※ A code editor for MLang source with the Sublime Text signature moves:
+※ ⌸ opens a 960×600 pixel canvas and the whole editor is drawn with
+※ two ops — ▦ rectangles and ⌶ text from the baked font — presented
+※ with ⎙. On a desktop that canvas is an OS window and ⌥ reads its
+※ keyboard and mouse; piped (or MLANG_HEADLESS=1) the same program
+※ renders headless, each ⎙ printing the frame's hash, which is how the
+※ recorded conformance golden pins every pixel of this editor.
+※
+※ The Sublime signature moves, in Mariana colors:
+※   · a FOLDERS sidebar — ⌹ lists the working directory; click a file
+※     to open it in a tab (or jump to its tab if it's already open)
 ※   · syntax highlighting, live as you type — comments, strings,
-※     numbers, brackets, each in its own color
+※     numbers, brackets, and every MLang sigil in its own color
 ※   · multiple cursors: ^D selects the word under the cursor, ^D again
 ※     adds its next occurrence (wrapping, skipping what's selected);
-※     typing replaces every selection at once, ⌫ deletes at every
-※     cursor, ⎋ collapses back to one
+※     typing replaces every selection at once, ⎋ collapses to one
 ※   · the command palette: ^P, fuzzy-matched («dup» finds «duplicate
 ※     line»), plus Goto Anything — «:42» jumps to line 42, «#boom»
 ※     finds boom
-※   · tabs: ^N new, ^E next, ^W close, ^O opens into a new tab, and
-※     every command-line argument opens as its own tab — click a tab
-※     to switch
-※   · a minimap: the document in miniature on the right edge with the
-※     viewport shaded — click it to jump
-※   · line numbers, auto-indent on ↵, auto-closing [ ⟨ « pairs
-※     (typing the closer types over it), ⇥ indents two spaces
-※   · line surgery: ^X cut  ^C copy  ^V paste a line; ^K delete,
-※     ^J join, ^_ toggle ※ comment; sort, reverse, case and trim
-※     live in the palette
-※   · ^S save (asks a name)  ^F find (wraps)  ^G goto line  ^Z undo
-※     ^Y redo  ^Q quit — warns once if anything is unsaved
+※   · tabs with ● unsaved dots and ✕ close buttons; ^N new, ^E next,
+※     ^W close, ^O opens into a new tab, arguments open as tabs
+※   · a real minimap: every line's words in miniature on the right,
+※     viewport shaded — click it to jump anywhere in the file
+※   · line numbers, current-line highlight, auto-indent on ↵,
+※     auto-closing [ ⟨ « pairs, ⇥ indents two spaces
+※   · line surgery: ^X cut  ^C copy  ^V paste  ^K delete  ^J join
+※     ^_ toggle ※ comment; sort, reverse, case, trim in the palette
+※   · ^S save  ^F find (wraps)  ^G goto  ^Z undo  ^Y redo  ^Q quit
 ※
-※ In a real terminal the runtime jacks in raw keys, SGR mouse
-※ reporting and the alternate screen for you:
-※   mlang run examples/sublime.ml [file …]
-※ or weld a standalone editor:  mlang build examples/sublime.ml -o subl
+※   mlang run examples/sublime.ml [file …]      — or weld it:
+※   mlang build examples/sublime.ml -o subl
 ※
-※ Three strands, the same event loop as MatrixPad:
-※   strand 0  keyboard — ⌥ reads raw input events    → k
-※   strand 1  the editor: buffers, tabs, dispatch    → o
-※   strand 2  screen — ⊸ prints ANSI frames from o
 ※ Every buffer is an immutable list of lines; every edit is
 ※ slice-and-concat; undo is a list of ⟨buffer cursor⟩ snapshots and a
 ※ tab is the whole editor state packed into one list. A multi-cursor
@@ -40,14 +38,19 @@
 ※ sorts the set and an edit replays left-to-right with per-line
 ※ offsets. Dispatch runs inside ⍥: a glitch becomes a status-bar
 ※ message, and the document survives by construction.
-27⍘≔⎋                                     ※ the escape character
-187⍘≔◗                                    ※ the » glyph — no string literal can hold it
-1048576≔Π                                 ※ selection encoding: row×Π + column
-[⎋«[»⧺⇅⧺]≔E                               ※ «7m»E → ␛[7m
+※
+※ ── geometry (pixels, 8×16 glyph cells) and the Mariana palette ──
+1048576≔Π                    ※ selection encoding: row×Π + column
+187⍘≔◗                       ※ the » glyph — no string literal can hold it
+34≔ρ 82≔ϣ                    ※ code pane: visible rows and columns
+176≔⍺ 28≔ϐ 576≔ϒ 48≔⍵        ※ sidebar width, tab-bar height, status top, gutter
+80≔∿ 274≔ϗ                   ※ minimap: width, strip rows (2 px per line)
+3160129≔▩ 2831163≔▤ 3884366≔▣ 5134949≔▨      ※ editor bg, panels, raised, selection
+14212841≔◇ 8095635≔⍪ 10923192≔⌭ 10078100≔⌮   ※ text, dim, comment, string
+13014470≔⌯ 15490918≔⌰ 16363096≔◆             ※ sigil, bracket, accent
+«∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⌥⍟⍙⌽⍋∈⍷⍇⍈⌂⍜⌸▦⌶⎙⌹≔⇒↥↧⇂⇈⇟⇉∅»≔⌇
 [⇒ϝ⇒ϛ«»ϝ[ϛ⧺]⍣]≔J                          ※ repeat:  c n J → ccc…
-[⇒ϡ∂# ϡ⇅- 0⊔« »⇅J⧺]≔K                     ※ pad:  s u K → s␣␣… (width u)
 [⇒ϻ∂⍕« »⧺ϻ⧺⇅1=[][«s»⧺]?]≔Z                ※ 3«line»Z → «3 lines»
-[⇒ϗ⇒ϟ⎋«[»⧺ϟ⍕⧺«;»⧺ϗ⍕⧺«H»⧺]≔G               ※ i j G → ␛[i;jH (goto)
 [∂#[∂⌷«⏎»=[∂#1- 0⇅⊂][]?][]?]≔T            ※ trim one trailing ⏎
 [⇒κ κ«a»≥ κ«z»≤∧ κ«A»≥ κ«Z»≤∧∨ κ«0»≥ κ«9»≤∧∨ κ«_»=∨]≔Ψ    ※ word character?
 [h⟨⟨b y x⟩⟩⧺⇒h ⟨⟩⇒z]≔N                    ※ snapshot ⟨buffer cursor⟩
@@ -57,7 +60,8 @@
 [[n⍇T∂«»=[⌫⟨«»⟩][«⏎»⊆]?⇒b «opened »n⧺« · »⧺b#«line»Z⧺⇒m][⌫⟨«»⟩⇒b «new file »n⧺⇒m]⍥
 0⇒y 0⇒x 0⇒v 0⇒d ⟨⟩⇒h ⟨⟩⇒z ¯1⇒e 0⇒λ ⟨⟩⇒σ 0⇒ω]≔O            ※ open file n
 [b«⏎»⊇«⏎»⧺ n⍈ 0⇒d «saved »n⧺« · »⧺b#«line»Z⧺⇒m]≔V
-[⇒t«»⇒u 1⇒f [f][r 1 G«7m»E⧺t⧺u⧺«K»E⧺«0m»E⧺↥o ↧k⇒a
+※ A — modal one-line prompt over the status bar; edited text (∅ cancelled)
+[⇒ϟ«»⇒u 1⇒f [f][F 0 ϒ 960 24 ▣▦ ϟ u⧺∂ 12 ϒ 4+ ◇⌶ #8× 12+ ϒ 4+ 2 16 ◆▦ ⎙ ⌥⇒a
 a∅=[∅⇒u 0⇒f 0⇒g][a«↵»=[0⇒f][a«⎋»=[∅⇒u 0⇒f][a«⌫»=[u«»≠[u∂#1- 0⇅⊂⇒u][]?][a#1=[u a⧺⇒u][]?]?]?]?]?]⟳ u]≔A
 [n«»=[«save as: »A ∂∅=[⌫«save cancelled»⇒m][∂«»=[⌫«save cancelled»⇒m][⇒n S]?]?][[V][⍕⇒m]⍥]?]≔S
 [⇒γ y e≠[N y⇒e][]? b y@⇒t t 0 x⊂γ⧺ t x t#⊂⧺⇒t b 0 y⊂⟨t⟩⧺ b y 1+ b#⊂⧺⇒b x γ#+⇒x 1⇒d]≔I
@@ -67,40 +71,47 @@ b 0 y⊂⟨t 0 x⊂⟩⧺⟨« »j J t x t#⊂⧺⟩⧺ b y 1+ b#⊂⧺⇒b y 1+
 [y 0>[N b y 1-@⇒t t#⇒x t b y@⧺⇒t b 0 y 1-⊂⟨t⟩⧺ b y 1+ b#⊂⧺⇒b y 1-⇒y 1⇒d ¯1⇒e][]?]?]≔B
 [b y@⇒t x t#<[y e≠[N y⇒e][]? t 0 x⊂ t x 1+ t#⊂⧺⇒t b 0 y⊂⟨t⟩⧺ b y 1+ b#⊂⧺⇒b 1⇒d]
 [y b#1-<[N t b y 1+@⧺⇒t b 0 y⊂⟨t⟩⧺ b y 2+ b#⊂⧺⇒b 1⇒d ¯1⇒e][]?]?]≔D
-※ H — one syntax-highlighted, selection-overlaid, width-τ text field for doc line ι
-[⇒ι b ι@⇒t «»⇒ϕ 0⇒ν «0»⇒χ «»⇒δ 0⇒ς 0⇒ξ 0⇒ε
+※ H — doc line ι at pane row υ: gutter number, then the glyphs — syntax
+※ colors from a tiny state machine, selection cells shaded first
+[⇒υ⇒ι ϐ 4+ υ 16×+⇒ø
+ι 1+⍕∂ ⍺ ⍵+ 8- ⇅#8×- ø ι y=[◇][⍪]?⌶
+b ι@⇒t 0⇒ν «0»⇒χ 0⇒ς 0⇒ξ 0⇒ε
 t«»⊆[⇒γ
-ξ[«0;90»][ς[γ◗=[0⇒ς][]?«0;93»][γ«※»=[1⇒ξ«0;90»][γ««»=[1⇒ς«0;93»][γ« »=[χ][
-γ«0»≥ γ«9»≤∧ γ«¯»=∨ γ«.»=∨[«0;95»][«[]⟨⟩»γ∈[«0;91»][«0»]?]?]?]?]?]?]?⇒χ
+ξ[⌭][ς[γ◗=[0⇒ς][]?⌮][γ«※»=[1⇒ξ⌭][γ««»=[1⇒ς⌮][
+γ«0»≥ γ«9»≤∧ γ«¯»=∨ γ«.»=∨[◆][«[]⟨⟩»γ∈[⌰][⌇γ∈[⌯][◇]?]?]?]?]?]?]?⇒χ
 ι Π× ε+⇒α
 λ 1=[σ 0[⇒κ κ α≤ κ ω+ α>∧∨]⍀][λ 2=[σ α∈][0]?]?⇒β
-χ β[«;7»][«»]?⧺⇒ψ
-ν τ<[ψ δ≠[⎋«[»⧺ψ⧺«m»⧺ϕ⇅⧺⇒ϕ ψ⇒δ][]? ϕ γ⧺⇒ϕ ν 1+⇒ν][]?
+ν ϣ<[⍺ ⍵+ ν 8×+⇒ϑ
+β[ϑ ø 8 16 ▨▦][]?
+γ« »≠[γ ϑ ø χ⌶][]? ν 1+⇒ν][]?
 ε 1+⇒ε]∀
-λ 2=[ι Π× t#+⇒α σ α∈ ν τ<∧[δ«0;7»≠[⎋«[0;7m»⧺ϕ⇅⧺⇒ϕ«0;7»⇒δ][]? ϕ« »⧺⇒ϕ ν 1+⇒ν][]?][]?
-δ«»≠ δ«0»≠∧[ϕ⎋⧺«[0m»⧺⇒ϕ][]?
-ϕ]≔H
-※ M — the minimap strip for content row q, viewport shaded
-[⇒q b# ρ≤[q][q b#× ρ÷⌊]?⇒j
-j b#<[b j@⇒a «»⇒ϑ 8⍸[⇒κ a κ 4× κ 1+ 4×⊂⍭# 0>[«▄»][« »]?ϑ⇅⧺⇒ϑ]∀ ϑ][«        »]?
-j v≥ j v ρ+<∧ j b#<∧[«90;100m»][«90m»]?E⇅⧺⎋⧺«[0m»⧺]≔M
-※ F — draw one full frame: tab bar, gutter+code+minimap rows, status bar → o
+λ 1=[ι Π× t#+⇒α σ α∈ ν ϣ<∧[⍺ ⍵+ ν 8×+ ø 8 16 ▨▦][]?][]?]≔H
+※ F — one full frame: bg, current line, code, carets, minimap, sidebar,
+※ tabs, status bar. Callers ⎙ when the frame (plus overlays) is whole.
 [y v<[y⇒v][]? y v ρ+ 1->[y ρ- 1+⇒v][]?
-«7m»E⇒ϑ 0⇒υ
-l#⍸[⇒κ κ i=[n d][l κ@∂0@⇅5@]?⇒f⇒a
-« »a«»=[«untitled»][a]?⧺f[« ●»][«»]?⧺« »⧺⇒j
-υ j#+ 1+⇒υ
-κ i=[«0m»E j⧺«7m»E⧺][j]?ϑ⇅⧺«▏»⧺⇒ϑ]∀
-ϑ« »c υ- 0⊔ J⧺«0m»E⧺⇒ϑ
-«H»E ϑ⧺
-ρ⍸[⇒q q 2+ 1 G⧺
-v q+ b#<[«90m»E⧺ v q+ 1+⍕⇒a « »3 a#- 0⊔ J⧺a⧺« »⧺ v q+ H⧺][]?
-«K»E⧺ q 2+ c 8- G⧺«90m»E⧺«▏»⧺ q M⧺]∀
-r 1 G⧺«7m»E⧺
-m«»=[λ 0≠[«^D adds the next — ⎋ collapses»][«^S save  ^P cmd  ^D multi  ^F find  ^Q quit»]?][m]?
-« ▏Ln »⧺y 1+⍕⧺« Col »⧺x 1+⍕⧺λ 0≠[« ▏»σ#⍕⧺« sel»⧺][«»]?⧺
-«MLang ▏▲ SUBLIMINAL »⇒a 0 c a#-⊂ c a#- K a⧺⧺«0m»E⧺
-y v- 2+ x τ⊓ 5+ G⧺«?25h»E⧺↥o «»⇒m]≔F
+0 0 960 600 ▩▦
+λ 0= y v- 0≥∧ y v- ρ<∧[⍺ ϐ 4+ y v- 16×+ 704 16 ▣▦][]?
+ρ⍸[⇒q v q+ b#<[v q+ q H][]?]∀
+y v- 0≥ y v- ρ<∧[⍺ ⍵+ x ϣ⊓ 8×+ ϐ 4+ y v- 16×+ 2 16 ◆▦][]?
+λ 0≠[σ[⇒κ κ Π÷⌊⇒j j v≥ j v ρ+<∧[⍺ ⍵+ κ Π% λ 1=[ω+][]? ϣ⊓ 8×+ ϐ 4+ j v- 16×+ 2 16 ◆▦][]?]∀][]?
+ϗ⍸[⇒κ b# ϗ≤[κ][κ b#× ϗ÷⌊]?⇒j
+j b#<[j v≥ j v ρ+<∧[880 ϐ κ 2×+ ∿ 2 ▣▦][]?
+b j@« »⊆⇒a 0⇒ν a[⇒γ γ#0> ν 72<∧[884 ν+ ϐ κ 2×+ 1+ γ# 72 ν-⊓ 1 ⍪▦][]? ν γ#1++⇒ν]∀][]?]∀
+0 0 ⍺ 600 ▤▦ «FOLDERS»12 8 ⍪⌶
+ϧ#⍸[⇒κ ϧ κ@⇒a 32 κ 20×+⇒j j ϒ 24-<[
+a n=[0 j 2- ⍺ 20 ▣▦][]?
+a∂#1-@«/»=[«▸ »a⧺∂#1-0⇅⊂ 10 j ⍪⌶][a 18 j a n=[◇][⍪]?⌶]?][]?]∀
+⍺ 0 784 ϐ ▤▦
+0⇒ν l#⍸[⇒κ κ i=[n d][l κ@∂0@⇅5@]?⇒ϙ⇒a
+« »a«»=[«untitled»][a]?⧺ϙ[« ●»][«»]?⧺« »⧺⇒j j#8× 16+⇒ϑ
+κ i=[⍺ ν+ 0 ϑ ϐ ▩▦][]?
+j ⍺ ν+ 6 κ i=[◇][⍪]?⌶ «✕»⍺ ν+ ϑ 14-+ 6 ⍪⌶
+ν ϑ+⇒ν]∀
+0 ϒ 960 24 ▤▦
+m«»=[λ 0≠[«^D adds the next — ⎋ collapses»][«^S save  ^P cmd  ^D multi  ^F find  ^Q quit»]?][m]?12 ϒ 4+ ⍪⌶
+«Ln »y 1+⍕⧺« Col »⧺x 1+⍕⧺λ 0≠[«  »σ#⍕⧺« sel»⧺][«»]?⧺ 440 ϒ 4+ ⍪⌶
+«MLang»800 ϒ 4+ ⍪⌶ «▲ SUBLIMINAL»860 ϒ 4+ ◆⌶
+«»⇒m]≔F
 ※ Θ — replace every selection with the string on the stack; selections become cursors
 [⇒γ σ⍋⇒σ ⟨⟩⇒ν 0⇒δ ¯1⇒ε
 σ[⇒κ κ Π÷⌊⇒j j ε≠[0⇒δ j⇒ε][]?
@@ -151,23 +162,27 @@ b 0 y⊂⟨t⟩⧺ b y 1+ b#⊂⧺⇒b x t#⊓⇒x 1⇒d ¯1⇒e]⟩
 ⟨«trim trailing spaces»[N b[[∂#0>[∂∂#1-@« »=][0]?][∂#1- 0⇅⊂]⟳]∵⇒b x b y@#⊓⇒x 1⇒d ¯1⇒e «trimmed»⇒m]⟩
 ⟨«save file»[S]⟩
 ⟨«about»[«SUBLIMINAL — Sublime Text, jacked into the Matrix»⇒m]⟩⟩≔Ω
-※ P — the command palette: fuzzy commands, «:42» goto, «#text» find
+※ P — the command palette, floating mid-screen: fuzzy commands, «:42» goto, «#text» find
 [Λ«»⇒u 0⇒η 1⇒f
-[f][
+[f][F
 Ω[∂0@ u Φ]⌿⇒ϑ
 u 0 1⊂«:»= u 0 1⊂«#»=∨[⟨⟩⇒ϑ][]?
 ϑ#0=[0⇒η][η ϑ#1-⊓⇒η]?
-« ⌕ »u⧺«▏»⧺46 K⇒j 2 6 G«7m»E⧺j⧺«0m»E⧺
-8⍸[⇒κ κ 3+ 6 G⧺ κ ϑ#<[κ η=[«1;7m»][«2m»]?E⧺« »ϑ κ@0@⧺« »⧺46 K⧺«0m»E⧺][«0m»E⧺« »46 J⧺]?]∀
-2 u# 9+ G⧺«?25h»E⧺↥o
-↧k⇒a
+238 58 484 214 1843752▦ 240 60 480 28 ▣▦
+« ⌕ »u⧺∂ 248 66 ◇⌶ #8× 248+ 66 2 16 ◆▦
+8⍸[⇒κ 88 κ 22×+⇒j κ ϑ#<[
+240 j 480 22 κ η=[▨][▤]?▦
+ϑ κ@0@ 252 j 3+ κ η=[◇][⍪]?⌶][240 j 480 22 ▤▦]?]∀
+⎙ ⌥⇒a
 a∅=[0⇒f 0⇒g][a«⎋»=[0⇒f][a«↑»=[η 1- 0⊔⇒η][a«↓»=[η 1+⇒η][a«↵»=[0⇒f
 u 0 1⊂«:»=[[u 1 u#⊂⍎ 1⊔ b#⊓ 1-⇒y 0⇒x «line »y 1+⍕⧺⇒m][⌫«not a line number»⇒m]⍥][
 u 0 1⊂«#»=[u 1 u#⊂ Ξ][
 ϑ#[ϑ η@1@!][«no match»⇒m]?]?]?
 ][a«⌫»=[u«»≠[u∂#1- 0⇅⊂⇒u 0⇒η][]?][a#1=[u a⧺⇒u 0⇒η][]?]?]?]?]?]?]?
 ]⟳]≔P
-※ C — the keymap: one event in, one edit out
+※ C — the keymap: one event in, one edit out. Mouse zones in pixels:
+※ tabs, sidebar, minimap, text — each maps a click back through the
+※ same arithmetic the frame was drawn with.
 [L«↑»=[Λ y 0>[y 1-⇒y][]? x b y@#⊓⇒x ¯1⇒e][
 L«↓»=[Λ y b#1-<[y 1+⇒y][]? x b y@#⊓⇒x ¯1⇒e][
 L«←»=[Λ x 0>[x 1-⇒x][y 0>[y 1-⇒y b y@#⇒x][]?]?¯1⇒e][
@@ -200,15 +215,23 @@ L«^J»=[Λ y b#1-<[N b y@⇒t b 0 y⊂⟨t« »⧺b y 1+@⧺⟩⧺ b y 2+ b#⊂
 L«^_»=[Λ N b y@⇒t t 0 2⊂«※ »=[t 2 t#⊂][t 0 1⊂«※»=[t 1 t#⊂][«※ »t⧺]?]?⇒t
 b 0 y⊂⟨t⟩⧺ b y 1+ b#⊂⧺⇒b x t#⊓⇒x 1⇒d ¯1⇒e][
 L«^Q»=[d⇒j l#⍸[⇒κ κ i≠[l κ@5@ j∨⇒j][]?]∀ j w¬∧[1⇒w«unsaved — ^Q again discards, ^S saves»⇒m][0⇒g]?][
-L⍙«list»=⇅⌫[Λ L 1@ c 8->[L 2@ 2- 0⊔ ρ 1-⊓⇒q b# ρ≤[q][q b#× ρ÷⌊]? b#1-⊓ 0⊔⇒y 0⇒x ¯1⇒e][
-L 2@ 1=[0⇒υ ¯1⇒ζ l#⍸[⇒κ κ i=[n d][l κ@∂0@⇅5@]?⇒f⇒a a«»=[«untitled»][a]?# 2+ f[2+][]?⇒j
-L 1@ υ> L 1@ υ j+≤∧[κ⇒ζ][]? υ j+ 1+⇒υ]∀ ζ ¯1≠ ζ i≠∧[W ζ Γ][]?][
-L 2@ 2- v+ b#1-⊓ 0⊔⇒y L 1@ 5- 0⊔ b y@#⊓⇒x ¯1⇒e]?]?][
+L⍙«list»=⇅⌫[L 1@⇒ζ L 2@⇒ξ
+ξ ϐ< ζ ⍺≥∧[0⇒ν ¯1⇒ø l#⍸[⇒κ κ i=[n d][l κ@∂0@⇅5@]?⇒ϙ⇒a
+« »a«»=[«untitled»][a]?⧺ϙ[« ●»][«»]?⧺« »⧺#8× 16+⇒ϑ
+ζ ⍺ ν+≥ ζ ⍺ ν+ ϑ+<∧[ζ ⍺ ν+ ϑ+ 16-≥[κ 1000+][κ]?⇒ø][]? ν ϑ+⇒ν]∀
+ø ¯1≠[ø 1000≥[ø 1000-⇒ζ ζ i≠[W ζ Γ][]?
+l#1>[d w¬∧[1⇒w«unsaved — ✕ again closes»⇒m][l 0 i⊂ l i 1+ l#⊂⧺⇒l i l#1-⊓ Γ]?][«last tab — ^Q quits»⇒m]?][ø i≠[W ø Γ][]?]?][]?][
+ζ ⍺< ξ 32≥∧[ξ 32- 20÷⌊⇒q q ϧ#<[ϧ q@⇒a a∂#1-@«/»≠[
+¯1⇒ø l#⍸[⇒κ κ i=[n][l κ@0@]?a=[κ⇒ø][]?]∀
+ø ¯1≠[ø i≠[W ø Γ][]?][⊕ a⇒n O]?][«a folder — files open on click»⇒m]?][]?][
+ξ ϒ≥[][
+ζ 880≥ ξ ϐ≥∧[Λ ξ ϐ- 2÷⌊⇒q b# ϗ≤[q][q b#× ϗ÷⌊]? b#1-⊓ 0⊔⇒y 0⇒x ¯1⇒e][
+ξ ϐ≥[Λ ξ 32- 0⊔ 16÷⌊ v+ b#1-⊓⇒y ζ 224- 0⊔ 8÷⌊ b y@#⊓⇒x ¯1⇒e][]?]?]?]?]?][
 L#1=[λ 0=[«]⟩»L∈ L ◗=∨ x b y@#<∧[b y@x@ L=][0]?[x 1+⇒x][L I L«[»=[«]»I x 1-⇒x][L«⟨»=[«⟩»I x 1-⇒x][L««»=[◗ I x 1-⇒x][]?]?]?]?][L Θ]?][]?
 ]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]≔C
 ⇊
-[⌥∂∅≠][↥k]⟳⌫∅↥k
-⍜∂0@⇒r 1@⇒c r 2-⇒ρ c 13-⇒τ ⟨«»⟩⇒b «»⇒n 0⇒y 0⇒x 0⇒v 0⇒d ⟨⟩⇒h ⟨⟩⇒z ¯1⇒e 0⇒w «»⇒m 1⇒g ∅⇒p 0⇒λ ⟨⟩⇒σ 0⇒ω 0⇒i ⟨⟨n b y x v d h z e⟩⟩⇒l
-⋮⌂#[⌂⊃⇒n O ⌂⍫[⇒a ⊕ a⇒n O]∀ W 0 Γ][]? «2J»E↥o
-⋮[g][F ↧k⇒L L∅=[0⇒g][L«^Q»≠ L«^W»≠∧[0⇒w][]?[C][⍕⇒m]⍥]?]⟳ «2J»E«H»E⧺↥o ∅↥o
-[↧o∂∅≠][⊸]⟳⌫
+960 600«SUBLIMINAL»⌸
+⋮«.»⌹⇒a a[∂#1-@«/»=]⌿ a[∂#1-@«/»≠]⌿⧺⇒ϧ
+⋮⟨«»⟩⇒b «»⇒n 0⇒y 0⇒x 0⇒v 0⇒d ⟨⟩⇒h ⟨⟩⇒z ¯1⇒e 0⇒w «»⇒m 1⇒g ∅⇒p 0⇒λ ⟨⟩⇒σ 0⇒ω 0⇒i ⟨⟨n b y x v d h z e⟩⟩⇒l
+⋮⌂#[⌂⊃⇒n O ⌂⍫[⇒a ⊕ a⇒n O]∀ W 0 Γ][]?
+⋮[g][F ⎙ ⌥⇒L L∅=[0⇒g][L«^Q»≠ L«^W»≠∧ L⍙⇅⌫«list»≠∧[0⇒w][]?[C][⍕⇒m]⍥]?]⟳
