@@ -67,9 +67,27 @@ sigil  name          effect              description
                                          a mouse press as ⟨«⌖» x y⟩; ∅ at end of input (lowest priority, like ⌨)
 ⍇      read-file     path ⍇ → s          read a whole file as a string; glitches if unreadable
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
+⍆      fetch         url ⍆ → s           HTTP(S) GET, body as a string; a hard 10s deadline — it delivers
+                                         or glitches («⍆ cannot fetch …» / «⍆ … answered 404»), never hangs
+⎆      accept        → ⟨id m path body⟩  the next HTTP request this program is serving, ∅ at end of input
+                                         (lowest priority, like ⌨). Replay mode (default): ▷ frames on stdin;
+                                         live mode (mlang serve / MLANG_PORT): a real listener
+⍅      respond       ⟨id st type body⟩ ⍅ →   answer request id with status st; replay writes a ◁ frame,
+                                         live writes the real HTTP response; unknown id glitches
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
+⌹      readdir       path ⌹ → L          sorted directory listing; directory names end with /
+⌸      canvas        w h title ⌸ →       open a w×h pixel canvas — a real window when the
+                                         session has a display, else headless: ⌸ and each ⎙
+                                         print one line (size/title, frame hash) so recorded
+                                         runs stay byte-exact; MLANG_FRAMES=dir dumps PPMs
+▦      rect          x y w h c ▦ →       fill a rectangle with color c (0xRRGGBB as an int)
+⌶      text          v x y c ⌶ →         draw v (stringified) in color c from the baked 8×16
+                                         font; ⏎ wraps to the next glyph row
+⎙      present       →                   show the frame: blit to the window, or print the
+                                         frame's hash when headless; ⌥ then reads the window's
+                                         keys and mouse (⟨«⌖» x y⟩ in pixels) instead of stdin
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)
@@ -84,7 +102,9 @@ layout:    ⇓ first line = rain form (columns are strands, read downward)
            ⇊ divider = boot section above, strands below
            ⋮ line prefix = continue previous strand (flat form)
            ※ comment to end of line (flat) / end of column (rain)
-libraries: std sigils (π ∑ ⊃ …) print with `mlang std`; the Construct —
-           the UI library (Ⓛ Ⓑ Ⓥ Ⓦ ⌺ ▶ scripted, ⏵ live …) — with
-           `mlang ui`, and is woven in automatically when its sigils
-           are referenced
+libraries: std sigils (π ∑ ⊃ ◧ ⍢ …) print with `mlang std`; the
+           Construct — the UI library (Ⓛ Ⓑ Ⓥ Ⓦ ⌺ ▶ scripted, ⏵ live
+           …) — with `mlang ui`; the Operator — the JSON library
+           (⒥ parse, ⒮ serialize, ⒢ get, ⒫ dig) — with `mlang json`.
+           Bundled libraries are woven in automatically when their
+           sigils are referenced

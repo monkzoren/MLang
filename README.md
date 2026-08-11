@@ -23,7 +23,7 @@ naturally write with threads and queues):
 ```
 9⍸[1+∂×]∵⇈α                ※ machine 1: pour the squares of 1..9 into α
 [∂25=[«boom»↯][]?2×]⇉αβ    ※ machine 2: double each value α→β — dies at 25
-[∂⍞]⇉βγ                    ※ machine 3: print each value as it arrives
+[↧β∂∅≠][⍞]⟳⌫               ※ machine 3: print each value as it arrives
 ```
 
 ```
@@ -37,9 +37,9 @@ $ mlang run examples/deadlock.ml
                  ↑ 2:13
   stack: 25
 ✗ deadlock — every remaining strand is blocked:
-  strand 2 (row 3) waiting on channel β at 3:5
-  3│ [∂⍞]⇉βγ
-         ↑ 3:5
+  strand 2 (row 3) waiting on channel β at 3:2
+  3│ [↧β∂∅≠][⍞]⟳⌫
+      ↑ 3:2
 ```
 
 The glitch quotes the offending line, points a caret at the exact glyph,
@@ -155,44 +155,102 @@ naming every blocked strand, the channel it waits on, and its grid
 coordinates — and nothing hangs, ever. Then the same repair protocol
 runs on both — same model, same rounds, same byte-exact bar:
 
-| Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
+| Self-repair on the Oracle, ≤3 rounds, byte-exact | healed | in one round |
 |---|---|---|
-| seeded one-edit bugs | 40 | 40 |
-| **healed (byte-exact output)** | **82%** | **100%** |
-| healed in one round | 55% | 100% |
-| median rounds to green | 1 | 1 |
+| Python — claude-haiku-4-5 | 40/40 (100%) | 100% |
+| MLang — claude-haiku-4-5 | 33/40 (82%) | 55% |
+| **MLang — claude-opus-5** | **40/40 (100%)** | **98%** |
 
-| healed, by what the bug turned into | MLang | Python |
-|---|---|---|
-| caught before running | 1/2 | 35/35 |
-| runtime fault, precise report | 19/22 | 2/2 |
-| proven deadlock | 5/6 | — |
-| silent wrong output | 8/10 | 1/1 |
-| hang | — | 2/2 |
+**With a small model Python wins; with a frontier model MLang draws
+level — 40/40, and 39 of those in a single round.** Same forty
+deterministic mutants, same toolchain, same ≤3 rounds; only the model
+differs. Every class went perfect: 6/6 proven deadlocks, 22/22
+glitches, 10/10 silent wrong-output. So the application-scale gap was
+**a model-capability gap, not a missing-information gap** — MLang's
+runtime was already handing over enough to fix the bug; the small model
+just couldn't always use it. haiku's losses concentrate exactly where
+you would expect from a language it has never read: semantic bugs in a
+dense notation, where Python's redundancy instead converts 35 of its 40
+mutants into familiar one-round syntax errors.
 
-**At application scale Python wins, and we publish that** — the small
-model healed every Python mutant, because Python's redundancy converts
-35 of its 40 one-token bugs into syntax errors, and a syntax error in a
-language the model has read for years is a one-round fix. What the
-MLang column shows is something rarer: **the number moving because the
-language listened to the benchmark.** The first run of this experiment
-healed only 65% — the failure transcripts showed the model repeatedly
-editing the *wrong glyph*, because a bare `at 29:22` in a 150-glyph
-line is uncountable for an LLM, and a `] without matching [` names
-neither bracket. So the runtime's fault reports were rebuilt for a
-reader that cannot count columns — every report now quotes the
-offending line with a caret under the exact glyph, shows the stack as
-the fault left it, and names library sources honestly (`std.ml 26:7`);
-the harness also began appending a first-divergence hint to both arms
-(SPEC §4.6, and the demo at the top of this page shows the format).
-Re-running the identical benchmark: **65% → 82%**, with glitch repairs
-up from 15/22 to 19/22 and silent wrong-output from 5/10 to 8/10.
-Python's familiarity plus shallow failure modes still beat MLang's
-better evidence plus deeper bugs — a small model's skill in a
-never-seen dense notation remains the binding constraint — but half
-the gap was diagnostics, not destiny, and the harness measures exactly
-what a stronger model or an MLang-native tokenizer would close next.
-Run it with any model: `bench/heal.py --cases example:oracle.ml,oracle`.
+**How much of that is noise?** Two runs of the *identical*
+configuration disagree on 6 of 40 individual mutants and land 2 apart
+in aggregate — a **≈5-point noise floor** at this sample size, from
+model sampling alone. So the opus-vs-haiku gap (7 mutants) is real, and
+any claim smaller than about 3 mutants is not. That cuts against a
+claim this README made earlier: a round of diagnostic improvements
+(source excerpts and carets, a channel census naming orphaned channels,
+a call chain through `≔` definitions, capped stack dumps — SPEC §4.6)
+was measured at 65% → 82%, which is larger than the noise floor and
+probably real, but a *second* round of diagnostics aimed at the
+remaining failures produced no measurable aggregate change at all
+(82% → 78% → 82% across replicates). What that second round did do,
+reproducibly across both replicates, is fix the specific failures it
+was designed for: proven deadlocks went 5/6 → 6/6 and weave errors
+1/2 → 2/2, and all four mutants diagnosed in advance — a four-round
+bracket-chase, a renamed channel, a report flooded by one huge stack
+value, and a fault inside a definition with no caller link — flipped to
+healed. Diagnostics fix the failures you can name; they do not move an
+aggregate on their own.
+
+Run any of it with any model:
+`bench/heal.py --cases example:oracle.ml,oracle --model <id>`.
+
+## The killer application
+
+The killer app was always the spreadsheet — VisiCalc is the program the
+term was coined for. MLang's motto was always *programs are grids*. So
+MLang's killer app is both at once:
+
+![THE ARCHITECT — a live spreadsheet in the browser, served entirely by MLang](docs/architect.png)
+
+**THE ARCHITECT** ([`examples/architect.ml`](examples/architect.ml)) is
+a live spreadsheet in your browser — and the entire application is one
+MLang file. The formula engine (tokenizer → shunting-yard → evaluator),
+the multi-pass recalculation that proves circular references instead of
+hanging, the HTTP routing, the JSON API, and the dark-glass frontend it
+serves are all MLang, running as six strands:
+
+```
+0    acceptor    ⎆ pulls each HTTP request and deals it onto κ
+1    the engine  owns the sheet: parses, recalculates, routes, answers on β
+2    responder   ⍅ writes every response back to the browser
+3-5  fetchers    a work-stealing pool: ↧φ url → ⍆ fetch → ⒥ parse → ↥ρ
+```
+
+```sh
+./mlang serve examples/architect.ml 4321     # → http://127.0.0.1:4321
+./mlang serve examples/architect.ml 4321 my.tsv        # open a real TSV
+./mlang build examples/architect.ml -o architect       # or weld it:
+MLANG_PORT=4321 ./architect                  # one binary, serving
+```
+
+Click a cell and type. `=B3*C3`, `=SUM(B3:B5)`, `=IF(D8>100,"yes","no")`
+— and then the part a 1979 spreadsheet could not do:
+**`=FX(EUR,USD)`** puts a live exchange rate in a cell, **`=BTC(USD)`**
+the live bitcoin price, **`=WX(-33.9,151.2)`** the temperature in
+Sydney, and **`=GET("url","path.to.field")`** any field of any JSON API
+on the internet. Press ↻ and the engine fans the sheet's URLs out to
+the fetcher pool over channels (run `serve --parallel` and the fetches
+truly overlap), folds the answers back into the cache, and
+recalculates; every response is parsed by the Operator — the JSON
+library written in MLang itself (`mlang json`).
+
+The language's promises hold at every layer. A formula error is a
+glitch caught per cell — `=1/0` shows `✗ ÷ by zero` in that one cell
+and nothing else. A circular reference is found by the recalculation
+fixpoint and marked `⚠` — the sheet cannot hang. A request that breaks
+mid-flight becomes a `500` and a status-bar `✗`, because the engine
+wraps each request in `⍥` — the server itself cannot die. A fetch
+either delivers or glitches within its 10-second deadline. Shutdown is
+a cascade of `∅` poison pills — nothing is ever left blocked, as the
+deadlock prover would loudly report. And the whole scripted session —
+requests in, page and JSON out — is pinned byte-for-byte in the
+conformance corpus, because `⎆`/`⍅` replay framed requests from stdin
+exactly the way `⌥` replays keystrokes (SPEC §5.2): the app is a
+deterministic function of its request stream.
+
+The sheet saves as honest TSV, so it pastes straight into Excel.
 
 ## Programs are grids
 
@@ -259,12 +317,14 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang run --parallel examples/mandelbrot.ml   # strands on OS threads
 ./mlang hub examples/net-primes-hub.ml          # …or machines on TCP
 ./mlang worker --connect host:7777 examples/net-primes-worker.ml
+./mlang serve examples/architect.ml 4321  # serve a web app (⎆/⍅) live
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
 ./mlang ops                          # the sigil reference
 ./mlang std                          # the standard library source
 ./mlang ui                           # the Construct — the UI library source
+./mlang json                         # the Operator — the JSON library source
 ```
 
 Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
@@ -355,6 +415,8 @@ value, which is how control flow works.
 100⍸⇈α                             ※ pour ⟨0..99⟩ into channel α, then ∅
 [∂×]⇉αβ                            ※ pump: square each value from α into β
 ⇟β 0[+]⍀⍞                          ※ drain β to a list, fold with + : 328350
+«https://open.er-api.com/v6/latest/EUR»⍆⒥⟨«rates» «USD»⟩⒫⍞
+⋮                                  ※ fetch a JSON API, parse it, dig a field
 ```
 
 Numbers write negatives as `¯5` (¯ binds to the literal; `-` is always
@@ -413,10 +475,40 @@ each row at its absolute screen position (green-on-black ANSI shading)
 the moment it lands. Under `--parallel` the arrival order is four real
 threads racing; the finished image is identical every time.
 
-`examples/calc.ml` is a fault-tolerant concurrent RPN
-calculator that evaluates every input line on a freshly spawned strand:
-a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
+`examples/calc.ml` is an RPN calculator on the live platform — the
+Construct's widgets driven by `⏵`. Two strand-locals hold the entire
+machine: `s`, the value stack, and `e`, the digits being typed. Every
+button carries the slot that edits them, and the tree is redrawn after
+each one. Press `8` or click `[ 8 ]` — both land in the entry, because
+a click resolves to whatever drew the `(key)` under the pointer. An
+operator commits the pending entry before it folds the top two values,
+so `12 p 4 +` and `12 p 4 p +` are the same 16. A slot that glitches —
+`÷` by zero, an operator with one operand — becomes a `✗` status line
+and the calculator keeps running.
+
+```
+┌─ Calculator ──────────────────────────────────────┐
+│ Stack                                             │
+│ • 16                                              │
+│ • 8                                               │
+│ ───────────────────────────────────────────────── │
+│ Entry: —                                          │
+│ ───────────────────────────────────────────────── │
+│ [ 7 ](7)  ⟦ 8 ⟧(8)  [ 9 ](9)  [ ÷ ](/)            │
+│ [ 4 ](4)  [ 5 ](5)  [ 6 ](6)  [ × ](*)            │
+│ [ 1 ](1)  [ 2 ](2)  [ 3 ](3)  [ − ](-)            │
+│ [ 0 ](0)  [ . ](.)  [ ^ ](^)  [ + ](+)            │
+│ ───────────────────────────────────────────────── │
+│ [ Push ](p)  [ Drop ](d)  [ Swap ](w)  [ Mod ](%) │
+│ [ Clear ](c)  [ Quit ](q)                         │
+└───────────────────────────────────────────────────┘
+```
+
+The same arithmetic without the widgets is `examples/rpn.ml`, a
+fault-tolerant concurrent RPN calculator that evaluates every input line
+on a freshly spawned strand: a bad line reports `✗ …` and dies alone,
+`⋈` keeps the answers in input order, and the calculator keeps
+answering. And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
 editor. The document fills the terminal, you type to insert, the cursor
 keys move you around: `↑ ↓ ← → Home End PgUp PgDn` — or a mouse click, which places the
 cursor where you point — Enter/Backspace/Delete edit, `^S` saves (asking for a name if there is none), `^O`
@@ -447,36 +539,50 @@ scripted session and pins every frame it draws. Weld it
 .txt onto the executable opens that file (`⌂`), on any platform —
 the runtime enables ANSI processing even in a legacy Windows console.
 
-MatrixPad has a big sibling. `examples/sublime.ml` is **SUBLIMINAL** —
-a Sublime Text clone in the same three strands, with the signature
-moves: syntax highlighting for MLang source, live as you type
-(comments, strings, numbers, brackets); **multiple cursors** — `^D`
-selects the word under the cursor, `^D` again adds its next occurrence
-(wrapping, skipping what's already selected), and typing replaces
-every selection at once; the **command palette** — `^P`, fuzzy-matched
+MatrixPad has a big sibling — and it does not live in the terminal.
+`examples/sublime.ml` is **SUBLIMINAL**, a Sublime Text clone that
+opens as a real desktop window, drawn pixel by pixel in MLang. Five
+ops are the whole graphics story: `⌸` opens a 960×600 canvas, `▦`
+fills rectangles, `⌶` draws text from a font baked into the runtime,
+`⎙` presents the frame, and `⌹` lists a directory — and out of them
+the program builds the Mariana-colored chrome: a **FOLDERS sidebar**
+of the working directory where clicking a file opens it (or jumps to
+its tab if it's already open), **tabs** with `●` unsaved dots and `✕`
+close buttons, a syntax-highlighted code pane — comments, strings,
+numbers, brackets, and every MLang sigil in its own color, live as
+you type — a **real minimap**, every line's words in miniature with
+the viewport shaded and click-to-jump, and a status bar. The Sublime
+signature moves are all in: **multiple cursors** — `^D` selects the
+word under the cursor, `^D` again adds its next occurrence (wrapping,
+skipping what's already selected), and typing replaces every
+selection at once; the **command palette** — `^P`, fuzzy-matched
 (`dup` finds *duplicate line*), with Goto Anything folded in (`:42`
-jumps to line 42, `#boom` finds boom); **tabs** — `^N`/`^E`/`^W`,
-every command-line argument opens as one, click a tab to switch; and a
-**minimap**, the document in miniature down the right edge with the
-viewport shaded — click it to jump. Line numbers, auto-indent,
-auto-closing `[ ⟨ «` pairs that type-over, and line
-cut/copy/paste/join/sort/comment round it out:
+jumps to line 42, `#boom` finds boom); line numbers, current-line
+highlight, auto-indent, auto-closing `[ ⟨ «` pairs that type-over,
+and line cut/copy/paste/join/sort/comment.
 
 ```
- boot.ml ● ▏ oracle.ml ▏
-  1 9⍸[1+∂×]∵⇈α ※ pour the squares                  ▏▄▄▄▄▄▄
-  2 [∂25=[«boom»↯][]?2×]⇉αβ                         ▏▄▄▄▄▄▄
-  3 [∂⍞]⇉βγ█                                        ▏▄▄▄
-                                                    ▏
- ^S save  ^P cmd  ^D multi  ^F find  ^Q quit ▏Ln 3 Col 10  ▲ SUBLIMINAL
+mlang run examples/sublime.ml [file …]        # opens a window
+mlang build examples/sublime.ml -o subl       # weld a standalone editor
 ```
 
 A multi-cursor selection is one integer (`row×2²⁰+column`), so the
 flat `⍋` sorts a selection set and an edit replays across it with
-per-line offsets — no new machinery, just lists and slices. The
-conformance corpus drives a full scripted tour — a multi-cursor
-replace, the palette, find, undo, a second tab, a save, a mouse click —
-and pins every highlighted frame, byte for byte.
+per-line offsets — no new machinery, just lists and slices.
+
+The window is the interesting part. The canvas has two backends that
+draw identical pixels (SPEC §5.2): on a desktop it is an OS window
+whose keyboard and mouse feed `⌥`; piped, the frame stays in memory
+and every `⎙` prints the frame's hash instead, so the conformance
+corpus drives a full scripted tour — typing, a multi-cursor replace,
+the palette, find, a second tab, clicks on the tab bar, sidebar,
+minimap, and text — and pins every pixel of all 59 frames, byte for
+byte, in CI with no display anywhere. Set `MLANG_FRAMES=dir` and the
+same run dumps each frame as an image; that is how the screenshots
+were made. Text is deterministic because the glyphs are, too: an
+8×16-pixel grayscale strip (`compiler/src/font.bin`) baked from
+DejaVu Sans Mono, covering ASCII, every sigil in the repo's sources,
+and the box-drawing set.
 
 ## The Construct — the UI library
 
@@ -617,14 +723,13 @@ SPEC.md           the full language specification
   design, and the Python control arm is 29 hand-verified ports, not all
   120 programs. Models have seen enormous amounts of Python and
   essentially zero MLang — the MLang arm leans entirely on an
-  op-reference primer in the prompt, and the application-scale run shows
-  what that costs: with a small model, repair parity holds on small
-  programs but flips to Python's favor (100% vs 82%) on the Oracle —
-  MLang's one-token bugs run semantically deeper than Python's, which
-  mostly die shallow at the parser. Excerpt-and-caret fault reports
-  closed half of an initially wider gap (65% → 82%); the rest is the
-  model's unfamiliarity with the notation. `bench/README.md` spells out
-  the protocol and every caveat.
+  op-reference primer in the prompt. With a small model that costs real
+  points at application scale (82% vs Python's 100% on the Oracle); with
+  a frontier model it costs nothing measurable (100%, 39 of 40 in one
+  round). Read the small-model number as the floor and the frontier
+  number as the ceiling, and note that both sit above a ≈5-point
+  run-to-run noise floor that any single-run comparison here has to
+  clear. `bench/README.md` spells out the protocol and every caveat.
 
 ## Name
 

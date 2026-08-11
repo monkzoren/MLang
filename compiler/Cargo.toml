@@ -6,6 +6,18 @@ edition = "2024"
 [dependencies]
 num-bigint = "0.5.1"
 num-traits = "0.2.19"
+# ⍆ (fetch): a pure-Rust HTTP(S) client — rustls, no system TLS library,
+# so welded binaries stay self-contained. native-certs honors the
+# platform trust store and SSL_CERT_FILE; proxies come from the standard
+# HTTPS_PROXY/HTTP_PROXY environment variables.
+ureq = { version = "2.12", default-features = false, features = ["tls", "native-certs"] }
+# the windowed backend for the canvas ops (⌸ ▦ ⌶ ⎙); headless mode —
+# which is what CI and recorded goldens exercise — needs no window stack
+minifb = { version = "0.28", optional = true, default-features = false, features = ["x11"] }
+
+[features]
+default = ["gui"]
+gui = ["dep:minifb"]
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

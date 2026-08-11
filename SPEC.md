@@ -204,10 +204,17 @@ columns. The first line of each report keeps the fixed shape shown above
 **source excerpt**: the offending physical line, windowed to at most 61
 glyphs around the fault (`…` marks a trimmed side), prefixed `  row│ `,
 with a caret line beneath marking the exact glyph and repeating the
-coordinates. A glitch report then adds the strand's **stack as the fault
-left it** (`  stack: …`, deepest first, capped to the topmost eight
-values, `(empty)` when bare); deadlock reports add an excerpt for every
-waiting strand, and weave errors carry the same excerpt treatment.
+coordinates. A glitch report then adds the **call chain** — one `  in X, called at
+row:col` line per active named definition, innermost first, so a fault
+inside a definition or a library word names its caller — followed by the
+strand's **stack as the fault left it** (`  stack: …`, deepest first,
+capped to the topmost eight values and to a readable width each,
+`(empty)` when bare). Deadlock reports add an excerpt for every waiting
+strand and then a **channel census**: any channel with send sites but no
+receive sites (or the reverse) is named as a `⚠` line, since a channel
+that can never complete a handoff is almost always a misspelled or
+renamed name. Weave errors carry the same excerpt treatment, and a
+`]` without an opener reports the strand's bracket tally.
 
 Positions in woven library code report with the library's own file name
 and coordinates (`std.ml 26:7`, `ui.ml 3:12`) and excerpt the library's
@@ -314,9 +321,21 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⌥` | `→ e` | read one input event (§5.1): a key, or a mouse press `⟨«⌖» x y⟩`; `∅` at end of input; same lowest scheduling priority as `⌨` |
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
+| `⍆` | `url → s` | HTTP(S) GET, the response body as a string (§5.2); failure glitches `⍆ cannot fetch «url»`, an error status glitches `⍆ «url» answered 404` |
+| `⎆` | `→ ⟨id method path body⟩ \| ∅` | accept the next HTTP request this program is serving (§5.2); `∅` at end of input; lowest scheduling priority, like `⌨` |
+| `⍅` | `⟨id status type body⟩ →` | answer request `id` with an HTTP status, content type, and body (§5.2); an unknown or already-answered id glitches |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
 | `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
+| `⌹` | `path → L` | sorted directory listing; directory names carry a trailing `/`; failure glitches `⌹ cannot read «path»` |
+
+### The canvas
+| glyph | effect | |
+|---|---|---|
+| `⌸` | `w h title →` | open a `w`×`h` pixel canvas (each side 1…4096); a second `⌸`, or one under `--parallel`, glitches |
+| `▦` | `x y w h c →` | fill a rectangle, clipped to the canvas, with color `c` — an integer read as `0xRRGGBB` |
+| `⌶` | `v x y c →` | draw `v` (stringified like `⊸`) with its top-left at `(x, y)`; `⏎` wraps to the next glyph row; characters the font strip lacks draw a hollow box |
+| `⎙` | `→` | present the frame |
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
@@ -326,6 +345,51 @@ executable name — which is how a file dropped onto a built editor arrives
 as its argument. File-operation glitch messages name only the path, never
 an operating-system error string — they are part of the language's
 deterministic, conformance-pinned output.
+
+The network is part of a run's input the same way: identical responses
+produce identical runs. `⍆` carries a hard 10-second deadline — it
+delivers the body or glitches, and can never hang a strand. Responses
+over 16 MiB, bodies that are not UTF-8, and transport failures all
+glitch `⍆ cannot fetch «url»`; an HTTP error status glitches with the
+status number. Proxies are honored from the standard `HTTPS_PROXY` /
+`HTTP_PROXY` environment variables and trust roots come from the
+platform store (and `SSL_CERT_FILE`), so no configuration appears in
+the language. In the deterministic scheduler a fetch completes within
+the executing strand's turn; run `--parallel` to overlap fetches from
+different strands.
+
+### 5.2 Serving the web
+
+`⎆` (accept) and `⍅` (respond) make an MLang program an HTTP server.
+The program sees only values: each request arrives as
+`⟨id method path body⟩` — id counting up from 1, method uppercased,
+path with its query string intact, body decoded as UTF-8 — and each
+`⍅` answers one id. Like `⌥`, the pair has two faces with one meaning:
+
+* **Replay mode** — the default, and what the conformance corpus pins.
+  `⎆` reads request frames from stdin: a line `▷ METHOD PATH`
+  (`▷ METHOD PATH nbytes` when there is a body, whose nbytes follow on
+  the next line(s)); blank lines between frames are skipped, and end
+  of input is `∅`. A line that is not a frame glitches
+  `⎆ bad request frame «…»`. `⍅` writes `◁ id status type nbytes`
+  to stdout with the body after it. A recorded session is
+  deterministic byte for byte.
+* **Live mode** — `mlang serve prog.ml [port]` (default 4321), or
+  `MLANG_PORT=…` for a welded binary. A real HTTP/1.1 listener on
+  127.0.0.1 materializes each request into the identical value shape,
+  and `⍅` writes the real response (`Connection: close`; the status
+  line, `Content-Type`, and `Content-Length` come from the response
+  value). Requests are parsed with a hard 10-second deadline and a
+  16 MiB body cap; a request that violates either is answered 400 by
+  the runtime and never reaches the program. The request *stream* is
+  the run's input; its arrival order is the outside world's timing,
+  exactly as `--parallel` interleaving is.
+
+Accepting shares `⌨`'s lowest scheduling priority (§4.2): the whole
+grid goes quiet — every computed response sent — before the server
+waits on the outside world. A strand waiting at `⎆` is not deadlocked.
+Responding to an id twice, or to an id never accepted, glitches
+`⍅ no pending request n`.
 
 ### 5.1 Input events
 
@@ -355,6 +419,41 @@ executes `⌥` runs with stdin and stdout on a real terminal, the runtime
 reporting on the alternate screen for the duration of the run, and
 restores it afterwards. None of that scaffolding appears in the
 program's own output, which stays byte-identical to a piped run.
+(A program that opens a canvas is the exception: its window owns the
+input, so the terminal is left alone — see §5.2.)
+
+### 5.2 The canvas
+
+`⌸` opens one pixel surface per program, and `▦`/`⌶` draw into it —
+there is no other drawing state. Text renders from a grayscale glyph
+strip baked into the runtime (`compiler/src/font.bin`, 8×16-pixel
+cells, regenerated by `compiler/font/bake.py`), so the same draws
+produce the same pixels on every platform, with no OS text stack
+involved.
+
+The surface has two interchangeable backends, and a program cannot
+tell them apart except by where its `⌥` events come from:
+
+* **Windowed** — a real OS window, chosen when the build carries the
+  `gui` cargo feature, stdin is a terminal, `MLANG_HEADLESS` is unset,
+  and the OS can open a window. `⎙` blits the frame, and `⌥` reads the
+  window's keyboard and mouse instead of stdin: the same event strings
+  as §5.1, with a mouse press `⟨«⌖» x y⟩` in 0-based pixel
+  coordinates. Closing the window delivers `∅`.
+* **Headless** — every other run, which includes CI and every recorded
+  golden. The frame stays in memory; `⌸` prints one line naming the
+  surface (`⌸ 960×600 «title»`) and each `⎙` prints the frame's
+  identity (`⎙ 3 #a1b2…`, an FNV-1a-64 of the RGB bytes, row-major),
+  so a recorded run pins every pixel byte-for-byte. `⌥` keeps reading
+  the stdin byte stream. Setting `MLANG_FRAMES=<dir>` additionally
+  dumps each presented frame as `frame-NNN.ppm` — in either backend —
+  which is how the screenshots in the README are made.
+
+The canvas requires the deterministic scheduler; `⌸` under
+`--parallel` glitches. Directory listings (`⌹`) return names sorted,
+directories marked with a trailing `/`, so a fixed tree yields a fixed
+listing — like every other observable, the file system is part of a
+run's input (§ above).
 
 ## 6. The standard library
 
@@ -375,7 +474,8 @@ defined». Names resolve late, at call time.
 | `s n⊤` / `s n⊥` | take / drop first n | `s⍒` | sort descending |
 | `A B⍚` | zip to pair list | | |
 | `s⇑` / `s⇩` | upper/lowercase (ASCII) | `s⍭` | words (split, drop empties) |
-| `s⍖` | split into lines | | |
+| `s⍖` | split into lines | `s n◧` / `s n◨` | pad with spaces to width n, left / right |
+| `x n⍢` | fixed-decimal string («x.xx»; rounds half away from zero, `¯` for sign) | | |
 
 Library internals use fullwidth letters (`ａ ｂ ｘ`) as strand-locals;
 programs should treat those as reserved.
@@ -406,7 +506,22 @@ that library's sigils glitches with «already defined». A program that
 defines a library sigil itself and never references the library's others
 is left alone — its own definition wins and nothing is woven.
 
-One library is currently bundled: **the Construct** (`std/ui.ml`,
+Two libraries are currently bundled.
+
+**The Operator** (`std/json.ml`, printed by `mlang json`) reads and
+writes JSON — the wire format `⍆` fetches and `⎆`/`⍅` serve. Public
+sigils: `«text»⒥` parses (objects become `⟨⟨«key» value⟩ …⟩` pair
+lists, arrays lists, `true`/`false` `1`/`0`, `null` `∅`; malformed
+input glitches `⒥ bad JSON at i`, a 0-based glyph index); `v⒮`
+serializes (a non-empty list whose items are all ⟨«key» value⟩ pairs
+becomes an object, any other list an array; quotations glitch); `obj
+«key»⒢` looks a key up (`∅` when absent); `v ⟨steps…⟩⒫` digs a path of
+object keys and array indices, answering `∅` as soon as a step has
+nothing to offer. `\u` escapes cover the Basic Multilingual Plane.
+Internals use the other parenthesized letters (`⒜ ⒝ …`) and the
+fullwidth strand-locals `ｊ ｐ` — reserved, like std's.
+
+**The Construct** (`std/ui.ml`,
 printed by `mlang ui`) — a widget toolkit in the lineage of Qt/PySide.
 Public sigils: `Ⓛ` label, `Ⓑ` button, `Ⓔ` line edit, `Ⓒ` checkbox,
 `Ⓟ` progress bar, `Ⓘ` item list, `Ⓢ` separator, `Ⓥ`/`Ⓗ` vertical and

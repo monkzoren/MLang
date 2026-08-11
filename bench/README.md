@@ -82,9 +82,21 @@ language's runtime printed (MLang reports carry source excerpts with
 carets, the stack at the fault, and proven wait graphs — SPEC §4.6;
 Python gets its tracebacks), plus one harness-computed hint appended
 identically in both arms: the first line where stdout diverged from the
-golden. Improving MLang's reports moved the Oracle arm from 65% to 82%
-healed under the identical protocol — the benchmark is the language's
-feedback loop, not just its scoreboard. Results are committed under `results/`;
+golden. Improving MLang's reports moved the Oracle arm from 65% to 82% healed
+under the identical protocol — the benchmark is the language's feedback
+loop, not just its scoreboard.
+
+**Measure the noise floor before believing a delta.** The model is
+sampled, not deterministic: two runs of the *identical* configuration
+(same mutants, same toolchain, same prompt) disagree on ~6 of 40
+individual mutants and land ~2 apart in aggregate, i.e. **≈5 points at
+n=40**. A single-run difference smaller than about 3 mutants means
+nothing. Two ways to get signal anyway: raise n, or predict *which*
+mutants a change should fix and check those specifically — the second
+round of diagnostic work here produced no aggregate movement while
+reproducibly fixing all four failures it was designed for. Result files
+carry every transcript, so per-mutant comparison across runs is a
+`json.load` away. Results are committed under `results/`;
 `report.md` there is the rendered summary. `tokens.py` (needs
 `pip install tiktoken`) measures the char-vs-BPE-token table quoted in
 the top-level README's honest notes.

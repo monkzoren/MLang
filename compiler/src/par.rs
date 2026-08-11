@@ -87,11 +87,35 @@ pub struct Bus {
     /// Channels bridged outward by net.rs: a send goes to the tap, not
     /// the local queue. Empty except under `mlang hub` / `mlang worker`.
     exports: HashMap<char, ExportTap>,
+    /// Replay-mode web state (⎆/⍅ without a live listener): the request
+    /// counter and the ids still awaiting a response, shared by all strands.
+    replay_web: Mutex<(i64, HashSet<i64>)>,
+    /// Live web mode: the listener, shared by every strand's VM.
+    pub http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+    /// The program's source lines and channel census, so parallel-mode
+    /// fault reports carry the same excerpts, call chains, and orphaned-
+    /// channel warnings as the sequential engine.
+    source: Vec<String>,
+    chan_sites: HashMap<char, (usize, usize)>,
 }
 
 impl Bus {
-    fn new(main_count: usize, args: Vec<String>) -> Bus {
-        Bus::with_net(main_count, args, HashMap::new(), HashSet::new())
+    fn new(
+        main_count: usize,
+        args: Vec<String>,
+        http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+        source: Vec<String>,
+        chan_sites: HashMap<char, (usize, usize)>,
+    ) -> Bus {
+        Bus::with_net(
+            main_count,
+            args,
+            http,
+            source,
+            chan_sites,
+            HashMap::new(),
+            HashSet::new(),
+        )
     }
 
     /// A Bus with network bridging: sends to an exported channel go to
@@ -100,6 +124,9 @@ impl Bus {
     pub(crate) fn with_net(
         main_count: usize,
         args: Vec<String>,
+        http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+        source: Vec<String>,
+        chan_sites: HashMap<char, (usize, usize)>,
         exports: HashMap<char, ExportTap>,
         imports: HashSet<char>,
     ) -> Bus {
@@ -119,9 +146,46 @@ impl Bus {
             stdin: Mutex::new(std::io::BufReader::new(std::io::stdin())),
             fail: AtomicBool::new(false),
             main_count,
+            source,
+            chan_sites,
             args,
             exports,
+            replay_web: Mutex::new((1, HashSet::new())),
+            http,
         }
+    }
+
+    // ── the web bridge (replay mode) ───────────────────────────────────
+
+    /// Read one ▷ request frame from the shared stdin, holding its lock
+    /// for the whole frame so concurrent accepts cannot interleave bytes.
+    pub fn read_request(&self) -> Result<Option<crate::http::Request>, String> {
+        let mut stdin = self.stdin.lock().unwrap();
+        { let _ = self.stdout.lock().unwrap().flush(); }
+        let mut next = move || {
+            let buf = stdin.fill_buf().ok()?;
+            if buf.is_empty() {
+                return None;
+            }
+            let b = buf[0];
+            stdin.consume(1);
+            Some(b)
+        };
+        match crate::http::read_framed(&mut next)? {
+            None => Ok(None),
+            Some((method, path, body)) => {
+                let mut web = self.replay_web.lock().unwrap();
+                let id = web.0;
+                web.0 += 1;
+                web.1.insert(id);
+                Ok(Some((id, method, path, body)))
+            }
+        }
+    }
+
+    /// Retire a replay request id; false when it was never open.
+    pub fn close_request(&self, id: i64) -> bool {
+        self.replay_web.lock().unwrap().1.remove(&id)
     }
 
     // ── channels ───────────────────────────────────────────────────────
@@ -320,7 +384,20 @@ impl Bus {
                 what,
                 coords(*pos)
             ));
+            if let Some(x) = crate::vm::excerpt(&self.source, *pos) {
+                report.push_str(&x);
+                report.push('\n');
+            }
         }
+        let waited: Vec<char> = st
+            .waiting
+            .values()
+            .filter_map(|(_, what, _)| match what {
+                WaitOn::Chan(c) => Some(*c),
+                _ => None,
+            })
+            .collect();
+        report.push_str(&crate::vm::channel_census(&self.chan_sites, &waited));
         let _ = self.stdout.lock().unwrap().flush();
         {
             let mut err = self.stderr.lock().unwrap();
@@ -380,6 +457,7 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
         vm.bus = Some(bus.clone());
         vm.main_count = bus.main_count;
         vm.args = bus.args.clone();
+        vm.http = bus.http.clone();
         let mut s = Strand::new(sid, label, code, locals);
         loop {
             run_burst(&mut vm, &mut s, usize::MAX);
@@ -399,6 +477,8 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
                 coords(pos),
                 fmt(&v, false)
             );
+            let _ = write!(vm.err, "{}", crate::vm::fault_detail(
+                &bus.source, pos, &s.glitch_chain, s.stack_view()));
             bus.set_failed();
         }
     }
@@ -411,9 +491,30 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
 /// standard library woven in) runs first and must fully finish — including
 /// anything it spawned — before the main strands start, same as the
 /// sequential engine.
-pub fn run_parallel(prog: &CompiledProgram, args: Vec<String>) -> i32 {
-    let bus = Arc::new(Bus::new(prog.strands.len(), args));
+pub fn run_parallel(
+    prog: &CompiledProgram,
+    args: Vec<String>,
+    http: Option<Arc<crate::http::HttpBridge>>,
+) -> i32 {
+    let bus = Arc::new(Bus::new(
+        prog.strands.len(),
+        args,
+        http,
+        prog.source.clone(),
+        channel_census(prog),
+    ));
     run_with_bus(bus, prog)
+}
+
+/// The channel census (send/receive site counts per glyph) for a whole
+/// program, as parallel-mode fault reports want it.
+pub(crate) fn channel_census(prog: &CompiledProgram) -> HashMap<char, (usize, usize)> {
+    let mut chan_sites = HashMap::new();
+    crate::vm::channel_sites(&prog.boot, &mut chan_sites);
+    for (_, code) in &prog.strands {
+        crate::vm::channel_sites(code, &mut chan_sites);
+    }
+    chan_sites
 }
 
 /// The strand-startup sequence on an already-configured Bus — net.rs

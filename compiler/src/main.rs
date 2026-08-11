@@ -61,7 +61,10 @@ struct TerminalSession {
 impl TerminalSession {
     fn start(prog: &vm::CompiledProgram) -> Self {
         use std::io::IsTerminal;
+        // A canvas program's window owns the input — leave the terminal
+        // in its normal mode instead of switching to the raw alt-screen.
         let wanted = vm::uses_interactive(prog)
+            && !vm::uses_gui(prog)
             && std::io::stdin().is_terminal()
             && std::io::stdout().is_terminal();
         let mut session = TerminalSession {
@@ -140,10 +143,15 @@ impl Drop for TerminalSession {
     }
 }
 
-fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bool) -> ExitCode {
+fn run_compiled(
+    prog: &vm::CompiledProgram,
+    prog_args: Vec<String>,
+    parallel: bool,
+    http: Option<std::sync::Arc<mlang::http::HttpBridge>>,
+) -> ExitCode {
     let session = TerminalSession::start(prog);
     if parallel || parallel_env() {
-        let code = mlang::par::run_parallel(prog, prog_args);
+        let code = mlang::par::run_parallel(prog, prog_args, http);
         drop(session); // restore the terminal before the process exits
         return ExitCode::from(code as u8);
     }
@@ -154,6 +162,7 @@ fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bo
     let code = {
         let mut machine = vm::VM::new(&mut reader, &mut out, &mut err);
         machine.args = prog_args;
+        machine.http = http;
         machine.run_compiled(prog)
     };
     let _ = out.flush();
@@ -163,8 +172,23 @@ fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bo
 
 fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     match vm::compile_text(text) {
-        Ok(prog) => run_compiled(&prog, prog_args, parallel),
+        Ok(prog) => run_compiled(&prog, prog_args, parallel, None),
         Err(e) => weave_error(text, &e),
+    }
+}
+
+/// `mlang serve` (and MLANG_PORT for welded binaries): start the live web
+/// listener and announce it, then run the program against it.
+fn start_bridge(port: u16) -> Result<std::sync::Arc<mlang::http::HttpBridge>, ExitCode> {
+    match mlang::http::HttpBridge::start(port) {
+        Ok(bridge) => {
+            eprintln!("⇓ the grid is listening on http://127.0.0.1:{}", bridge.port);
+            Ok(bridge)
+        }
+        Err(e) => {
+            eprintln!("✗ cannot listen on port {port}: {e}");
+            Err(ExitCode::from(2))
+        }
     }
 }
 
@@ -213,6 +237,11 @@ usage:
                                   binaries also honor): one OS thread per
                                   strand instead of the deterministic
                                   round-robin scheduler
+  mlang serve [--parallel] <file> [port] [args…]   run with a live web
+                                  listener for ⎆/⍅ (default port 4321;
+                                  MLANG_PORT does the same for a welded
+                                  binary — without it, ⎆ replays request
+                                  frames from stdin)
   mlang check <file|->            compile only; report weave errors
   mlang hub [--listen A:P] [--workers N] <file|-> [args…]
                                   run a program with its work channel (α)
@@ -227,6 +256,7 @@ usage:
   mlang ops                       print the sigil reference table
   mlang std                       print the standard library source
   mlang ui                        print the Construct, the UI library source
+  mlang json                      print the Operator, the JSON library source
 ";
 
 /// Parse and dispatch `mlang hub` / `mlang worker`. Flags come before the
@@ -314,7 +344,18 @@ fn main() -> ExitCode {
     // lets a welded editor open a file dropped onto the executable.
     if let Some(extracted) = payload::self_payload() {
         return match extracted {
-            Ok(prog) => run_compiled(&prog, std::env::args().skip(1).collect(), false),
+            Ok(prog) => {
+                // MLANG_PORT turns a welded server binary live; anything
+                // else (or nothing) runs in replay mode.
+                let http = match std::env::var("MLANG_PORT").ok().and_then(|p| p.parse().ok()) {
+                    Some(port) => match start_bridge(port) {
+                        Ok(bridge) => Some(bridge),
+                        Err(code) => return code,
+                    },
+                    None => None,
+                };
+                run_compiled(&prog, std::env::args().skip(1).collect(), false, http)
+            }
             Err(e) => {
                 eprintln!("✗ corrupt program payload: {e}");
                 ExitCode::from(2)
@@ -343,6 +384,41 @@ fn main() -> ExitCode {
                     ExitCode::from(2)
                 }
             }
+        }
+        ("serve", n) if n >= 3 => {
+            let par = args[2] == "--parallel";
+            let fi = if par { 3 } else { 2 };
+            let Some(file) = args.get(fi) else {
+                eprint!("{USAGE}");
+                return ExitCode::from(2);
+            };
+            let text = match read_source(file) {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("✗ {e}");
+                    return ExitCode::from(2);
+                }
+            };
+            let prog = match vm::compile_text(&text) {
+                Ok(p) => p,
+                Err(e) => return weave_error(&text, &e),
+            };
+            // An optional port follows the file; anything after it — or a
+            // first argument that is not a number — belongs to ⌂.
+            let (port, rest) = match args.get(fi + 1).and_then(|p| p.parse::<u16>().ok()) {
+                Some(p) => (p, fi + 2),
+                None => (4321, fi + 1),
+            };
+            let bridge = match start_bridge(port) {
+                Ok(b) => b,
+                Err(code) => return code,
+            };
+            run_compiled(
+                &prog,
+                args.get(rest..).unwrap_or(&[]).to_vec(),
+                par,
+                Some(bridge),
+            )
         }
         ("eval", n) if n >= 3 => {
             let par = args[2] == "--parallel";
@@ -401,6 +477,10 @@ fn main() -> ExitCode {
         }
         ("ui", 2) => {
             print!("{}", vm::UI_SOURCE);
+            ExitCode::SUCCESS
+        }
+        ("json", 2) => {
+            print!("{}", vm::JSON_SOURCE);
             ExitCode::SUCCESS
         }
         _ => {

@@ -294,7 +294,15 @@ pub fn run_hub(
     let mut exports: HashMap<char, ExportTap> = HashMap::new();
     exports.insert(opts.work, Box::new(move |v| tap_hub.offer(v)));
     let imports: HashSet<char> = [opts.results].into();
-    let bus = Arc::new(Bus::with_net(prog.strands.len(), prog_args, exports, imports));
+    let bus = Arc::new(Bus::with_net(
+        prog.strands.len(),
+        prog_args,
+        None,
+        prog.source.clone(),
+        par::channel_census(prog),
+        exports,
+        imports,
+    ));
     hub.bus.set(bus.clone()).ok().expect("bus set once");
 
     let accept_hub = hub.clone();
@@ -382,7 +390,15 @@ pub fn run_worker(
         }),
     );
     let imports: HashSet<char> = [opts.work].into();
-    let bus = Arc::new(Bus::with_net(prog.strands.len(), prog_args, exports, imports));
+    let bus = Arc::new(Bus::with_net(
+        prog.strands.len(),
+        prog_args,
+        None,
+        prog.source.clone(),
+        par::channel_census(prog),
+        exports,
+        imports,
+    ));
 
     let reader_bus = bus.clone();
     let work_chan = opts.work;

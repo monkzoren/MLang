@@ -28,7 +28,7 @@ pub enum Axis {
     Col,
 }
 
-pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⌥⍟⍙⌽⍋∈⍷⍇⍈⌂⍜";
+pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⌥⍟⍙⌽⍋∈⍷⍇⍈⍆⎆⍅⌂⍜⌸▦⌶⎙⌹";
 pub const ARG_OP_CHARS: &str = "≔⇒↥↧⇂⇈⇟";
 pub const ARG2_OP_CHARS: &str = "⇉";
 const STRUCTURAL: &str = "«»⟨⟩[]⏎¯.※⋮⇓⇊∅ \t";
@@ -61,6 +61,27 @@ impl Lexer {
 
     fn err<T>(&self, msg: impl Into<String>, cell: &Cell) -> LResult<T> {
         Err(LoadError::new(msg, Some(self.pos(cell))))
+    }
+
+    /// Count [ and ] in the whole strand, ignoring bracket glyphs inside
+    /// string literals and comments — the numbers a bracket-balance fix
+    /// has to reconcile.
+    fn bracket_tally(&self) -> (usize, usize) {
+        let (mut opens, mut closes) = (0, 0);
+        let (mut in_str, mut in_comment) = (false, false);
+        for cell in &self.cells {
+            match cell.ch {
+                _ if in_comment => {}
+                '«' => in_str = true,
+                '»' => in_str = false,
+                _ if in_str => {}
+                '※' => in_comment = true,
+                '[' => opens += 1,
+                ']' => closes += 1,
+                _ => {}
+            }
+        }
+        (opens, closes)
     }
 
     fn same_line(&self, a: &Cell, b: &Cell) -> bool {
@@ -192,7 +213,16 @@ impl Lexer {
                     pos: self.pos(&cell),
                 });
             } else if ch == ']' {
-                return self.err("] without matching [", &cell);
+                // Say how lopsided the strand is: an agent reading this
+                // needs to know whether to delete this ] or restore a
+                // dropped [ somewhere before it.
+                let (opens, closes) = self.bracket_tally();
+                return self.err(
+                    format!(
+                        "] without matching [ — this strand has {opens} [ and {closes} ]"
+                    ),
+                    &cell,
+                );
             } else if ch == '⟨' {
                 self.i += 1;
                 code.push(Instr { op: Op::LMark, pos: self.pos(&cell) });

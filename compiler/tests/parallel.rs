@@ -66,15 +66,15 @@ fn parallel_matches_sequential_on_spsc_programs() {
 }
 
 #[test]
-fn parallel_calc_keeps_answers_in_order() {
+fn parallel_rpn_keeps_answers_in_order() {
     // ⋈ serializes the per-line evaluator strands, so answers keep input
     // order even on real threads — including the caught-glitch line.
-    let path = example("calc.ml");
+    let path = example("rpn.ml");
     let stdin = "3 4 +\n10 2 - 6 ×\noops\n2 63 ^\n";
     let seq = run(&["run", &path], stdin, &[]);
     for round in 0..3 {
         let par = run(&["run", "--parallel", &path], stdin, &[]);
-        assert_eq!(seq, par, "calc.ml (round {round}) diverged");
+        assert_eq!(seq, par, "rpn.ml (round {round}) diverged");
     }
 }
 
