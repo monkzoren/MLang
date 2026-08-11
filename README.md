@@ -52,33 +52,41 @@ implemented in Rust — the way C's first compilers were implemented in
 assembly — but MLang programs never touch Rust, and nothing else is
 involved: no C compiler, no linker, no interpreter dependency.)
 
-Linux / macOS:
+Build the toolchain once (from the repo root, any platform):
 
 ```sh
-cd compiler && cargo build --release && cd ..   # build the toolchain once
-alias mlang=$PWD/compiler/target/release/mlang
-
-mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
-./mandelbrot                                       # standalone: no toolchain needed
-
-mlang run examples/pipeline.ml       # or compile-and-run in one step
-mlang eval '«Hello, Matrix»⍞'        # inline source
-mlang check examples/calc.ml         # compile only, report weave errors
-mlang rain examples/pipeline.ml      # render the vertical rain view
-mlang ops                            # the sigil reference
-mlang std                            # the standard library source
+cargo build --release --manifest-path compiler/Cargo.toml
 ```
 
-Windows (PowerShell) — same commands, but name the output `.exe`:
+Then use the bundled launcher — `./mlang` on Linux/macOS, `.\mlang.cmd` in
+PowerShell — no alias or PATH setup needed. Linux / macOS:
+
+```sh
+./mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
+./mandelbrot                                         # standalone: no toolchain needed
+
+./mlang run examples/edit.ml         # or compile-and-run in one step
+./mlang eval '«Hello, Matrix»⍞'      # inline source
+./mlang check examples/calc.ml       # compile only, report weave errors
+./mlang rain examples/pipeline.ml    # render the vertical rain view
+./mlang ops                          # the sigil reference
+./mlang std                          # the standard library source
+```
+
+Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
+output `.exe`:
 
 ```powershell
-cd compiler; cargo build --release; cd ..
-Set-Alias mlang "$PWD\compiler\target\release\mlang.exe"
-
-mlang build examples\mandelbrot.ml -o mandelbrot.exe
+.\mlang.cmd build examples\mandelbrot.ml -o mandelbrot.exe
 .\mandelbrot.exe
-mlang run examples\edit.ml
+.\mlang.cmd run examples\edit.ml
 ```
+
+Windows notes: WSL is *not* required — the toolchain and welded binaries
+are fully native on Windows. Use Windows Terminal (not legacy conhost)
+with a Unicode-capable font so the glyphs render. The `cargo test` suite,
+however, assumes a Unix-like filesystem (`/tmp` paths in the recorded
+file-I/O goldens; CI runs Ubuntu) — run it on Linux, macOS, or WSL.
 
 `mlang build` compiles source to MLang bytecode and welds it into a copy
 of the toolchain's own runtime image — the same shape as a Go binary,
