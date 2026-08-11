@@ -1,0 +1,114 @@
+{
+ "arith": {
+  "file": "arith.py",
+  "stdin": ""
+ },
+ "compare": {
+  "file": "compare.py",
+  "stdin": ""
+ },
+ "division": {
+  "file": "division.py",
+  "stdin": ""
+ },
+ "each": {
+  "file": "each.py",
+  "stdin": ""
+ },
+ "fifo": {
+  "file": "fifo.py",
+  "stdin": ""
+ },
+ "filter": {
+  "file": "filter.py",
+  "stdin": ""
+ },
+ "fizzbuzz": {
+  "file": "fizzbuzz.py",
+  "stdin": ""
+ },
+ "fold": {
+  "file": "fold.py",
+  "stdin": ""
+ },
+ "if": {
+  "file": "if.py",
+  "stdin": ""
+ },
+ "list": {
+  "file": "list.py",
+  "stdin": ""
+ },
+ "logic": {
+  "file": "logic.py",
+  "stdin": ""
+ },
+ "modulo": {
+  "file": "modulo.py",
+  "stdin": ""
+ },
+ "pour-drain": {
+  "file": "pour_drain.py",
+  "stdin": ""
+ },
+ "pump-chained": {
+  "file": "pump_chained.py",
+  "stdin": ""
+ },
+ "pump-pipeline": {
+  "file": "pump_pipeline.py",
+  "stdin": ""
+ },
+ "raise-custom": {
+  "file": "raise_custom.py",
+  "stdin": ""
+ },
+ "range-map": {
+  "file": "range_map.py",
+  "stdin": ""
+ },
+ "repeat": {
+  "file": "repeat.py",
+  "stdin": ""
+ },
+ "seq-basics": {
+  "file": "seq_basics.py",
+  "stdin": ""
+ },
+ "slice": {
+  "file": "slice.py",
+  "stdin": ""
+ },
+ "spawn-join": {
+  "file": "spawn_join.py",
+  "stdin": ""
+ },
+ "split-join": {
+  "file": "split_join.py",
+  "stdin": ""
+ },
+ "stdin-echo": {
+  "file": "stdin_echo.py",
+  "stdin": "x\ny\n"
+ },
+ "str-parse": {
+  "file": "str_parse.py",
+  "stdin": ""
+ },
+ "string": {
+  "file": "string.py",
+  "stdin": ""
+ },
+ "try-catch": {
+  "file": "try_catch.py",
+  "stdin": ""
+ },
+ "unary-math": {
+  "file": "unary_math.py",
+  "stdin": ""
+ },
+ "while-fib": {
+  "file": "while_fib.py",
+  "stdin": ""
+ }
+}

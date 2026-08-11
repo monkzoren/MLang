@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 400" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="13">
+  <style>
+    text { white-space: pre; }
+    .t { fill: #c9d1d9; }
+    .p { fill: #3fb950; }
+    .e { fill: #f85149; }
+    .d { fill: #8b949e; }
+    .line { opacity: 0; animation: cycle 14s linear infinite; }
+    @keyframes cycle {
+      0% { opacity: 0; } 96% { opacity: 1; } 100% { opacity: 0; }
+    }
+    .r0 { animation-name: c0; } @keyframes c0 { 0%,2% {opacity:0} 4%,96% {opacity:1} 100% {opacity:0} }
+    .r1 { animation-name: c1; } @keyframes c1 { 0%,8% {opacity:0} 10%,96% {opacity:1} 100% {opacity:0} }
+    .r2 { animation-name: c2; } @keyframes c2 { 0%,12% {opacity:0} 14%,96% {opacity:1} 100% {opacity:0} }
+    .r3 { animation-name: c3; } @keyframes c3 { 0%,16% {opacity:0} 18%,96% {opacity:1} 100% {opacity:0} }
+    .r4 { animation-name: c4; } @keyframes c4 { 0%,20% {opacity:0} 22%,96% {opacity:1} 100% {opacity:0} }
+    .r5 { animation-name: c5; } @keyframes c5 { 0%,27% {opacity:0} 29%,96% {opacity:1} 100% {opacity:0} }
+    .r6 { animation-name: c6; } @keyframes c6 { 0%,34% {opacity:0} 36%,96% {opacity:1} 100% {opacity:0} }
+    .r7 { animation-name: c7; } @keyframes c7 { 0%,41% {opacity:0} 43%,96% {opacity:1} 100% {opacity:0} }
+    .cursor { animation: c5blink 14s linear infinite; }
+    @keyframes c5blink {
+      0%,41% { opacity: 0 }
+      43%,46% { opacity: 1 } 49%,52% { opacity: 0 } 55%,58% { opacity: 1 }
+      61%,64% { opacity: 0 } 67%,70% { opacity: 1 } 73%,76% { opacity: 0 }
+      79%,82% { opacity: 1 } 85%,88% { opacity: 0 } 91%,96% { opacity: 1 }
+      100% { opacity: 0 }
+    }
+  </style>
+
+  <rect width="920" height="400" rx="8" fill="#0d1117"/>
+
+  <!-- ───────────────────────── left pane: Python ───────────────────────── -->
+  <rect x="14" y="14" width="438" height="372" rx="6" fill="#161b22" stroke="#30363d"/>
+  <circle cx="34" cy="34" r="5" fill="#f85149"/><circle cx="52" cy="34" r="5" fill="#d29922"/><circle cx="70" cy="34" r="5" fill="#3fb950"/>
+  <text x="90" y="39" class="d">Python — same pipeline, threads + queues</text>
+
+  <g transform="translate(32 70)">
+    <text class="t line r0" y="0"><tspan class="p">$</tspan> python3 deadlock.py</text>
+    <text class="t line r1" y="22">2</text>
+    <text class="t line r2" y="44">8</text>
+    <text class="t line r3" y="66">18</text>
+    <text class="t line r4" y="88">32</text>
+    <text class="e line r5" y="118">Exception in thread Thread-2 (pump):</text>
+    <text class="e line r5" y="140">Traceback (most recent call last):</text>
+    <text class="e line r5" y="162">  File "deadlock.py", line 15, in pump</text>
+    <text class="e line r5" y="184">    raise ValueError("boom")</text>
+    <text class="e line r5" y="206">ValueError: boom</text>
+    <rect class="cursor" x="0" y="238" width="9" height="16" fill="#c9d1d9"/>
+    <text class="d line r6" y="272">…the traceback names the worker, but the</text>
+    <text class="d line r6" y="290">process sits frozen forever. No prompt.</text>
+    <text class="d line r7" y="308">Your agent is now waiting on a dead pipeline.</text>
+  </g>
+
+  <!-- ───────────────────────── right pane: MLang ───────────────────────── -->
+  <rect x="468" y="14" width="438" height="372" rx="6" fill="#161b22" stroke="#30363d"/>
+  <circle cx="488" cy="34" r="5" fill="#f85149"/><circle cx="506" cy="34" r="5" fill="#d29922"/><circle cx="524" cy="34" r="5" fill="#3fb950"/>
+  <text x="544" y="39" class="d">MLang — 3 strands, 3 lines</text>
+
+  <g transform="translate(486 70)">
+    <text class="t line r0" y="0"><tspan class="p">$</tspan> mlang run examples/deadlock.ml</text>
+    <text class="t line r1" y="22">2</text>
+    <text class="t line r2" y="44">8</text>
+    <text class="t line r3" y="66">18</text>
+    <text class="t line r4" y="88">32</text>
+    <text class="e line r5" y="118">✗ glitch in strand 1 (row 2) at 2:13: boom</text>
+    <text class="e line r6" y="146">✗ deadlock — every remaining strand is blocked:</text>
+    <text class="e line r6" y="168">  strand 2 (row 3) waiting on channel β at 3:5</text>
+    <text class="t line r7" y="198"><tspan class="p">$</tspan> <tspan class="d">← exit 1, instantly: the failure is the output</tspan></text>
+    <text class="d line r7" y="272">The runtime proves the deadlock and reports</text>
+    <text class="d line r7" y="290">who waits on whom, with grid coordinates —</text>
+    <text class="d line r7" y="308">then exits. Nothing to kill, nothing to guess.</text>
+  </g>
+</svg>

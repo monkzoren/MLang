@@ -1,0 +1,1668 @@
+{
+ "meta": {
+  "arm": "mlang",
+  "provider": "claude-cli",
+  "model": "claude-haiku-4-5-20251001",
+  "rounds_max": 3,
+  "seeds": 6,
+  "mutants": 80
+ },
+ "healed": 78,
+ "records": [
+  {
+   "id": "mlang:apply:0",
+   "case": "apply",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[1 2+]!\u2365 [[3]!]!\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u2365 expects a [quotation], got int\n"
+    },
+    {
+     "source": "[1 2+][[3]!]\u2365\u235e[[3]!]!\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:args-empty:0",
+   "case": "args-empty",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u2302\u235e \u2200#\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n\u27e8\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: stack underflow \u2014 needed a quotation\n"
+    },
+    {
+     "source": "\u2302\u2202\u235e#\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u27e9\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:arith:0",
+   "case": "arith",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "3 4+\u235e 10 3-\u235e 6 7\u00d7\u00f7 2 10^\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n7\n7\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:18: stack underflow \u2014 needed a number\n"
+    },
+    {
+     "source": "3 4+\u235e 10 3-\u235e 6 7\u00d7\u235e 2 10^\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n7\n42\n1024\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:bignum:0",
+   "case": "bignum",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "2 010^\u235e 2 100^ 2 100^\u00d7\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1024\n1606938044258990275541962092341162602522202993782792835301376\n"
+    },
+    {
+     "source": "2 100^\u235e 2 100^ 2 100^\u00d7\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1267650600228229401496703205376\n1606938044258990275541962092341162602522202993782792835301376\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:boot-defs:0",
+   "case": "boot-defs",
+   "op": "chan-rename",
+   "first_outcome": "deadlock",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2202\u00d7]\u2254\u00b2\n\u21ca\n7\u00b2\u21a5e\n\u21a7a 1+\u235e",
+     "outcome": "deadlock",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel a at 4:1\n"
+    },
+    {
+     "source": "[\u2202\u00d7]\u2254\u00b2\n\u21ca\n7\u00b2\u21a5a\n\u21a7a 1+\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n50\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:codepoints:0",
+   "case": "codepoints",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abA\u00bb\u2317\u235e 66\u2358\u235e \u00ab\u2373\u2317\u00bb\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n65\nB\n\u2373\u2317\n"
+    },
+    {
+     "source": "\u00abA\u00bb\u2317\u235e 66\u2358\u235e \u00ab\u2373\u00bb\u2317\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n65\nB\n9075\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:comment-lines:0",
+   "case": "comment-lines",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b a comment\n\u22b8\u235e \u203b trailing\n",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at 2:1: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "\u203b a comment\n0\u235e \u203b trailing",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:compare:0",
+   "case": "compare",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1 <\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1 2 <\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n1\n1\n0\n1\n1\n1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:continuation:0",
+   "case": "continuation",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1 2\n\u22ee\u221e\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\ninf\n"
+    },
+    {
+     "source": "1 2\n\u22ee+\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:debug-stderr:0",
+   "case": "debug-stderr",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1\u00abs\u00bb\u27e82 \u27e93\u235f",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)\nstderr:\n\u235f strand 0 (row 1): 1 \u00abs\u00bb \u27e82\u27e9 3\n"
+    },
+    {
+     "source": "1\u00abs\u00bb\u27e82 3\u27e9\u235f",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n(empty)\nstderr:\n\u235f strand 0 (row 1): 1 \u00abs\u00bb \u27e82 3\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:define-call:0",
+   "case": "define-call",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2202\u00d7]\u2254\u00b2 9\u00b2\u235e 3.14\u21c5\u03ba \u03ba\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n81\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:16: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "[\u2202\u00d7]\u2254\u00b2 9\u00b2\u235e 3.14\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n81\n3.14\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:digit-runs:1",
+   "case": "digit-runs",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1 2 3\u22a4+\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 30:4: \u2282 expects a list or string, got int\n"
+    },
+    {
+     "source": "1 2 3 + +\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n6\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:division:0",
+   "case": "division",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "8 2\u00f7\u2356 7 2\u00f7\u235e \u00af8 2\u00f7\u235e 1 3\u00f7\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 39:5: \u2286 expects string sep-string, got int str\n"
+    },
+    {
+     "source": "8 2\u00f7\u235e 7 2\u00f7\u235e \u00af8 2\u00f7\u235e 1 3\u00f7\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n4\n3.5\n\u00af4\n0.3333333333333333\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:drain-cross-strand:0",
+   "case": "drain-cross-strand",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "3\u2293\u21c8q\n\u21dfq\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 18:2: stack underflow \u2014 needed a value\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel q at 2:1\n"
+    },
+    {
+     "source": "3\u2378\u21c8q\n\u21dfq\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e80 1 2\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:dup-swap-drop:0",
+   "case": "dup-swap-drop",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u22021+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:1: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1 1+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n1\n1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:each:0",
+   "case": "each",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "3\u2378[\u235e]\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n[\u22ef]\n"
+    },
+    {
+     "source": "3\u2378[\u235e]\u2200",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:empty-things-falsy:0",
+   "case": "empty-things-falsy",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00ab\u00bb[\u00abt\u00bb][\u00abf\u00bb]?\u235e \u27e8\u27e9[\u00abt\u00bb][\u00abf\u00bb]\u2378\u235e 0.0[\u00abt\u00bb][\u00abf\u00bb]?\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\nf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:28: \u2378 expects numbers, got quot\n"
+    },
+    {
+     "source": "\u00ab\u00bb[\u00abt\u00bb][\u00abf\u00bb]?\u235e \u27e8\u27e9[\u00abt\u00bb][\u00abf\u00bb]?\u235e 0.0[\u00abt\u00bb][\u00abf\u00bb]?\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nf\nf\nf\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-arrows-delete:0",
+   "case": "event-arrows-delete",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u235c\u232b",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u2191\n\u2193\n\u2192\n\u2190\n\u2326\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-decode:0",
+   "case": "event-decode",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355]\u235e\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n[\u22ef]\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a quotation\n"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\na\nZ\n\u2191\n\u2190\n\u21f1\n\u2326\n\u21df\n\u21b5\n\u232b\n\u21e5\n^Q\nq\n \n\u238b\nx\n\u03c0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-esc-pushback:1",
+   "case": "event-esc-pushback",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 2,
+   "attempts": [
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u21d2\u235e]\u27f3\u232b",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:9: '\u235e' is reserved and cannot follow \u21d2\n"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u21c5\u235e\u232b]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u238b\nZ\nq\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-keys:0",
+   "case": "event-keys",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\na\nb\n\u21b5\n\u21e5\n\u00e9\n\u232b\n^C\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-lone-esc-is-eof:1",
+   "case": "event-lone-esc-is-eof",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 2,
+   "attempts": [
+    {
+     "source": "[\u2202\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "[\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "\u2205[\u2202\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u00b7\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:event-mouse-sgr-press-only:0",
+   "case": "event-mouse-sgr-press-only",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u2325\u2205\u2202\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00ab\u2316\u00bb 12 5\u27e9\nx\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:fibonacci.ml:0",
+   "case": "example:fibonacci.ml",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 2,
+   "attempts": [
+    {
+     "source": "\u203b Fibonacci numbers below 1000. One strand, one line.\n0 1[\u22021000<][\u2202\u21c5\u229a+]\u27f3\u232b\u232b\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "0 1[\u22021000<][\u232b\u235e\u21c5\u229a+]\u27f3",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n0\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:15: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "0 1[\u22021000<][\u2202\u235e\u21c5\u229a+]\u27f3\u232b\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:fizzbuzz.ml:0",
+   "case": "example:fizzbuzz.ml",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 3,
+   "attempts": [
+    {
+     "source": "\u203b FizzBuzz 1..100 \u2014 71 glyphs of program.\n1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2337\u235e]?]?]?1+]\u27f3\u232b\n",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at 28:3: # expects a list or string, got int\n"
+    },
+    {
+     "source": "1[\u2202100\u2264][\u232b\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u235e]?]?]?1+]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2355\u235e]?]?]?1+]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:69: stack underflow \u2014 needed a number\n"
+    },
+    {
+     "source": "1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2202\u235e]?]?]?1+]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:hello-rain.ml:0",
+   "case": "example:hello-rain.ml",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": false,
+   "rounds": null,
+   "attempts": [
+    {
+     "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n\nM\na\nt\nr\ni\nx\n\u00bb\n\u21d1\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "\u21d3\n\u00abHello, Matrix\u00bb\n\u235e\n\u21d1",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 2:1: unterminated \u00ab string\n"
+    },
+    {
+     "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n\nM\na\nt\nr\ni\nx\n\u00bb\n\u235e\n\u21d1",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\nHello, Matrix\n\nstderr:\n\u2717 glitch in strand 0 (col 1) at 36:4: stack underflow \u2014 needed a string\n"
+    },
+    {
+     "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n \nM\na\nt\nr\ni\nx\n\u00bb\n\u235e\n\u21d1",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\nHello, Matrix\n\nstderr:\n\u2717 glitch in strand 0 (col 1) at 36:4: stack underflow \u2014 needed a string\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:hello.ml:0",
+   "case": "example:hello.ml",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abHello, Matrix\u235e\u00bb\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "\u00abHello, Matrix\u00bb \u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nHello, Matrix\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:parallel-sum.ml:0",
+   "case": "example:parallel-sum.ml",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b Sum 1..1000 across four worker strands plus a reducer.\n\u203b Each worker uses its own strand id \u2373 to pick its chunk of 250,\n\u203b sends its partial sum down channel \u03c3; strand 4 reduces.\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1+]+\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3+++\u235e\n",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 5) at 5:17: + expects numbers, got quot\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 4 (row 8) waiting on channel \u03c3 at 8:7\n"
+    },
+    {
+     "source": "\u203b Sum 1..1000 across four worker strands plus a reducer.\n\u203b Each worker uses its own strand id \u2373 to pick its chunk of 250,\n\u203b sends its partial sum down channel \u03c3; strand 4 reduces.\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3+++\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n500500\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:pipeline-manual.ml:0",
+   "case": "example:pipeline-manual.ml",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b The same three-strand pipeline as pipeline.ml, built by hand from\n\u203b raw sends and receives \u2014 this is the protocol the stream\n\u203b combinators (\u21c8 \u21c9 \u21df) package up: send values, end with \u2205,\n\u203b receive until \u2205, forward the \u2205 so downstream stages stop too.\n9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u2325]\u27f3\u232b\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "\u203b The same three-strand pipeline as pipeline.ml, built by hand from\n\u203b raw sends and receives \u2014 this is the protocol the stream\n\u203b combinators (\u21c8 \u21c9 \u21df) package up: send values, end with \u2205,\n\u203b receive until \u2205, forward the \u2205 so downstream stages stop too.\n9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:pipeline.ml:0",
+   "case": "example:pipeline.ml",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b A three-strand pipeline in 25 glyphs, using the stream combinators:\n\u203b   \u21c8\u03b1  pour a list into channel \u03b1 (then the \u2205 end-marker)\n\u203b   \u21c9\u03b1\u03b2 pump: transform each value from \u03b1, send to \u03b2, forward \u2205\n\u203b   \u21df\u03b2  drain channel \u03b2 into a list\n\u203b strand 0 emits the squares of 1..9, strand 1 doubles them,\n\u203b strand 2 prints them. All three run concurrently.\n9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u27f3\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200\n",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 8) at 8:5: stack underflow \u2014 needed a quotation\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 9) waiting on channel \u03b2 at 9:1\n"
+    },
+    {
+     "source": "\u203b A three-strand pipeline in 25 glyphs, using the stream combinators:\n\u203b   \u21c8\u03b1  pour a list into channel \u03b1 (then the \u2205 end-marker)\n\u203b   \u21c9\u03b1\u03b2 pump: transform each value from \u03b1, send to \u03b2, forward \u2205\n\u203b   \u21df\u03b2  drain channel \u03b2 into a list\n\u203b strand 0 emits the squares of 1..9, strand 1 doubles them,\n\u203b strand 2 prints them. All three run concurrently.\n9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:spawn.ml:0",
+   "case": "example:spawn.ml",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b Dynamic scaling: the grid is one strand wide, but \u26a1 adds machines\n\u203b at runtime. Each spawned strand announces itself and sends its id\n\u203b down channel \u03c1; the parent joins them all, then reduces.\n\u203b The boot section defines W, the worker body.\n[\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n\u21ca\n\u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u232b\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e\n",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 2 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 3 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 4 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 7) waiting on channel \u03c1 at 7:24\n"
+    },
+    {
+     "source": "\u203b Dynamic scaling: the grid is one strand wide, but \u26a1 adds machines\n\u203b at runtime. Each spawned strand announces itself and sends its id\n\u203b down channel \u03c1; the parent joins them all, then reduces.\n\u203b The boot section defines W, the worker body.\n[\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u235e \u2373\u21a5\u03c1]\u2254W\n\u21ca\n\u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u232b\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nmachine 1 online\nmachine 2 online\nmachine 3 online\nmachine 4 online\nids sum: 10\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:example:std-tour.ml:0",
+   "case": "example:std-tour.ml",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u203b A tour of the standard library. (`mlang std` prints its source.)\n\u203b The \u22ee lines continue strand 0, so the tour runs top to bottom.\n\u27e831 4 15 9 2 6\u27e9\u234b\u235e\n\u22ee\u27e831 4 15 9 2 6\u27e9\u2352\u2283\u235e\n\u22ee\u27e81 2 3 4\u27e9\u00b5\u235e\n\u22ee10\u203c\u235e\n\u22ee462 1071\u27cc\u235e\n\u22ee\u00af42\u2223\u235e\n\u22ee3 9\u2293 3 9\u2294\u00d7\u235e\n\u22ee\u00abknock knock, neo\u00bb\u21d1\u235e\n\u22ee\u00abFOLLOW THE WHITE RABBIT\u00bb\u21e9\u236d#\u235e\n\u22ee\u00abthe matrix has you\u00bb\u236d\u233d\u00ab \u00bb\u2287\u235e\n\u22ee\u27e8\u00abred\u00bb \u00abblue\u27e9\u00bb\u27e8\u00abpill\u00bb \u00abshift\u00bb\u27e9\u235a\u235e\n\u22ee\u00abwake up\u00bb\u00abake\u00bb\u2377\u235e\n\u22ee\u27e81 1 2 3 5 8\u27e9\u2211 \u03c0\u00d7\u230a\u235e\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u27e82 4 6 9 15 31\u27e9\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n\u27e8\u27e8\u00abb\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abl\u00bb \u00abshift\u00bb\u27e9\u27e9\n1\n62\n"
+    },
+    {
+     "source": "\u203b A tour of the standard library. (`mlang std` prints its source.)\n\u203b The \u22ee lines continue strand 0, so the tour runs top to bottom.\n\u27e831 4 15 9 2 6\u27e9\u234b\u235e\n\u22ee\u27e831 4 15 9 2 6\u27e9\u2352\u2283\u235e\n\u22ee\u27e81 2 3 4\u27e9\u00b5\u235e\n\u22ee10\u203c\u235e\n\u22ee462 1071\u27cc\u235e\n\u22ee\u00af42\u2223\u235e\n\u22ee3 9\u2293 3 9\u2294\u00d7\u235e\n\u22ee\u00abknock knock, neo\u00bb\u21d1\u235e\n\u22ee\u00abFOLLOW THE WHITE RABBIT\u00bb\u21e9\u236d#\u235e\n\u22ee\u00abthe matrix has you\u00bb\u236d\u233d\u00ab \u00bb\u2287\u235e\n\u22ee\u27e8\u00abred\u00bb \u00abblue\u00bb\u27e9\u27e8\u00abpill\u00bb \u00abshift\u00bb\u27e9\u235a\u235e\n\u22ee\u00abwake up\u00bb\u00abake\u00bb\u2377\u235e\n\u22ee\u27e81 1 2 3 5 8\u27e9\u2211 \u03c0\u00d7\u230a\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e82 4 6 9 15 31\u27e9\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n\u27e8\u27e8\u00abred\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abblue\u00bb \u00abshift\u00bb\u27e9\u27e9\n1\n62\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:fifo:0",
+   "case": "fifo",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1\u21a5c 2\u21a5c 3\u21a5c\n\u21a7c\u235e\u2202c\u235e\u21a7c\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1\u21a5c 2\u21a5c 3\u21a5c\n\u21a7c\u235e \u21a7c\u235e \u21a7c\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:file-io-roundtrip:0",
+   "case": "file-io-roundtrip",
+   "op": "drop",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abneo\u23cetrinity\u00bb\u00abmlang-conf-io.tmp\u00bb\u2348 \u00abmlang-conf-io.tmp\u2347\u2356\u235e",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:35: unterminated \u00ab string\n"
+    },
+    {
+     "source": "\u00abneo\u23cetrinity\u00bb\u00abmlang-conf-io.tmp\u00bb\u2348 \u00abmlang-conf-io.tmp\u00bb\u2347\u00ab\u23ce\u00bb\u2286\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00abneo\u00bb \u00abtrinity\u00bb\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:file-missing-glitch:0",
+   "case": "file-missing-glitch",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u00abno-such-dir/definitely-not-here.ml\u00bb\u2347][\u00ab\u2717 \u00bb\u21c5\u235e\u29fa]\u2365\u00abalive\u00bb\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n\u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:47: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "[\u00abno-such-dir/definitely-not-here.ml\u00bb\u2347][\u00ab\u2717 \u00bb\u21c5\u29fa\u235e]\u2365\u00abalive\u00bb\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u2717 \u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb\nalive\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:file-op-type-errors:0",
+   "case": "file-op-type-errors",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[5\u2347][\u235e]\u2365 [\u00abx\u00bb5\u2348][\u22a4]\u2365",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n\u2347 expects a path string, got int\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 30:4: \u2282 expects numbers, got str\n"
+    },
+    {
+     "source": "[5\u2347][\u235e]\u2365 [\u00abx\u00bb5\u2348][\u235e]\u2365",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u2347 expects a path string, got int\n\u2348 expects a path string, got int\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:filter:0",
+   "case": "filter",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "10\u2378[2%=0]\u233f\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:7: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "10\u2378[2%0=]\u233f\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e80 2 4 6 8\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:float:0",
+   "case": "float",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": ".25\u235e .5 2\u00d7\u235e 3.0\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n0.25\n1.0\n3.0\n"
+    },
+    {
+     "source": "2.5\u235e .5 2\u00d7\u235e 3.0\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2.5\n1.0\n3.0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:fold:0",
+   "case": "fold",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "011\u2378 0[+]\u2340\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n55\n"
+    },
+    {
+     "source": "101\u2378 0[+]\u2340\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5050\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:if:0",
+   "case": "if",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1[\u00aby\u00bb][\u00abn\u00bb]?\u235c 0[\u00aby\u00bb][\u00abn\u00bb]?\u235e 1 5 9?\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\nn\n5\n"
+    },
+    {
+     "source": "1[\u00aby\u00bb][\u00abn\u00bb]?\u235e 0[\u00aby\u00bb][\u00abn\u00bb]?\u235e 1 5 9?\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ny\nn\n5\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:int:0",
+   "case": "int",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "42\u00f7",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a number\n"
+    },
+    {
+     "source": "42\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:interleave-deterministic:0",
+   "case": "interleave-deterministic",
+   "op": "transpose",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "5\u2378\u00ab[A\u00bb\u235e]\u2200\n5\u2378[\u00abB\u00bb\u235e]\u2200",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:8: ] without matching [\n"
+    },
+    {
+     "source": "5\u2378[\u00abA\u00bb\u235e]\u2200\n5\u2378[\u00abB\u00bb\u235e]\u2200",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nA\nB\nA\nA\nB\nB\nA\nA\nB\nB\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:iterate-string:0",
+   "case": "iterate-string",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00ababc\u00bb[\u235e\u2200] \u00abab\u00bb[\u00ab!\u00bb\u29fa]\u2235\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9\n"
+    },
+    {
+     "source": "\u00ababc\u00bb [\u235e] \u2200 \u00abab\u00bb [\u00ab!\u00bb \u29fa] \u2235 \u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\na\nb\nc\n\u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:list:0",
+   "case": "list",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\u2208",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a list or string\n"
+    },
+    {
+     "source": "\u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:list-build-nested:0",
+   "case": "list-build-nested",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e812\u27e83\u27e9\u27e9\u27e9#\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u27e9 without matching \u27e8\n"
+    },
+    {
+     "source": "\u27e812\u27e83\u27e9\u27e9#\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:list-deep-eq:0",
+   "case": "list-deep-eq",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e81 \u27e82 3\u27e9\u27e9\u27e81 \u27e82 \u27e93\u27e9=\u235e \u27e81\u27e9\u27e82\u27e9=\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n0\n0\n"
+    },
+    {
+     "source": "\u27e81 \u27e82 3\u27e9\u27e9\u27e81 \u27e82 3\u27e9\u27e9=\u235e \u27e81\u27e9\u27e82\u27e9=\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:locals:0",
+   "case": "locals",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1\u21d2x x 1\u2228\u21d2x x\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1\n"
+    },
+    {
+     "source": "1\u21d2x x 1+\u21d2x x\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:logic:0",
+   "case": "logic",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1 0\u2227\u235e 1 0\u2228\u235e 0\u00ac\u235e 1 1\u22bb\u235e 1 \u22bb\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n0\n1\n1\n0\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:25: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1 0\u2227\u235e 1 0\u2228\u235e 0\u00ac\u235e 1 1\u22bb\u235e 1 0\u22bb\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\n1\n0\n1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:modulo:0",
+   "case": "modulo",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "7 3\u22c8\u235e \u00af7 3%\u235e 7 \u00af3%\u235e 7.5 2%\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: \u22c8 no strand with id 3\n"
+    },
+    {
+     "source": "7 3%\u235e \u00af7 3%\u235e 7 \u00af3%\u235e 7.5 2%\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n\u00af2\n1.5\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:negative:0",
+   "case": "negative",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00af5\u235e \u00af5 3\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u00af5\n3\n"
+    },
+    {
+     "source": "\u00af5\u235e \u00af5 3+\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u00af5\n\u00af2\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:nested-try:0",
+   "case": "nested-try",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 2,
+   "attempts": [
+    {
+     "source": "[[\u00abinner\u00bb\u21af][\u00abre-\u00bb\u21c5\u2355\u29fa\u21af]\u2356][\u235e]\u2365",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u2286 expects string sep-string, got quot str\n"
+    },
+    {
+     "source": "[[\u00abinner\u00bb\u21af]][\u00abre-\u00bb \u21c5 \u29fa \u235e]\u2365",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "[\u00abinner\u00bb\u21af] [\u00abre-\u00bb \u21c5 \u29fa \u235e] \u2365",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nre-inner\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:nil:0",
+   "case": "nil",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u2205\u235e \u2205\u2205=\u235e \u22050= \u2205\u00ac\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u2205\n1\n1\n"
+    },
+    {
+     "source": "\u2205\u235e \u2205\u2205=\u235e \u22050=\u235e \u2205\u00ac\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u2205\n1\n0\n1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:over-rot-depth:0",
+   "case": "over-rot-depth",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1 2\u229a\u235e\u235e\u00ac 1 2 3\u2940\u235e\u235e\u235e 7 8\u2262\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1\n2\n1\n3\n2\n3\n"
+    },
+    {
+     "source": "1 2\u229a\u235e\u235e\u235e 1 2 3\u2940\u235e\u235e\u235e 7 8\u2262\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n1\n1\n3\n2\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:pipeline:0",
+   "case": "pipeline",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:12: stack underflow \u2014 needed a value to send\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel \u03b1 at 2:2\n  strand 2 (row 3) waiting on channel \u03b2 at 3:2\n"
+    },
+    {
+     "source": "9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:pour-drain:0",
+   "case": "pour-drain",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e81 2 3\u27e9\u21c8a \u21dfa\u235e \u27e8\u27e9\u21c8b \u2228b\u235e \u00abxy\u00bb\u21c8c \u21dfc\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n\u27e81 2 3\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "\u27e81 2 3\u27e9\u21c8a \u21dfa\u235e \u27e8\u27e9\u21c8b \u21dfb\u235e \u00abxy\u00bb\u21c8c \u21dfc\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e81 2 3\u27e9\n\u27e8\u27e9\n\u27e8\u00abx\u00bb \u00aby\u00bb\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:prim-contains-find:0",
+   "case": "prim-contains-find",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abwake up\u00bb\u00abake\u00bb\u2208\u21df \u27e81 \u27e82\u27e9\u27e9\u27e82\u27e9\u2208\u235e \u00ababcd\u00bb\u00abcd\u00bb\u2377\u235e \u27e87 8\u27e99\u2377\u235e",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:18: '\u27e8' is reserved and cannot follow \u21df\n"
+    },
+    {
+     "source": "\u00abwake up\u00bb\u00abake\u00bb\u2208\u235e \u27e81 \u27e82\u27e9\u27e9\u27e82\u27e9\u2208\u235e \u00ababcd\u00bb\u00abcd\u00bb\u2377\u235e \u27e87 8\u27e99\u2377\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n1\n2\n\u00af1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:prim-reverse:0",
+   "case": "prim-reverse",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u21df \u00ab\u00bb\u233d\u235e",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:22: '\u00ab' is reserved and cannot follow \u21df\n"
+    },
+    {
+     "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u2355\u235e \u00ab\u00bb\u233d\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nxirtam\n\u27e83 2 1\u27e9\n\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:prim-sort:0",
+   "case": "prim-sort",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e83 1.5 2\u27e9\u234b\u21c2 \u00abcba\u00bb\u234b\u235e \u27e8\u00abb\u00bb \u00aba\u00bb\u27e9\u234b\u235e",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:13: '\u00ab' is reserved and cannot follow \u21c2\n"
+    },
+    {
+     "source": "\u27e83 1.5 2\u27e9\u234b\u235e \u00abcba\u00bb\u234b\u235e \u27e8\u00abb\u00bb \u00aba\u00bb\u27e9\u234b\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e81.5 2 3\u27e9\nabc\n\u27e8\u00aba\u00bb \u00abb\u00bb\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:prim-type:0",
+   "case": "prim-type",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "5\u2359\u235e\u235e 2.5\u2359\u21c5\u232b\u235e \u00abx\u00bb\u2359\u21c5\u232b\u235e \u27e8\u2359\u21c5\u232b\u235e [\u2202]\u2359\u21c5\u232b\u235e \u2205\u2359\u21c5\u232b\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\nint\n5\nfloat\nstr\nmark\nquot\n\u2205\n"
+    },
+    {
+     "source": "5\u2359\u235e\u235e 2.5\u2359\u21c5\u232b\u235e \u00abx\u00bb\u2359\u21c5\u232b\u235e \u27e8\u27e9\u2359\u21c5\u232b\u235e [\u2202]\u2359\u21c5\u232b\u235e \u2205\u2359\u21c5\u232b\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nint\n5\nfloat\nstr\nlist\nquot\n\u2205\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:pump-chained:0",
+   "case": "pump-chained",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "5\u2378\u21c8a\n[1+]\u21c9ab\n[10\u00d7]\u21c9bc\n\u229ac\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 3 (row 4) at 4:1: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "5\u2378\u21c8a\n[1+]\u21c9ab\n[10\u00d7]\u21c9bc\n\u21dfc\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e810 20 30 40 50\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:pump-empty:0",
+   "case": "pump-empty",
+   "op": "chan-rename",
+   "first_outcome": "deadlock",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e8\u27e9\u21c8a\n[\u2202\u00d7]\u21c9ab\n\u21dfa#\u235e",
+     "outcome": "deadlock",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel a at 3:1\n"
+    },
+    {
+     "source": "\u27e8\u27e9\u21c8a\n[\u2202\u00d7]\u21c9ab\n\u21dfb#\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:pump-pipeline:0",
+   "case": "pump-pipeline",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2]\u00d7\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: \u00d7 expects numbers, got quot\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel \u03b2 at 3:1\n"
+    },
+    {
+     "source": "9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:quot-identity-eq:0",
+   "case": "quot-identity-eq",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 2,
+   "attempts": [
+    {
+     "source": "[1]\u2202\u229a\u235e [1][1]=\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n[\u22ef]\n0\n"
+    },
+    {
+     "source": "[1]\u2202\u229a!\u235e [1][1]\u2260\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1\n1\n"
+    },
+    {
+     "source": "[1]\u2202\u229a!\u235e [1][1]=\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:rain-boot:0",
+   "case": "rain-boot",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": false,
+   "rounds": null,
+   "attempts": [
+    {
+     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\n\u00b2\n\u21ca\n6\n\u00b2\n\u2262",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n(empty)"
+    },
+    {
+     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\n\u00b2\n\u21ca\n6\n\u00b2\n!\n\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 11:1: ! expects a [quotation], got int\n"
+    },
+    {
+     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\u00b2\n\u21ca\n6\n\u00b2\n!\n\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 10:1: ! expects a [quotation], got int\n"
+    },
+    {
+     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254f\n\u21ca\n6\nf\n!\n\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 10:1: ! expects a [quotation], got int\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:rain-comment-column:0",
+   "case": "rain-comment-column",
+   "op": "drop",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\n1\n\u235e\n\u203b\n9",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 3) at 3:1: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "1\n\u22ee \u235e\n\u203b\n9",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:rain-hello:0",
+   "case": "rain-hello",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u21d3\n\u00ab\nH\ni\n\u00bb\n\u21df",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 6:1: \u21df needs a sigil after it\n"
+    },
+    {
+     "source": "\u21d3\n\u00ab\nH\ni\n\u00bb\n\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nHi\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:rain-two-strands:0",
+   "case": "rain-two-strands",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u21d3\n1  \u00ab\n\u235e  A\n   \u00bb\n   \u2263",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1\n"
+    },
+    {
+     "source": "\u21d3\n1  \u00ab\n\u235e  A\n   \u00bb\n   \u235e\n   \u2263",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\nA\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:raise-custom:0",
+   "case": "raise-custom",
+   "op": "swap-op",
+   "first_outcome": "weave",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[\u27e81 2\u27e9\u21af][\u21d2]\u2365",
+     "outcome": "weave",
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:11: ']' is reserved and cannot follow \u21d2\n"
+    },
+    {
+     "source": "[\u27e81 2\u27e9\u21af][\u235e]\u2365",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e81 2\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:range-map:0",
+   "case": "range-map",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "5\u2378[\u2202\u00d7]\u2235 0\u2378[\u2202\u00d7]\u2235\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u27e9\n"
+    },
+    {
+     "source": "5\u2378[\u2202\u00d7]\u2235\u235e 0\u2378[\u2202\u00d7]\u2235\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e80 1 4 9 16\u27e9\n\u27e8\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:repeat:0",
+   "case": "repeat",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "0 5[1+]\u2363 0 0[1+]\u2363\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n0\n"
+    },
+    {
+     "source": "0 5[1+]\u2363\u235e 0 0[1+]\u2363\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:seq-basics:0",
+   "case": "seq-basics",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00ababc\u00bb#\u235e \u27e81 2\u27e9\u27e8\u27e9\u29fa\u235e \u00abab\u00bb\u00abcd\u00bb\u29fa\u235e \u27e87 8 9\u27e91@\u235e \u00abxyz\u00bb2@\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n3\n\u27e81 2\u27e9\nabcd\n8\nz\n"
+    },
+    {
+     "source": "\u00ababc\u00bb#\u235e \u27e81 2\u27e9\u27e83\u27e9\u29fa\u235e \u00abab\u00bb\u00abcd\u00bb\u29fa\u235e \u27e87 8 9\u27e91@\u235e \u00abxyz\u00bb2@\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n\u27e81 2 3\u27e9\nabcd\n8\nz\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:slice:0",
+   "case": "slice",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00abmatrix\u00bb1 4\u2282\u235e \u00abab\u00bb0 99\u2282\u235e \u27e81 2 3 4\u27e91 3\u2282\u03c4",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\natr\nab\n"
+    },
+    {
+     "source": "\u00abmatrix\u00bb1 4\u2282\u235e \u00abab\u00bb0 99\u2282\u235e \u27e81 2 3 4\u27e91 3\u2282\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\natr\nab\n\u27e82 3\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:spawn-join:0",
+   "case": "spawn-join",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "[42\u2208r]\u26a1\u22c8\u21a7r\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 1:4: stack underflow \u2014 needed a list or string\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel r at 1:9\n"
+    },
+    {
+     "source": "[42\u21a5r]\u26a1\u22c8\u21a7r\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:spawn-locals-copy:0",
+   "case": "spawn-locals-copy",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "7\u21d2x [x\u21a5r]\u26a1\u22c8 9\u21d2x \u21a7r\u22a5 x\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 31:2: stack underflow \u2014 needed a value\n"
+    },
+    {
+     "source": "7\u21d2x [x\u21a5r]\u26a1\u22c8 9\u21d2x \u21a7r\u235e x\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:split-join:0",
+   "case": "split-join",
+   "op": "swap-op",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00aba,b,c\u00bb\u00ab,\u00bb\u2286\u235e \u00abab\u00bb\u00ab\u00bb\u2294\u235e \u27e81 2 3\u27e9\u00ab-\u00bb\u2287\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba\u00bb \u00abb\u00bb \u00abc\u00bb\u27e9\nab\n1-2-3\n"
+    },
+    {
+     "source": "\u00aba,b,c\u00bb\u00ab,\u00bb\u2286\u235e \u00abab\u00bb\u00ab\u00bb\u2286\u235e \u27e81 2 3\u27e9\u00ab-\u00bb\u2287\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba\u00bb \u00abb\u00bb \u00abc\u00bb\u27e9\n\u27e8\u00aba\u00bb \u00abb\u00bb\u27e9\n1-2-3\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:std-aggregates:0",
+   "case": "std-aggregates",
+   "op": "transpose",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "1\u27e8 2 3 4\u27e9\u2211\u235e \u27e82 3 4\u27e9\u220f\u235e \u27e81 2 3 4\u27e9\u00b5\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n9\n24\n2.5\n"
+    },
+    {
+     "source": "\u27e81 2 3 4\u27e9\u2211\u235e \u27e82 3 4\u27e9\u220f\u235e \u27e81 2 3 4\u27e9\u00b5\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n10\n24\n2.5\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:std-constants:0",
+   "case": "std-constants",
+   "op": "swap-op",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u03c0\u235e \u03c4\u235e \u212f\u235e \u221e\u235e \u221e\u00d7\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:14: stack underflow \u2014 needed a number\n"
+    },
+    {
+     "source": "\u03c0\u235e \u03c4\u235e \u212f\u235e \u221e\u235e \u221e\u00b1\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n\u00afinf\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:std-in-boot-and-strands:0",
+   "case": "std-in-boot-and-strands",
+   "op": "chan-rename",
+   "first_outcome": "deadlock",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u03c0\u2254c\n\u21ca\nc \u03c4<\u235e\n[\u27e84 2\u27e9\u234b\u21a5r]\u26a1\u22c8\u21a7\u03c4\u235e",
+     "outcome": "deadlock",
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel \u03c4 at 4:13\n"
+    },
+    {
+     "source": "\u03c0\u2254c\n\u21ca\n1 \u235e \u21a7r \u21a5\u03c4\n[\u27e84 2\u27e9\u234b\u21a5r]\u26a1\u22c8\u21a7\u03c4\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n\u27e82 4\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:std-list-helpers:0",
+   "case": "std-list-helpers",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u27e87 8 9\u27e9\u2283\u235e \u27e87 8 9\u27e9\u2337\u235e \u27e87 8 9\u27e9\u236b \u27e87 8 9\u27e92\u22a4\u235e \u27e87 8 9\u27e92\u22a5\u235e \u27e83 1 2\u27e9\u2352\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n7\n9\n\u27e87 8\u27e9\n\u27e89\u27e9\n\u27e83 2 1\u27e9\n"
+    },
+    {
+     "source": "\u27e87 8 9\u27e9\u2283\u235e \u27e87 8 9\u27e9\u2337\u235e \u27e87 8 9\u27e9\u236b\u235e \u27e87 8 9\u27e92\u22a4\u235e \u27e87 8 9\u27e92\u22a5\u235e \u27e83 1 2\u27e9\u2352\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n9\n\u27e88 9\u27e9\n\u27e87 8\u27e9\n\u27e89\u27e9\n\u27e83 2 1\u27e9\n"
+    }
+   ]
+  },
+  {
+   "id": "mlang:std-numbers:0",
+   "case": "std-numbers",
+   "op": "transpose",
+   "first_outcome": "glitch",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "\u00af7\u2223\u235e 3 9\u2293\u235e 3 9\u2294\u235e \u203c6\u235e 462 1071\u27cc\u235e",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n7\n3\n9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 20:2: stack underflow \u2014 needed a number\n"
+    },
+    {
+     "source": "\u00af7\u2223\u235e 3 9\u2293\u235e 3 9\u2294\u235e 6\u203c\u235e 462 1071\u27cc\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n3\n9\n720\n21\n"
+    }
+   ]
+  }
+ ]
+}

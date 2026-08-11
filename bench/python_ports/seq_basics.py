@@ -1,0 +1,5 @@
+print(len("abc"))
+print([1, 2] + [3])
+print("ab" + "cd")
+print([7, 8, 9][1])
+print("xyz"[2])

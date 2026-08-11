@@ -1,0 +1,5 @@
+print(1 and 0)
+print(1 or 0)
+print(not 0)
+print(bool(1) ^ bool(1))
+print(bool(1) ^ bool(0))
