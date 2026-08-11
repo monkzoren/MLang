@@ -1,0 +1,10 @@
+#!/bin/sh
+# MLang launcher (Linux/macOS). Usage: ./mlang run examples/edit.ml
+here="$(dirname "$0")"
+exe="$here/compiler/target/release/mlang"
+if [ ! -x "$exe" ]; then
+  echo "mlang is not built yet. Build it once with:" >&2
+  echo "  cargo build --release --manifest-path \"$here/compiler/Cargo.toml\"" >&2
+  exit 2
+fi
+exec "$exe" "$@"

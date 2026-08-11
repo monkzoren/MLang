@@ -264,20 +264,20 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
-| `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF |
+| `⌨` | `→ s \| ∅` | read a line of stdin, stripping the trailing `\n` or `\r\n`; `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
+| `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
+| `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
-| `⍇` | `path → s` | read the file at `path` into a string; unreadable path glitches |
-| `⍈` | `s path →` | write string `s` to the file at `path`; failure glitches |
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
 produce an identical run. `⌂` sees the arguments after the source file
 (`mlang run prog.ml a b`) or, in a welded binary, everything after the
 executable name — which is how a file dropped onto a built editor arrives
-as its argument. `⍇`/`⍈` glitch with a stable message that names only the
-path, never an OS error string, so failures are reproducible byte for
-byte.
+as its argument. File-operation glitch messages name only the path, never
+an operating-system error string — they are part of the language's
+deterministic, conformance-pinned output.
 
 ## 6. The standard library
 
