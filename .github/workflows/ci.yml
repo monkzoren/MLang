@@ -13,6 +13,11 @@ jobs:
         run: cargo build --release --manifest-path compiler/Cargo.toml
       - name: Tests (unit, payload, conformance corpus)
         run: cargo test --release --manifest-path compiler/Cargo.toml
+      - name: Bench harness smoke (port goldens + robustness mini-sweep)
+        run: |
+          python3 bench/record_ports.py --check
+          python3 bench/robustness.py --seeds-mlang 1 --seeds-python 2 --jobs 4
+          git checkout -- bench/results/
       - name: Weld and run standalone binaries
         run: |
           M=compiler/target/release/mlang
@@ -23,4 +28,8 @@ jobs:
           done
           "$M" build examples/calc.ml -o /tmp/calc
           printf '3 4 +\n' | /tmp/calc | grep -qx 7
+          "$M" build examples/construct.ml -o /tmp/console
+          printf 'q\n' | /tmp/console | grep -q 'Nebuchadnezzar'
+          "$M" build examples/jack-in.ml -o /tmp/jackin
+          /tmp/jackin < /dev/null | grep -q 'Nebuchadnezzar'
           echo "standalone binaries OK"

@@ -206,6 +206,19 @@ impl Bus {
         stdin.read_line(line).unwrap_or(0)
     }
 
+    /// One byte for the ⌥ event parser; None at end of input.
+    pub fn read_byte(&self) -> Option<u8> {
+        let mut stdin = self.stdin.lock().unwrap();
+        { let _ = self.stdout.lock().unwrap().flush(); }
+        let buf = stdin.fill_buf().ok()?;
+        if buf.is_empty() {
+            return None;
+        }
+        let b = buf[0];
+        stdin.consume(1);
+        Some(b)
+    }
+
     fn write_stream(&self, err: bool, bytes: &[u8]) {
         if err {
             let _ = self.stderr.lock().unwrap().write_all(bytes);

@@ -74,7 +74,8 @@ fn welded_editor_opens_and_saves_a_dropped_file() {
     assert!(build.status.success(), "build failed: {:?}", build);
 
     // Dropping a .txt onto the executable launches it with the file's path
-    // as the argument; the session below types Windows-style \r\n lines.
+    // as the argument. The session below is raw keystrokes: End, Enter,
+    // type a line, ^S (saves — the name is known), ^X (clean, not dirty).
     use std::io::Write;
     let mut child = std::process::Command::new(&bin)
         .arg(note.to_str().unwrap())
@@ -86,7 +87,7 @@ fn welded_editor_opens_and_saves_a_dropped_file() {
         .stdin
         .as_mut()
         .unwrap()
-        .write_all(b"a\r\nFree your mind.\r\n.\r\nw\r\nq\r\n")
+        .write_all(b"\x1b[F\rFree your mind.\x13\x18")
         .unwrap();
     let out = child.wait_with_output().unwrap();
     assert_eq!(out.status.code(), Some(0));

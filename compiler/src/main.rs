@@ -39,9 +39,107 @@ fn parallel_env() -> bool {
         .unwrap_or(false)
 }
 
+/// Puts a real terminal into an interactive session for programs that
+/// use ⌥: raw input, SGR mouse reporting, the alternate screen, hidden
+/// cursor. Restores everything on drop, so a glitch exit cleans up too.
+/// Does nothing when stdin/stdout are pipes — recorded runs see only
+/// the program's own bytes.
+struct TerminalSession {
+    active: bool,
+    #[cfg(unix)]
+    saved: Option<libc::termios>,
+    #[cfg(windows)]
+    saved: Option<(u32, u32)>,
+}
+
+impl TerminalSession {
+    fn start(prog: &vm::CompiledProgram) -> Self {
+        use std::io::IsTerminal;
+        let wanted = vm::uses_interactive(prog)
+            && std::io::stdin().is_terminal()
+            && std::io::stdout().is_terminal();
+        let mut session = TerminalSession {
+            active: false,
+            saved: None,
+        };
+        if wanted && session.enter_raw() {
+            session.active = true;
+            print!("\x1b[?1049h\x1b[?25l\x1b[?1000;1006h\x1b[2J\x1b[H");
+            let _ = std::io::stdout().flush();
+        }
+        session
+    }
+
+    #[cfg(unix)]
+    fn enter_raw(&mut self) -> bool {
+        unsafe {
+            let mut t: libc::termios = std::mem::zeroed();
+            if libc::tcgetattr(libc::STDIN_FILENO, &mut t) != 0 {
+                return false;
+            }
+            self.saved = Some(t);
+            libc::cfmakeraw(&mut t);
+            // keep output post-processing so \n still moves to column 0
+            t.c_oflag |= libc::OPOST;
+            libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &t) == 0
+        }
+    }
+
+    #[cfg(unix)]
+    fn leave_raw(&mut self) {
+        if let Some(t) = self.saved.take() {
+            unsafe {
+                libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &t);
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    fn enter_raw(&mut self) -> bool {
+        use windows_sys::Win32::System::Console::*;
+        unsafe {
+            let hin = GetStdHandle(STD_INPUT_HANDLE);
+            let hout = GetStdHandle(STD_OUTPUT_HANDLE);
+            let (mut min, mut mout) = (0u32, 0u32);
+            if GetConsoleMode(hin, &mut min) == 0 || GetConsoleMode(hout, &mut mout) == 0 {
+                return false;
+            }
+            self.saved = Some((min, mout));
+            let raw_in = (min & !(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT))
+                | ENABLE_VIRTUAL_TERMINAL_INPUT;
+            let vt_out = mout | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            SetConsoleMode(hin, raw_in) != 0 && SetConsoleMode(hout, vt_out) != 0
+        }
+    }
+
+    #[cfg(windows)]
+    fn leave_raw(&mut self) {
+        use windows_sys::Win32::System::Console::*;
+        if let Some((min, mout)) = self.saved.take() {
+            unsafe {
+                SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), min);
+                SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), mout);
+            }
+        }
+    }
+}
+
+impl Drop for TerminalSession {
+    fn drop(&mut self) {
+        if self.active {
+            print!("\x1b[?1000;1006l\x1b[?25h\x1b[?1049l");
+            let _ = std::io::stdout().flush();
+            self.leave_raw();
+        }
+    }
+}
+
 fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bool) -> ExitCode {
+    let session = TerminalSession::start(prog);
     if parallel || parallel_env() {
-        return ExitCode::from(mlang::par::run_parallel(prog, prog_args) as u8);
+        let code = mlang::par::run_parallel(prog, prog_args);
+        drop(session); // restore the terminal before the process exits
+        return ExitCode::from(code as u8);
     }
     let stdin = std::io::stdin();
     let mut reader = BufReader::new(stdin.lock());
@@ -53,6 +151,7 @@ fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bo
         machine.run_compiled(prog)
     };
     let _ = out.flush();
+    drop(session);
     ExitCode::from(code as u8)
 }
 
@@ -113,6 +212,7 @@ usage:
   mlang flat <file|->             render rain source as flat lines
   mlang ops                       print the sigil reference table
   mlang std                       print the standard library source
+  mlang ui                        print the Construct, the UI library source
 ";
 
 fn main() -> ExitCode {
@@ -202,6 +302,10 @@ fn main() -> ExitCode {
         }
         ("std", 2) => {
             print!("{}", vm::STD_SOURCE);
+            ExitCode::SUCCESS
+        }
+        ("ui", 2) => {
+            print!("{}", vm::UI_SOURCE);
             ExitCode::SUCCESS
         }
         _ => {

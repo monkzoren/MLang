@@ -1,0 +1,1613 @@
+{
+ "meta": {
+  "arm": "python",
+  "provider": "claude-cli",
+  "model": "claude-haiku-4-5-20251001",
+  "rounds_max": 3,
+  "seeds": 6,
+  "mutants": 80
+ },
+ "healed": 80,
+ "records": [
+  {
+   "id": "python:arith:0",
+   "case": "arith",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * 7)\nprint>=2 ** 10)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-_ei1hy8e/prog.py\", line 4\n    print>=2 ** 10)\n                  ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * 7)\nprint(2 ** 10)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n7\n42\n1024\n"
+    }
+   ]
+  },
+  {
+   "id": "python:compare:0",
+   "case": "compare",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nqz(1 >= 2)\nprint(1 == 1)\nprint(1 != 2)\nprint(1 == 1.0)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\nTrue\nTrue\nTrue\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-0i963cuk/prog.py\", line 4, in <module>\n    qz(1 >= 2)\n    ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nprint(1 >= 2)\nprint(1 == 1)\nprint(1 != 2)\nprint(1 == 1.0)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nTrue\nTrue\nTrue\nFalse\nTrue\nTrue\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:division:0",
+   "case": "division",
+   "op": "transpose",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(8 / 2)\n(print7 / 2)\nprint(-8 / 2)\nprint(1 / 3)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n4.0\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-sc28pv7o/prog.py\", line 2, in <module>\n    (print7 / 2)\n     ^^^^^^\nNameError: name 'print7' is not defined. Did you mean: 'print'?\n"
+    },
+    {
+     "source": "print(8 / 2)\nprint(7 / 2)\nprint(-8 / 2)\nprint(1 / 3)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n4.0\n3.5\n-4.0\n0.3333333333333333\n"
+    }
+   ]
+  },
+  {
+   "id": "python:each:0",
+   "case": "each",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for i in range(3):\n    printi)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-6a7vk4z4/prog.py\", line 2\n    printi)\n          ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "for i in range(3):\n    print(i)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fifo:0",
+   "case": "fifo",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put(3)\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t raise threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-b7zyk3v_/prog.py\", line 19\n    for t raise threads:\n          ^^^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put(3)\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:filter:0",
+   "case": "filter",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([qz for i in range(10) if i % 2 == 0])\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-oun3993t/prog.py\", line 1, in <module>\n    print([qz for i in range(10) if i % 2 == 0])\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/pybench-oun3993t/prog.py\", line 1, in <listcomp>\n    print([qz for i in range(10) if i % 2 == 0])\n           ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "print([i for i in range(10) if i % 2 == 0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 2, 4, 6, 8]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fizzbuzz:0",
+   "case": "fizzbuzz",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for i in range(1, 101):\n    if i % 15  0:\n        print(\"FizzBuzz\")\n    elif i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(i)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-uq0wals8/prog.py\", line 2\n    if i % 15  0:\n               ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "for i in range(1, 101):\n    if i % 15 == 0:\n        print(\"FizzBuzz\")\n    elif i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(i)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fold:0",
+   "case": "fold",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "total = 0\nfor i in range(101-:\n    total += i\nprint(total)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-3rjqjba4/prog.py\", line 2\n    for i in range(101-:\n                       ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "total = 0\nfor i in range(101):\n    total += i\nprint(total)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5050\n"
+    }
+   ]
+  },
+  {
+   "id": "python:if:0",
+   "case": "if",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "(print\"y\" if 1 else \"n\")\nprint(\"y\" if 0 else \"n\")\nprint(5 if 1 else 9)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-iu8mzksh/prog.py\", line 1\n    (print\"y\" if 1 else \"n\")\n     ^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?\n"
+    },
+    {
+     "source": "print(\"y\" if 1 else \"n\")\nprint(\"y\" if 0 else \"n\")\nprint(5 if 1 else 9)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ny\nn\n5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:list:0",
+   "case": "list",
+   "op": "swap-op",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([1, \"two\"* [3, 4], 2.5])\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-v41fvu81/prog.py\", line 1, in <module>\n    print([1, \"two\"* [3, 4], 2.5])\n              ~~~~~^~~~~~~~\nTypeError: can't multiply sequence by non-int of type 'list'\n"
+    },
+    {
+     "source": "print([1, \"two\", [3, 4], 2.5])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 'two', [3, 4], 2.5]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:logic:0",
+   "case": "logic",
+   "op": "transpose",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 and 0)\nprint(1 or 0)\nprint(not 0)\nprintbool((1) ^ bool(1))\nprint(bool(1) ^ bool(0))\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n0\n1\nTrue\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-caossc9n/prog.py\", line 4, in <module>\n    printbool((1) ^ bool(1))\n    ^^^^^^^^^\nNameError: name 'printbool' is not defined\n"
+    },
+    {
+     "source": "print(1 and 0)\nprint(1 or 0)\nprint(not 0)\nprint(bool((1) ^ bool(1)))\nprint(bool(1) ^ bool(0))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\nTrue\nFalse\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:modulo:0",
+   "case": "modulo",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(7 % 3<=\nprint(-7 % 3)\nprint(7 % -3)\nprint(7.5 % 2)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-3r1fc1rg/prog.py\", line 1\n    print(7 % 3<=\n         ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "print(7 % 3)\nprint(-7 % 3)\nprint(7 % -3)\nprint(7.5 % 2)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n-2\n1.5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pour-drain:0",
+   "case": "pour-drain",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(v)\n\na = qz.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour(\"xy\", c)\nprint(drain(c))\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-ykn4d8j9/prog.py\", line 16, in <module>\n    a = qz.Queue()\n        ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(v)\n\na = queue.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour(\"xy\", c)\nprint(drain(c))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2, 3]\n[]\n['x', 'y']\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-chained:0",
+   "case": "pump-chained",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i in range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n    if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put(None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-926o6zo8/prog.py\", line 19\n    b.put(v + 1)\n                ^\nIndentationError: unindent does not match any outer indentation level\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i in range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n        if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put(None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[10, 20, 30, 40, 50]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-pipeline:0",
+   "case": "pump-pipeline",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nalpha = queueQueue.()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) for f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-a4tfa1cd/prog.py\", line 4\n    alpha = queueQueue.()\n                       ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nalpha = queue.Queue()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) for f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "python:raise-custom:0",
+   "case": "raise-custom",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "except:\n    raise ValueError([1, 2])\nexcept ValueError as e:\n    print(e.args[0])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-gwgnhk66/prog.py\", line 1\n    except:\n    ^^^^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "try:\n    raise ValueError([1, 2])\nexcept ValueError as e:\n    print(e.args[0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:range-map:0",
+   "case": "range-map",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print/[i * i for i in range(5)])\nprint([i * i for i in range(0)])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-5xvxdgul/prog.py\", line 1\n    print/[i * i for i in range(5)])\n                                   ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "print([i * i for i in range(5)])\nprint([i * i for i in range(0)])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 1, 4, 9, 16]\n[]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:repeat:0",
+   "case": "repeat",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "x = 0\nfor _ in range(5:)\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-10711bdt/prog.py\", line 2\n    for _ in range(5:)\n                    ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "x = 0\nfor _ in range(5):\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "python:seq-basics:0",
+   "case": "seq-basics",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(len(\"abc\"))\nqz([1, 2] + [3])\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9][1])\nprint(\"xyz\"[2])\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n3\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-m4_9bgs1/prog.py\", line 2, in <module>\n    qz([1, 2] + [3])\n    ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "print(len(\"abc\"))\nprint([1, 2] + [3])\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9][1])\nprint(\"xyz\"[2])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n[1, 2, 3]\nabcd\n8\nz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:slice:0",
+   "case": "slice",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"matrix\"[1:])\nprint(\"ab\"[0:99])\nprint([1, 2, 3, 4][1:3])\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\natrix\nab\n[2, 3]\n"
+    },
+    {
+     "source": "print(\"matrix\"[1:4])\nprint(\"ab\"[0:99])\nprint([1, 2, 3, 4][1:3])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\natr\nab\n[2, 3]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:spawn-join:0",
+   "case": "spawn-join",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.Thread(target=lambda: r.put(42))\nt.start()\nt.join)\nprint(r.get())\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-j6jdwhhm/prog.py\", line 7\n    t.join)\n          ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.Thread(target=lambda: r.put(42))\nt.start()\nt.join()\nprint(r.get())",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42\n"
+    }
+   ]
+  },
+  {
+   "id": "python:split-join:0",
+   "case": "split-join",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\"))\nprint(\"-\".(str(x) for x in [1, 2, 3]))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-2126dgef/prog.py\", line 3\n    print(\"-\".(str(x) for x in [1, 2, 3]))\n              ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\"))\nprint(\"-\".join(str(x) for x in [1, 2, 3]))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n['a', 'b', 'c']\n['a', 'b']\n1-2-3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:stdin-echo:0",
+   "case": "stdin-echo",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import sys\nfor qz in sys.stdin:\n    print(line, end=\"\")\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-d8bni6uk/prog.py\", line 3, in <module>\n    print(line, end=\"\")\n          ^^^^\nNameError: name 'line' is not defined. Did you mean: 'slice'?\n"
+    },
+    {
+     "source": "import sys\nfor qz in sys.stdin:\n    print(qz, end=\"\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nx\ny\n"
+    }
+   ]
+  },
+  {
+   "id": "python:str-parse:0",
+   "case": "str-parse",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(str(42= + \"!\")\nprint(int(\"-3\"))\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-py1t3crd/prog.py\", line 1\n    print(str(42= + \"!\")\n              ^^^\nSyntaxError: expression cannot contain assignment, perhaps you meant \"==\"?\n"
+    },
+    {
+     "source": "print(str(42) + \"!\")\nprint(int(\"-3\"))\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42!\n-3\n2.5\n6\n"
+    }
+   ]
+  },
+  {
+   "id": "python:string:0",
+   "case": "string",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"Hello, Matrix\"[\nprint(\"a\\nb\")\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-jixkc00f/prog.py\", line 1\n    print(\"Hello, Matrix\"[\n                         ^\nSyntaxError: '[' was never closed\n"
+    },
+    {
+     "source": "print(\"Hello, Matrix\")\nprint(\"a\\nb\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nHello, Matrix\na\nb\n"
+    }
+   ]
+  },
+  {
+   "id": "python:try-catch:0",
+   "case": "try-catch",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "try:\n    1 / 0\nexcept ZeroDivisionError as :e\n    print(\"got:\", e)\nprint(\"after\")\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-rdqoccez/prog.py\", line 3\n    except ZeroDivisionError as :e\n                                ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "try:\n    1 / 0\nexcept ZeroDivisionError as e:\n    print(\"got:\", e)\nprint(\"after\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ngot: division by zero\nafter\n"
+    }
+   ]
+  },
+  {
+   "id": "python:unary-math:0",
+   "case": "unary-math",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import math\nprint(math.sqrt(2))\nprint(math.floor(2.7)\nprint(math.ceil(2.1))\nprint(-5)\nprint(math.floor(-2.5))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-c5jpsjt9/prog.py\", line 3\n    print(math.floor(2.7)\n         ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "import math\nprint(math.sqrt(2))\nprint(math.floor(2.7))\nprint(math.ceil(2.1))\nprint(-5)\nprint(math.floor(-2.5))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1.4142135623730951\n2\n3\n-5\n-3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:while-fib:0",
+   "case": "while-fib",
+   "op": "swap-op",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "a, b = 0== 1\nwhile b < 1000:\n    print(b)\n    a, b = b, a + b\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-iksxfcha/prog.py\", line 1, in <module>\n    a, b = 0== 1\n    ^^^^\nTypeError: cannot unpack non-iterable bool object\n"
+    },
+    {
+     "source": "a, b = 0, 1\nwhile b < 1000:\n    print(b)\n    a, b = b, a + b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+    }
+   ]
+  },
+  {
+   "id": "python:arith:1",
+   "case": "arith",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * )\nprint(2 ** 10)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-n6p_hdc0/prog.py\", line 3\n    print(6 * )\n              ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * 7)\nprint(2 ** 10)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n7\n42\n1024\n"
+    }
+   ]
+  },
+  {
+   "id": "python:compare:2",
+   "case": "compare",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nprint(1 >= 2)\nprint1 == 1)\nprint(1 != 2)\nprint(1 == 1.0)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-8sq_d5i1/prog.py\", line 5\n    print1 == 1)\n               ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nprint(1 >= 2)\nprint(1 == 1)\nprint(1 != 2)\nprint(1 == 1.0)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nTrue\nTrue\nTrue\nFalse\nTrue\nTrue\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:division:1",
+   "case": "division",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(8  2)\nprint(7 / 2)\nprint(-8 / 2)\nprint(1 / 3)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-tg_i0xpk/prog.py\", line 1\n    print(8  2)\n          ^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n"
+    },
+    {
+     "source": "print(8 / 2)\nprint(7 / 2)\nprint(-8 / 2)\nprint(1 / 3)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n4.0\n3.5\n-4.0\n0.3333333333333333\n"
+    }
+   ]
+  },
+  {
+   "id": "python:each:1",
+   "case": "each",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for i in range(3):\n    print==i)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-4koq6voa/prog.py\", line 2\n    print==i)\n            ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "for i in range(3):\n    print(i)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fifo:1",
+   "case": "fifo",
+   "op": "drop",
+   "first_outcome": "hang",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put()\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "hang",
+     "failure": "The program did not terminate (killed after 5s).\nstdout so far:\n1\n2\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put(3)\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:filter:1",
+   "case": "filter",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([i and i in range(10) if i % 2 == 0])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-4bi2_vfy/prog.py\", line 1\n    print([i and i in range(10) if i % 2 == 0])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: expected 'else' after 'if' expression\n"
+    },
+    {
+     "source": "print([i for i in range(10) if i % 2 == 0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 2, 4, 6, 8]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fizzbuzz:1",
+   "case": "fizzbuzz",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for qz in range(1, 101):\n    if i % 15 == 0:\n        print(\"FizzBuzz\")\n    elif i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(i)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-_locswov/prog.py\", line 2, in <module>\n    if i % 15 == 0:\n       ^\nNameError: name 'i' is not defined. Did you mean: 'id'?\n"
+    },
+    {
+     "source": "for qz in range(1, 101):\n    if qz % 15 == 0:\n        print(\"FizzBuzz\")\n    elif qz % 3 == 0:\n        print(\"Fizz\")\n    elif qz % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(qz)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fold:1",
+   "case": "fold",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "total = 0\nfor i in range(101):\n    total += i\nprint(total/\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-i080kcb0/prog.py\", line 4\n    print(total/\n         ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "total = 0\nfor i in range(101):\n    total += i\nprint(total)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5050\n"
+    }
+   ]
+  },
+  {
+   "id": "python:if:1",
+   "case": "if",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"y\" if 1 else \"n\")\nprint(\"y\" return 0 else \"n\")\nprint(5 if 1 else 9)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-hz7sl2dt/prog.py\", line 2\n    print(\"y\" return 0 else \"n\")\n              ^^^^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(\"y\" if 1 else \"n\")\nprint(\"y\" if 0 else \"n\")\nprint(5 if 1 else 9)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ny\nn\n5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:list:1",
+   "case": "list",
+   "op": "drop",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([1, \"two\" [3, 4], 2.5])\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n/tmp/pybench-lartmq6k/prog.py:1: SyntaxWarning: str indices must be integers or slices, not tuple; perhaps you missed a comma?\n  print([1, \"two\" [3, 4], 2.5])\nTraceback (most recent call last):\n  File \"/tmp/pybench-lartmq6k/prog.py\", line 1, in <module>\n    print([1, \"two\" [3, 4], 2.5])\n              ~~~~~~^^^^^^\nTypeError: string indices must be integers, not 'tuple'\n"
+    },
+    {
+     "source": "print([1, \"two\", [3, 4], 2.5])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 'two', [3, 4], 2.5]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:logic:1",
+   "case": "logic",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 and 0)\nprint(1 or 0)\nprint(not 0)\nprint(bool(1> ^ bool(1))\nprint(bool(1) ^ bool(0))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-ihvpyj2r/prog.py\", line 4\n    print(bool(1> ^ bool(1))\n                  ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(1 and 0)\nprint(1 or 0)\nprint(not 0)\nprint(bool(1) ^ bool(1))\nprint(bool(1) ^ bool(0))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\nTrue\nFalse\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:modulo:1",
+   "case": "modulo",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(7 % 3)\nprint+-7 % 3)\nprint(7 % -3)\nprint(7.5 % 2)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-zkgrp84s/prog.py\", line 2\n    print+-7 % 3)\n                ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "print(7 % 3)\nprint(-7 % 3)\nprint(7 % -3)\nprint(7.5 % 2)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n-2\n1.5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pour-drain:1",
+   "case": "pour-drain",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(v)\n\na = queue.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour//\"xy\", c)\nprint(drain(c))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-po3luosv/prog.py\", line 23\n    pour//\"xy\", c)\n                 ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(v)\n\na = queue.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour(\"xy\", c)\nprint(drain(c))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2, 3]\n[]\n['x', 'y']\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-chained:1",
+   "case": "pump-chained",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i raise range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n        if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put(None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-hw0qfhhr/prog.py\", line 9\n    for i raise range(5):\n          ^^^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i in range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n        if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put(None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[10, 20, 30, 40, 50]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-pipeline:1",
+   "case": "pump-pipeline",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nalpha = queue.Queue()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) for f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.qz()\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-u3fyuxpt/prog.py\", line 32, in <module>\n    t.qz()\n    ^^^^\nAttributeError: 'Thread' object has no attribute 'qz'\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nalpha = queue.Queue()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) for f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "python:raise-custom:1",
+   "case": "raise-custom",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "try:\n    raise ValueError([,1 2])\nexcept ValueError as e:\n    print(e.args[0])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-5rwx1xf1/prog.py\", line 2\n    raise ValueError([,1 2])\n                      ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "try:\n    raise ValueError([1, 2])\nexcept ValueError as e:\n    print(e.args[0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:range-map:1",
+   "case": "range-map",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([i * i for i in range(5)])\nprint([i * i for i in range<=0)])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-lkhbz9ug/prog.py\", line 2\n    print([i * i for i in range<=0)])\n                                  ^\nSyntaxError: closing parenthesis ')' does not match opening parenthesis '['\n"
+    },
+    {
+     "source": "print([i * i for i in range(5)])\nprint([i * i for i in range(0)])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 1, 4, 9, 16]\n[]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:repeat:1",
+   "case": "repeat",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "x = 0\nfor _ not range(5):\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-fkm70q90/prog.py\", line 2\n    for _ not range(5):\n          ^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "x = 0\nfor _ in range(5):\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "python:seq-basics:1",
+   "case": "seq-basics",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(len(\"abc\"))\nprint([1, 2] + [3])\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9[1])\nprint(\"xyz\"[2])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-gzu8njba/prog.py\", line 4\n    print([7, 8, 9[1])\n                     ^\nSyntaxError: closing parenthesis ')' does not match opening parenthesis '['\n"
+    },
+    {
+     "source": "print(len(\"abc\"))\nprint([1, 2] + [3])\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9][1])\nprint(\"xyz\"[2])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n[1, 2, 3]\nabcd\n8\nz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:slice:2",
+   "case": "slice",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"matrix\"[1:4])\nprint(\"ab\"[0:99])\nqz([1, 2, 3, 4][1:3])\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\natr\nab\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-g_gyki01/prog.py\", line 3, in <module>\n    qz([1, 2, 3, 4][1:3])\n    ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "print(\"matrix\"[1:4])\nprint(\"ab\"[0:99])\nprint([1, 2, 3, 4][1:3])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\natr\nab\n[2, 3]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:spawn-join:1",
+   "case": "spawn-join",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.(Threadtarget=lambda: r.put(42))\nt.start()\nt.join()\nprint(r.get())\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-4pldfr9n/prog.py\", line 5\n    t = threading.(Threadtarget=lambda: r.put(42))\n                  ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.Thread(target=lambda: r.put(42))\nt.start()\nt.join()\nprint(r.get())",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42\n"
+    }
+   ]
+  },
+  {
+   "id": "python:split-join:1",
+   "case": "split-join",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\")>=\nprint(\"-\".join(str(x) for x in [1, 2, 3]))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-0phcqkk2/prog.py\", line 2\n    print(list(\"ab\")>=\n         ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\"))\nprint(\"-\".join(str(x) for x in [1, 2, 3]))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n['a', 'b', 'c']\n['a', 'b']\n1-2-3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:stdin-echo:1",
+   "case": "stdin-echo",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import sys\nfor line in sys.qz:\n    print(line, end=\"\")\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-0u1wprq9/prog.py\", line 2, in <module>\n    for line in sys.qz:\n                ^^^^^^\nAttributeError: module 'sys' has no attribute 'qz'\n"
+    },
+    {
+     "source": "import sys\nfor line in sys.stdin:\n    print(line, end=\"\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nx\ny\n"
+    }
+   ]
+  },
+  {
+   "id": "python:str-parse:1",
+   "case": "str-parse",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(str(42) + \"!\")\nprint(int(\"-3\"!=)\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-b6sinnza/prog.py\", line 2\n    print(int(\"-3\"!=)\n                    ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(str(42) + \"!\")\nprint(int(\"-3\"))\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42!\n-3\n2.5\n6\n"
+    }
+   ]
+  },
+  {
+   "id": "python:string:1",
+   "case": "string",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"Hello, Matrix\")\n(print\"a\\nb\")\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-3jq3aduj/prog.py\", line 2\n    (print\"a\\nb\")\n     ^^^^^^^^^^^\nSyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?\n"
+    },
+    {
+     "source": "print(\"Hello, Matrix\")\nprint(\"a\\nb\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nHello, Matrix\na\nb\n"
+    }
+   ]
+  },
+  {
+   "id": "python:try-catch:1",
+   "case": "try-catch",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "try:\n    1 / 0\nexcept ZeroDivisionError as e:\n    print(\"got:\", e)\nprint:\"after\")\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-l88y42tx/prog.py\", line 5\n    print:\"after\")\n                 ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "try:\n    1 / 0\nexcept ZeroDivisionError as e:\n    print(\"got:\", e)\nprint(\"after\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ngot: division by zero\nafter\n"
+    }
+   ]
+  },
+  {
+   "id": "python:unary-math:1",
+   "case": "unary-math",
+   "op": "drop",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import math\nprint(math.sqrt(2))\nprint(math.floor(2.7))\nprint(math.ceil())\nprint(-5)\nprint(math.floor(-2.5))\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n1.4142135623730951\n2\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-e8e1e5t5/prog.py\", line 4, in <module>\n    print(math.ceil())\n          ^^^^^^^^^^^\nTypeError: math.ceil() takes exactly one argument (0 given)\n"
+    },
+    {
+     "source": "import math\nprint(math.sqrt(2))\nprint(math.floor(2.7))\nprint(math.ceil(2.7))\nprint(-5)\nprint(math.floor(-2.5))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1.4142135623730951\n2\n3\n-5\n-3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:while-fib:1",
+   "case": "while-fib",
+   "op": "swap-op",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "a, b = 0, 1\nwhile b < 1000:\n    print(b)\n    a, b = b== a + b\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-e1qv5k81/prog.py\", line 4, in <module>\n    a, b = b== a + b\n    ^^^^\nTypeError: cannot unpack non-iterable bool object\n"
+    },
+    {
+     "source": "a, b = 0, 1\nwhile b < 1000:\n    print(b)\n    a, b = b, a + b",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n"
+    }
+   ]
+  },
+  {
+   "id": "python:arith:2",
+   "case": "arith",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * 7)\nprint(2 ** )10\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-_l0w0976/prog.py\", line 4\n    print(2 ** )10\n               ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "print(3 + 4)\nprint(10 - 3)\nprint(6 * 7)\nprint(2 ** 10)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n7\n7\n42\n1024\n"
+    }
+   ]
+  },
+  {
+   "id": "python:compare:3",
+   "case": "compare",
+   "op": "drop",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nprint(1 >= 2)\nprint(1 == 1\nprint(1 != 2)\nprint(1 == 1.0)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-xmq2udf5/prog.py\", line 5\n    print(1 == 1\n         ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "print(1 < 2)\nprint(2 <= 2)\nprint(3 > 2)\nprint(1 >= 2)\nprint(1 == 1)\nprint(1 != 2)\nprint(1 == 1.0)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nTrue\nTrue\nTrue\nFalse\nTrue\nTrue\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:division:2",
+   "case": "division",
+   "op": "transpose",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(8 / 2)\nprint(7 / 2)\nprint(-8 / 2)\n(print1 / 3)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n4.0\n3.5\n-4.0\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-d8qwukuk/prog.py\", line 4, in <module>\n    (print1 / 3)\n     ^^^^^^\nNameError: name 'print1' is not defined. Did you mean: 'print'?\n"
+    },
+    {
+     "source": "print(8 / 2)\nprint(7 / 2)\nprint(-8 / 2)\nprint(1 / 3)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n4.0\n3.5\n-4.0\n0.3333333333333333\n"
+    }
+   ]
+  },
+  {
+   "id": "python:each:2",
+   "case": "each",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for i in range(3):\n    print(qz)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-ftr6j3ts/prog.py\", line 2, in <module>\n    print(qz)\n          ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "for i in range(3):\n    print(i)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\n2\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fifo:2",
+   "case": "fifo",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put(3)\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.(join)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-jmbuz14_/prog.py\", line 20\n    t.(join)\n      ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nc = queue.Queue()\n\ndef send():\n    c.put(1)\n    c.put(2)\n    c.put(3)\n\ndef recv():\n    print(c.get())\n    print(c.get())\n    print(c.get())\n\nthreads = [threading.Thread(target=send), threading.Thread(target=recv)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:filter:2",
+   "case": "filter",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(:i for i in range(10) if i % 2 == 0])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-7wukuo3h/prog.py\", line 1\n    print(:i for i in range(10) if i % 2 == 0])\n                                             ^\nSyntaxError: closing parenthesis ']' does not match opening parenthesis '('\n"
+    },
+    {
+     "source": "print([i for i in range(10) if i % 2 == 0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 2, 4, 6, 8]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fizzbuzz:2",
+   "case": "fizzbuzz",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "for i in range(1, 101):\n    if i ] 15 == 0:\n        print(\"FizzBuzz\")\n    elif i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(i)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-0vuh7748/prog.py\", line 2\n    if i ] 15 == 0:\n         ^\nSyntaxError: unmatched ']'\n"
+    },
+    {
+     "source": "for i in range(1, 101):\n    if i % 15 == 0:\n        print(\"FizzBuzz\")\n    elif i % 3 == 0:\n        print(\"Fizz\")\n    elif i % 5 == 0:\n        print(\"Buzz\")\n    else:\n        print(i)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:fold:2",
+   "case": "fold",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "total = 0\nfor i in range(101)>=\n    total += i\nprint(total)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-3ugcrw9z/prog.py\", line 2\n    for i in range(101)>=\n                         ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "total = 0\nfor i in range(101):\n    total += i\nprint(total)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5050\n"
+    }
+   ]
+  },
+  {
+   "id": "python:if:3",
+   "case": "if",
+   "op": "transpose",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"y\" if 1 else \"n\")\nprint(\"y\" if 0 else \"n\")\n(print5 if 1 else 9)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\ny\nn\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-hneqiv0k/prog.py\", line 3, in <module>\n    (print5 if 1 else 9)\n     ^^^^^^\nNameError: name 'print5' is not defined. Did you mean: 'print'?\n"
+    },
+    {
+     "source": "print(\"y\" if 1 else \"n\")\nprint(\"y\" if 0 else \"n\")\nprint(5 if 1 else 9)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\ny\nn\n5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:list:2",
+   "case": "list",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([1, \"two\", [3, 4], 2.5==)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-0kkxgswu/prog.py\", line 1\n    print([1, \"two\", [3, 4], 2.5==)\n                                  ^\nSyntaxError: closing parenthesis ')' does not match opening parenthesis '['\n"
+    },
+    {
+     "source": "print([1, \"two\", [3, 4], 2.5])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 'two', [3, 4], 2.5]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:logic:2",
+   "case": "logic",
+   "op": "drop",
+   "first_outcome": "wrong-output",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(1 and 0)\n(1 or 0)\nprint(not 0)\nprint(bool(1) ^ bool(1))\nprint(bool(1) ^ bool(0))\n",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n0\nTrue\nFalse\nTrue\n"
+    },
+    {
+     "source": "print(1 and 0)\nprint(1 or 0)\nprint(not 0)\nprint(bool(1) ^ bool(1))\nprint(bool(1) ^ bool(0))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n0\n1\nTrue\nFalse\nTrue\n"
+    }
+   ]
+  },
+  {
+   "id": "python:modulo:2",
+   "case": "modulo",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(7 % 3)\nprint(-7 % 3)\nprint(7 % -3)\nqz(7.5 % 2)\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n1\n2\n-2\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-knf_ww26/prog.py\", line 4, in <module>\n    qz(7.5 % 2)\n    ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "print(7 % 3)\nprint(-7 % 3)\nprint(7 % -3)\nprint(7.5 % 2)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n1\n2\n-2\n1.5\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pour-drain:2",
+   "case": "pour-drain",
+   "op": "ident-rename",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(qz)\n\na = queue.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour(\"xy\", c)\nprint(drain(c))\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-xnrlpcln/prog.py\", line 18, in <module>\n    print(drain(a))\n          ^^^^^^^^\n  File \"/tmp/pybench-xnrlpcln/prog.py\", line 14, in drain\n    out.append(qz)\n               ^^\nNameError: name 'qz' is not defined\n"
+    },
+    {
+     "source": "import queue\n\ndef pour(items, ch):\n    for v in items:\n        ch.put(v)\n    ch.put(None)\n\ndef drain(ch):\n    out = []\n    while True:\n        v = ch.get()\n        if v is None:\n            return out\n        out.append(v)\n\na = queue.Queue()\npour([1, 2, 3], a)\nprint(drain(a))\nb = queue.Queue()\npour([], b)\nprint(drain(b))\nc = queue.Queue()\npour(\"xy\", c)\nprint(drain(c))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2, 3]\n[]\n['x', 'y']\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-chained:2",
+   "case": "pump-chained",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i in range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n        if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put)None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-qqsqs866/prog.py\", line 25\n    c.put)None)\n         ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\na = queue.Queue()\nb = queue.Queue()\nc = queue.Queue()\n\ndef produce():\n    for i in range(5):\n        a.put(i)\n    a.put(None)\n\ndef add_one():\n    while True:\n        v = a.get()\n        if v is None:\n            b.put(None)\n            return\n        b.put(v + 1)\n\ndef times_ten():\n    while True:\n        v = b.get()\n        if v is None:\n            c.put(None)\n            return\n        c.put(v * 10)\n\ndef drain():\n    out = []\n    while True:\n        v = c.get()\n        if v is None:\n            print(out)\n            return\n        out.append(v)\n\nthreads = [threading.Thread(target=f)\n           for f in (produce, add_one, times_ten, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[10, 20, 30, 40, 50]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:pump-pipeline:2",
+   "case": "pump-pipeline",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nalpha = queue.Queue()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) break f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-ertk8q5i/prog.py\", line 28\n    threads = [threading.Thread(target=f) break f in (produce, pump, drain)]\n                                          ^^^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nalpha = queue.Queue()\nbeta = queue.Queue()\n\ndef produce():\n    for i in range(9):\n        v = i + 1\n        alpha.put(v * v)\n    alpha.put(None)\n\ndef pump():\n    while True:\n        v = alpha.get()\n        if v is None:\n            beta.put(None)\n            return\n        beta.put(v * 2)\n\ndef drain():\n    while True:\n        v = beta.get()\n        if v is None:\n            return\n        print(v)\n\nthreads = [threading.Thread(target=f) for f in (produce, pump, drain)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n"
+    }
+   ]
+  },
+  {
+   "id": "python:raise-custom:2",
+   "case": "raise-custom",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "try:\n    raise ValueError([1, 2])\ncontinue ValueError as e:\n    print(e.args[0])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-kfqxox59/prog.py\", line 3\n    continue ValueError as e:\n    ^^^^^^^^\nSyntaxError: expected 'except' or 'finally' block\n"
+    },
+    {
+     "source": "try:\n    raise ValueError([1, 2])\nexcept ValueError as e:\n    print(e.args[0])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[1, 2]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:range-map:2",
+   "case": "range-map",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print([i * i for i or range(5)])\nprint([i * i for i in range(0)])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-lna64rmm/prog.py\", line 1\n    print([i * i for i or range(5)])\n                     ^^^^^^^^^^^^^\nSyntaxError: cannot assign to expression\n"
+    },
+    {
+     "source": "print([i * i for i in range(5)])\nprint([i * i for i in range(0)])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n[0, 1, 4, 9, 16]\n[]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:repeat:2",
+   "case": "repeat",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "x = 0\nand _ in range(5):\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-ad1vkza9/prog.py\", line 2\n    and _ in range(5):\n    ^^^\nSyntaxError: invalid syntax\n"
+    },
+    {
+     "source": "x = 0\nfor _ in range(5):\n    x += 1\nprint(x)\ny = 0\nfor _ in range(0):\n    y += 1\nprint(y)",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n5\n0\n"
+    }
+   ]
+  },
+  {
+   "id": "python:seq-basics:2",
+   "case": "seq-basics",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(len(\"abc\"))\nprint([1, 2] + [3<)\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9][1])\nprint(\"xyz\"[2])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-9ldjjnbx/prog.py\", line 2\n    print([1, 2] + [3<)\n                      ^\nSyntaxError: closing parenthesis ')' does not match opening parenthesis '['\n"
+    },
+    {
+     "source": "print(len(\"abc\"))\nprint([1, 2] + [3])\nprint(\"ab\" + \"cd\")\nprint([7, 8, 9][1])\nprint(\"xyz\"[2])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n3\n[1, 2, 3]\nabcd\n8\nz\n"
+    }
+   ]
+  },
+  {
+   "id": "python:slice:3",
+   "case": "slice",
+   "op": "transpose",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"matrix\"[1:4])\nprint(\"ab\"[:099])\nprint([1, 2, 3, 4][1:3])\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-8k6to4vn/prog.py\", line 2\n    print(\"ab\"[:099])\n                ^\nSyntaxError: leading zeros in decimal integer literals are not permitted; use an 0o prefix for octal integers\n"
+    },
+    {
+     "source": "print(\"matrix\"[1:4])\nprint(\"ab\"[:99])\nprint([1, 2, 3, 4][1:3])",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\natr\nab\n[2, 3]\n"
+    }
+   ]
+  },
+  {
+   "id": "python:spawn-join:2",
+   "case": "spawn-join",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.Thread(target=lambda: r.put(42))\nt.start()\nt.join((\nprint(r.get())\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-132tl4p_/prog.py\", line 7\n    t.join((\n           ^\nSyntaxError: '(' was never closed\n"
+    },
+    {
+     "source": "import threading\nimport queue\n\nr = queue.Queue()\nt = threading.Thread(target=lambda: r.put(42))\nt.start()\nt.join()\nprint(r.get())",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42\n"
+    }
+   ]
+  },
+  {
+   "id": "python:split-join:2",
+   "case": "split-join",
+   "op": "swap-op",
+   "first_outcome": "syntax",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\"))\nprint(\"-\".join(str<=x) for x in [1, 2, 3]))\n",
+     "outcome": "syntax",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n  File \"/tmp/pybench-h4lctng7/prog.py\", line 3\n    print(\"-\".join(str<=x) for x in [1, 2, 3]))\n                                              ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+     "source": "print(\"a,b,c\".split(\",\"))\nprint(list(\"ab\"))\nprint(\"-\".join(str(x) for x in [1, 2, 3]))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n['a', 'b', 'c']\n['a', 'b']\n1-2-3\n"
+    }
+   ]
+  },
+  {
+   "id": "python:stdin-echo:2",
+   "case": "stdin-echo",
+   "op": "swap-op",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "import sys\nwhile line in sys.stdin:\n    print(line, end=\"\")\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-c0zf1y_j/prog.py\", line 2, in <module>\n    while line in sys.stdin:\n          ^^^^\nNameError: name 'line' is not defined. Did you mean: 'slice'?\n"
+    },
+    {
+     "source": "import sys\nfor line in sys.stdin:\n    print(line, end=\"\")",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nx\ny\n"
+    }
+   ]
+  },
+  {
+   "id": "python:str-parse:2",
+   "case": "str-parse",
+   "op": "transpose",
+   "first_outcome": "exception",
+   "healed": true,
+   "rounds": 1,
+   "attempts": [
+    {
+     "source": "print(str(42) + \"!\")\nprintint((\"-3\"))\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))\n",
+     "outcome": "exception",
+     "failure": "exit code: 1\nstdout:\n42!\n\nstderr:\nTraceback (most recent call last):\n  File \"/tmp/pybench-7ny3fxv7/prog.py\", line 2, in <module>\n    printint((\"-3\"))\n    ^^^^^^^^\nNameError: name 'printint' is not defined\n"
+    },
+    {
+     "source": "print(str(42) + \"!\")\nprint(int((\"-3\")))\nprint(float(\"2.5\"))\nprint(len(str([1, 2])))",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n42!\n-3\n2.5\n6\n"
+    }
+   ]
+  }
+ ]
+}

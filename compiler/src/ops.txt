@@ -62,10 +62,14 @@ sigil  name          effect              description
 ⍞      println       v ⍞ →               print v and a newline
 ⊸      print         v ⊸ →               print v without a newline
 ⌨      readline      → s|∅               read a line from stdin, stripping the \n or \r\n ending (∅ at end of input; waits until all other strands are quiet, flushing pending ⊸ output first)
+⌥      event         → e|∅              one raw input event: characters as themselves; «↵» Enter, «⌫ ⇥ ⎋»,
+                                         the navigation block «↑ ↓ ← → ⇱ ⇲ ⇞ ⇟ ⌦ ⎀», control chords «^A»…«^Z»,
+                                         a mouse press as ⟨«⌖» x y⟩; ∅ at end of input (lowest priority, like ⌨)
 ⍇      read-file     path ⍇ → s          read a whole file as a string; glitches if unreadable
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
+⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)
@@ -80,3 +84,7 @@ layout:    ⇓ first line = rain form (columns are strands, read downward)
            ⇊ divider = boot section above, strands below
            ⋮ line prefix = continue previous strand (flat form)
            ※ comment to end of line (flat) / end of column (rain)
+libraries: std sigils (π ∑ ⊃ …) print with `mlang std`; the Construct —
+           the UI library (Ⓛ Ⓑ Ⓥ Ⓦ ⌺ ▶ scripted, ⏵ live …) — with
+           `mlang ui`, and is woven in automatically when its sigils
+           are referenced
