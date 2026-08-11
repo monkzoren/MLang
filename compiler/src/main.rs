@@ -31,7 +31,18 @@ fn weave_error(e: &LoadError) -> ExitCode {
     ExitCode::from(2)
 }
 
-fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>) -> ExitCode {
+/// MLANG_PAR=1 selects the parallel scheduler (strands on OS threads) —
+/// the only switch a welded binary has, since its argv belongs to ⌂.
+fn parallel_env() -> bool {
+    std::env::var("MLANG_PAR")
+        .map(|v| !v.is_empty() && v != "0")
+        .unwrap_or(false)
+}
+
+fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>, parallel: bool) -> ExitCode {
+    if parallel || parallel_env() {
+        return ExitCode::from(mlang::par::run_parallel(prog, prog_args) as u8);
+    }
     let stdin = std::io::stdin();
     let mut reader = BufReader::new(stdin.lock());
     let mut out = std::io::stdout();
@@ -45,9 +56,9 @@ fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>) -> ExitCode 
     ExitCode::from(code as u8)
 }
 
-fn run_source(text: &str, prog_args: Vec<String>) -> ExitCode {
+fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     match vm::compile_text(text) {
-        Ok(prog) => run_compiled(&prog, prog_args),
+        Ok(prog) => run_compiled(&prog, prog_args, parallel),
         Err(e) => weave_error(&e),
     }
 }
@@ -91,8 +102,12 @@ const USAGE: &str = "mlang — the Matrix language toolchain
 
 usage:
   mlang build <file|-> -o <out>   compile to a standalone native executable
-  mlang run <file|-> [args…]      compile and run immediately (args reach ⌂)
-  mlang eval <code> [args…]       run flat-form source given as an argument
+  mlang run [--parallel] <file|-> [args…]   compile and run (args reach ⌂)
+  mlang eval [--parallel] <code> [args…]    run flat-form source directly
+                                  --parallel (or MLANG_PAR=1, which welded
+                                  binaries also honor): one OS thread per
+                                  strand instead of the deterministic
+                                  round-robin scheduler
   mlang check <file|->            compile only; report weave errors
   mlang rain <file|->             render flat source as the vertical rain grid
   mlang flat <file|->             render rain source as flat lines
@@ -106,7 +121,7 @@ fn main() -> ExitCode {
     // lets a welded editor open a file dropped onto the executable.
     if let Some(extracted) = payload::self_payload() {
         return match extracted {
-            Ok(prog) => run_compiled(&prog, std::env::args().skip(1).collect()),
+            Ok(prog) => run_compiled(&prog, std::env::args().skip(1).collect(), false),
             Err(e) => {
                 eprintln!("✗ corrupt program payload: {e}");
                 ExitCode::from(2)
@@ -118,14 +133,35 @@ fn main() -> ExitCode {
     let cmd = args.get(1).map(String::as_str).unwrap_or("");
     match (cmd, args.len()) {
         ("build", 5) if args[3] == "-o" => build(&args[2], &args[4]),
-        ("run", n) if n >= 3 => match read_source(&args[2]) {
-            Ok(text) => run_source(&text, args[3..].to_vec()),
-            Err(e) => {
-                eprintln!("✗ {e}");
-                ExitCode::from(2)
+        ("run", n) if n >= 3 => {
+            let par = args[2] == "--parallel";
+            let file = if par { args.get(3) } else { Some(&args[2]) };
+            let rest = if par { 4 } else { 3 };
+            match file {
+                Some(f) => match read_source(f) {
+                    Ok(text) => run_source(&text, args.get(rest..).unwrap_or(&[]).to_vec(), par),
+                    Err(e) => {
+                        eprintln!("✗ {e}");
+                        ExitCode::from(2)
+                    }
+                },
+                None => {
+                    eprint!("{USAGE}");
+                    ExitCode::from(2)
+                }
             }
-        },
-        ("eval", n) if n >= 3 => run_source(&args[2], args[3..].to_vec()),
+        }
+        ("eval", n) if n >= 3 => {
+            let par = args[2] == "--parallel";
+            let (code, rest) = if par { (args.get(3), 4) } else { (Some(&args[2]), 3) };
+            match code {
+                Some(c) => run_source(c, args.get(rest..).unwrap_or(&[]).to_vec(), par),
+                None => {
+                    eprint!("{USAGE}");
+                    ExitCode::from(2)
+                }
+            }
+        }
         ("check", 3) => match read_source(&args[2]) {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {

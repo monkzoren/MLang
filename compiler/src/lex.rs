@@ -1,7 +1,7 @@
 //! The MLang lexer — a faithful port of the reference implementation.
 
 use crate::values::{Instr, Op, Pos, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
@@ -188,7 +188,7 @@ impl Lexer {
                 self.i += 1;
                 let inner = self.parse(Some(']'), Some(cell))?;
                 code.push(Instr {
-                    op: Op::Push(Value::Quot(Rc::new(inner))),
+                    op: Op::Push(Value::Quot(Arc::new(inner))),
                     pos: self.pos(&cell),
                 });
             } else if ch == ']' {

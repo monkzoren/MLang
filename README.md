@@ -66,6 +66,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mandelbrot                                         # standalone: no toolchain needed
 
 ./mlang run examples/editor.ml         # or compile-and-run in one step
+./mlang run --parallel examples/mandelbrot.ml   # strands on OS threads
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
@@ -171,7 +172,9 @@ each frame in parallel; a navigator strand owns the viewport, streams
 render jobs to the workers over channels, reassembles their rows in
 order, and reads commands from stdin — `a d w s` pan, `z x` zoom (the
 escape-time depth rises as you dive), `r` reset, `q` quit — a full
-interactive event loop in 5 strands and two boot definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
+interactive event loop in 5 strands and two boot definitions. Run it
+with `mlang run --parallel` and the four workers land on four cores:
+same bytes on screen, ~3.4× faster frames. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 And `examples/editor.ml` is **MatrixPad** — a real application: a
@@ -236,14 +239,21 @@ SPEC.md           the full language specification
   makes a dedicated tokenizer trivial (one token per sigil). Density also
   buys correctness: there is no syntax to misindent and no identifier to
   misspell twice.
-* **Determinism over raw parallelism.** The runtime interleaves strands
-  deterministically (round-robin, fixed slice) rather than using OS
-  threads. The language model (immutable values, channel-only
-  communication) is exactly the one that admits true parallel execution
-  without data races; the scheduler is an implementation choice, and
-  reproducibility is worth more to a machine author than nondeterministic
-  wall-clock wins. A parallel scheduler can be added without changing a
-  single program's meaning where interleaving is unobservable.
+* **Determinism first, parallelism on demand.** By default the runtime
+  interleaves strands deterministically (round-robin, fixed slice):
+  identical input ⇒ identical bytes out, which is what makes
+  machine-written concurrent code debuggable by a machine, and is what
+  the conformance corpus pins. Because the language model (immutable
+  values, channel-only communication) admits true parallelism without
+  data races, the toolchain also ships it: `mlang run --parallel` (or
+  `MLANG_PAR=1` for welded binaries) puts every strand on its own OS
+  thread. Per-strand order, FIFO channels, glitch isolation, and
+  deadlock detection carry over; only cross-strand interleaving becomes
+  timing-dependent — and programs wired as single-producer
+  single-consumer pipelines with one printing strand (the Mandelbrot
+  explorer, `pipeline.ml`) produce byte-identical output either way,
+  just faster: the four-worker Mandelbrot renders ~3.4× quicker on four
+  cores.
 
 ## Name
 

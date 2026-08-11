@@ -10,7 +10,7 @@ use num_traits::{Signed, ToPrimitive, Zero};
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, Write};
-use std::rc::Rc;
+use std::sync::Arc;
 
 const SLICE: usize = 8;
 
@@ -51,28 +51,28 @@ enum IterMode {
 
 enum Frame {
     CF {
-        code: Rc<Vec<Instr>>,
+        code: Arc<Vec<Instr>>,
         ip: usize,
     },
     While {
-        cond: Rc<Vec<Instr>>,
-        body: Rc<Vec<Instr>>,
+        cond: Arc<Vec<Instr>>,
+        body: Arc<Vec<Instr>>,
         phase: u8,
     },
     Repeat {
         left: i64,
-        body: Rc<Vec<Instr>>,
+        body: Arc<Vec<Instr>>,
     },
     Iter {
-        items: Rc<Vec<Value>>,
+        items: Arc<Vec<Value>>,
         i: usize,
-        f: Rc<Vec<Instr>>,
+        f: Arc<Vec<Instr>>,
         mode: IterMode,
         out: Vec<Value>,
         awaiting: bool,
     },
     Try {
-        handler: Rc<Vec<Instr>>,
+        handler: Arc<Vec<Instr>>,
         depth: usize,
     },
     Drain {
@@ -83,13 +83,13 @@ enum Frame {
     Pump {
         src: char,
         dst: char,
-        f: Rc<Vec<Instr>>,
+        f: Arc<Vec<Instr>>,
         phase: u8,
         pos: Pos,
     },
 }
 
-fn cf(code: Rc<Vec<Instr>>) -> Frame {
+fn cf(code: Arc<Vec<Instr>>) -> Frame {
     Frame::CF { code, ip: 0 }
 }
 
@@ -107,7 +107,7 @@ pub struct Strand {
 }
 
 impl Strand {
-    fn new(sid: i64, label: String, code: Rc<Vec<Instr>>, locals: Vec<(char, Value)>) -> Self {
+    pub(crate) fn new(sid: i64, label: String, code: Arc<Vec<Instr>>, locals: Vec<(char, Value)>) -> Self {
         Strand {
             sid,
             label,
@@ -121,7 +121,16 @@ impl Strand {
     }
 
     fn placeholder() -> Self {
-        Strand::new(i64::MIN, String::new(), Rc::new(Vec::new()), Vec::new())
+        Strand {
+            sid: i64::MIN,
+            label: String::new(),
+            frames: Vec::new(),
+            stack: Vec::new(),
+            locals: Vec::new(),
+            status: Status::Run,
+            block: None,
+            glitch: None,
+        }
     }
 
     fn push(&mut self, v: Value) {
@@ -168,7 +177,7 @@ impl Strand {
         })
     }
 
-    fn pop_quot(&mut self, pos: Pos, op: &str) -> R<Rc<Vec<Instr>>> {
+    fn pop_quot(&mut self, pos: Pos, op: &str) -> R<Arc<Vec<Instr>>> {
         let v = self.pop(pos, "a quotation")?;
         match v {
             Value::Quot(q) => Ok(q),
@@ -180,10 +189,10 @@ impl Strand {
     }
 
     /// A list, or a string exploded into 1-char strings.
-    fn pop_seq(&mut self, pos: Pos, op: &str) -> R<Rc<Vec<Value>>> {
+    fn pop_seq(&mut self, pos: Pos, op: &str) -> R<Arc<Vec<Value>>> {
         let v = self.pop(pos, "a list or string")?;
         match v {
-            Value::Str(s) => Ok(Rc::new(
+            Value::Str(s) => Ok(Arc::new(
                 s.chars().map(|c| Value::str(c.to_string())).collect(),
             )),
             Value::List(l) => Ok(l),
@@ -365,6 +374,9 @@ pub struct VM<'io> {
     pub err: &'io mut dyn Write,
     /// The program's command-line arguments, pushed as a string list by ⌂.
     pub args: Vec<String>,
+    /// Parallel-mode substrate. None = the deterministic sequential
+    /// scheduler (the language default, pinned by the conformance corpus).
+    pub bus: Option<Arc<crate::par::Bus>>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -393,7 +405,57 @@ impl<'io> VM<'io> {
             out,
             err,
             args: Vec::new(),
+            bus: None,
         }
+    }
+
+    // ── the substrate switch ───────────────────────────────────────────
+    // Sequential mode (bus: None) keeps all shared state — channels,
+    // globals, spawned strands — inside this VM, and blocking ops signal
+    // Sig::Block to the deterministic scheduler. Parallel mode routes the
+    // same operations through the shared Bus, where blocking ops park the
+    // OS thread instead; Sig::Block never occurs there.
+
+    fn chan_send(&mut self, c: char, v: Value) {
+        match &self.bus {
+            Some(bus) => bus.send(c, v),
+            None => self.channels.entry(c).or_default().push_back(v),
+        }
+    }
+
+    fn chan_try_recv(&mut self, c: char) -> Option<Value> {
+        match &self.bus {
+            Some(bus) => bus.try_recv(c),
+            None => self.channels.entry(c).or_default().pop_front(),
+        }
+    }
+
+    /// Receive for blocking ops. Sequential: None means "signal Sig::Block".
+    /// Parallel: parks until a value arrives (the Bus detects deadlock and
+    /// aborts the process itself), so None is never returned.
+    fn chan_recv(&mut self, c: char, sid: i64, label: &str, pos: Pos) -> Option<Value> {
+        if let Some(bus) = &self.bus {
+            let bus = bus.clone();
+            let _ = self.out.flush(); // a prompt must survive a park
+            Some(bus.recv(c, sid, label, pos))
+        } else {
+            self.channels.entry(c).or_default().pop_front()
+        }
+    }
+
+    /// Resolve a global, consulting the shared table in parallel mode.
+    /// Globals are single-assignment, so caching a hit locally is sound.
+    fn global_lookup(&mut self, c: char) -> Option<Value> {
+        if let Some(v) = self.globals.get(&c) {
+            return Some(v.clone());
+        }
+        if let Some(bus) = &self.bus {
+            if let Some(v) = bus.global_get(c) {
+                self.globals.insert(c, v.clone());
+                return Some(v);
+            }
+        }
+        None
     }
 
     fn register(&mut self, strand: Strand) {
@@ -490,33 +552,7 @@ impl<'io> VM<'io> {
 
     fn run_slice(&mut self, idx: usize) -> usize {
         let mut s = std::mem::replace(&mut self.strands[idx], Strand::placeholder());
-        let mut executed = 0;
-        while executed < SLICE {
-            if s.frames.is_empty() {
-                s.status = Status::Done;
-                break;
-            }
-            match step(self, &mut s) {
-                Ok(()) => executed += 1,
-                Err(Sig::Block(on, pos)) => {
-                    s.status = Status::Blocked;
-                    s.block = Some((on, pos));
-                    break;
-                }
-                Err(Sig::Yield) => {
-                    executed += 1;
-                    break;
-                }
-                Err(Sig::Glitch(v, pos)) => {
-                    executed += 1;
-                    if !s.catch(v.clone()) {
-                        s.status = Status::Dead;
-                        s.glitch = Some((v, pos));
-                        break;
-                    }
-                }
-            }
-        }
+        let executed = run_burst(self, &mut s, SLICE);
         self.strands[idx] = s;
         executed
     }
@@ -575,7 +611,7 @@ impl<'io> VM<'io> {
         let boot = Strand::new(
             -1,
             "boot".into(),
-            Rc::new(prog.boot.clone()),
+            Arc::new(prog.boot.clone()),
             Vec::new(),
         );
         self.register(boot);
@@ -588,7 +624,7 @@ impl<'io> VM<'io> {
             self.register(Strand::new(
                 i as i64,
                 label.clone(),
-                Rc::new(code.clone()),
+                Arc::new(code.clone()),
                 Vec::new(),
             ));
         }
@@ -645,6 +681,106 @@ fn std_code() -> Vec<Instr> {
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────
+
+/// Run up to `limit` counted steps of one strand. The counting is exactly
+/// step()'s — one per executed instruction, frame retirement, or caught
+/// glitch — because the deterministic schedule (and therefore the recorded
+/// conformance corpus) observes it. The fast path below exists only to
+/// clone the top code frame's Arc once per run instead of once per
+/// instruction; it must never change what counts as a step.
+pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
+    let mut executed = 0;
+    'outer: while executed < limit {
+        if s.frames.is_empty() {
+            s.status = Status::Done;
+            break;
+        }
+        let fi = s.frames.len() - 1;
+        if let Frame::CF { code, ip } = &s.frames[fi] {
+            let code = code.clone();
+            let mut ip = *ip;
+            loop {
+                if ip >= code.len() {
+                    s.frames.pop();
+                    executed += 1;
+                    continue 'outer;
+                }
+                match execute(vm, s, &code[ip]) {
+                    Ok(()) => {
+                        executed += 1;
+                        ip += 1;
+                        if s.frames.len() != fi + 1 {
+                            // a frame was pushed — re-dispatch on the new top
+                            if let Frame::CF { ip: slot, .. } = &mut s.frames[fi] {
+                                *slot = ip;
+                            }
+                            continue 'outer;
+                        }
+                        if executed >= limit {
+                            if let Frame::CF { ip: slot, .. } = &mut s.frames[fi] {
+                                *slot = ip;
+                            }
+                            break 'outer;
+                        }
+                    }
+                    Err(Sig::Yield) => {
+                        // Yield completed — resume at the next instruction.
+                        ip += 1;
+                        executed += 1;
+                        if let Frame::CF { ip: slot, .. } = &mut s.frames[fi] {
+                            *slot = ip;
+                        }
+                        break 'outer;
+                    }
+                    Err(Sig::Block(on, pos)) => {
+                        // Blocked ops re-execute: ip stays on this instruction.
+                        if let Frame::CF { ip: slot, .. } = &mut s.frames[fi] {
+                            *slot = ip;
+                        }
+                        s.status = Status::Blocked;
+                        s.block = Some((on, pos));
+                        break 'outer;
+                    }
+                    Err(Sig::Glitch(v, pos)) => {
+                        if let Frame::CF { ip: slot, .. } = &mut s.frames[fi] {
+                            *slot = ip;
+                        }
+                        executed += 1;
+                        if !s.catch(v.clone()) {
+                            s.status = Status::Dead;
+                            s.glitch = Some((v, pos));
+                            break 'outer;
+                        }
+                        continue 'outer;
+                    }
+                }
+            }
+        } else {
+            match step(vm, s) {
+                Ok(()) => executed += 1,
+                Err(Sig::Block(on, pos)) => {
+                    s.status = Status::Blocked;
+                    s.block = Some((on, pos));
+                    break;
+                }
+                Err(Sig::Yield) => {
+                    executed += 1;
+                    break;
+                }
+                Err(Sig::Glitch(v, pos)) => {
+                    executed += 1;
+                    if !s.catch(v.clone()) {
+                        s.status = Status::Dead;
+                        s.glitch = Some((v, pos));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    executed
+}
+
 fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
     let fi = s.frames.len() - 1;
     match &s.frames[fi] {
@@ -742,7 +878,7 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                 let frame = s.frames.pop().unwrap();
                 if let Frame::Iter { out, mode, .. } = frame {
                     if matches!(mode, IterMode::Map | IterMode::Filter) {
-                        s.push(Value::List(Rc::new(out)));
+                        s.push(Value::List(Arc::new(out)));
                     }
                 }
                 return Ok(());
@@ -768,14 +904,13 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                 Frame::Drain { chan, pos, .. } => (*chan, *pos),
                 _ => unreachable!(),
             };
-            let q = vm.channels.entry(chan).or_default();
-            let Some(v) = q.pop_front() else {
+            let Some(v) = vm.chan_recv(chan, s.sid, &s.label, pos) else {
                 return Err(Sig::Block(BlockOn::Chan(chan), pos));
             };
             if matches!(v, Value::Nil) {
                 let frame = s.frames.pop().unwrap();
                 if let Frame::Drain { out, .. } = frame {
-                    s.push(Value::List(Rc::new(out)));
+                    s.push(Value::List(Arc::new(out)));
                 }
             } else if let Frame::Drain { out, .. } = &mut s.frames[fi] {
                 out.push(v);
@@ -790,12 +925,11 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                 _ => unreachable!(),
             };
             if phase == 0 {
-                let q = vm.channels.entry(src).or_default();
-                let Some(v) = q.pop_front() else {
+                let Some(v) = vm.chan_recv(src, s.sid, &s.label, pos) else {
                     return Err(Sig::Block(BlockOn::Chan(src), pos));
                 };
                 if matches!(v, Value::Nil) {
-                    vm.channels.entry(dst).or_default().push_back(Value::Nil);
+                    vm.chan_send(dst, Value::Nil);
                     s.frames.pop();
                     return Ok(());
                 }
@@ -809,7 +943,7 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                     *phase = 0;
                 }
                 let v = s.pop(pos, "the pump body's result")?;
-                vm.channels.entry(dst).or_default().push_back(v);
+                vm.chan_send(dst, v);
             }
             Ok(())
         }
@@ -827,8 +961,8 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
         Op::Name(c) => {
             let v = if let Some(v) = s.local_get(*c) {
                 v.clone()
-            } else if let Some(v) = vm.globals.get(c) {
-                v.clone()
+            } else if let Some(v) = vm.global_lookup(*c) {
+                v
             } else {
                 return glitch(format!("undefined sigil '{c}'"), pos);
             };
@@ -853,7 +987,7 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
                 }
             }
             items.reverse();
-            s.push(Value::List(Rc::new(items)));
+            s.push(Value::List(Arc::new(items)));
             Ok(())
         }
         Op::B(ch, arg, arg2) => builtin(vm, s, *ch, *arg, *arg2, pos),
@@ -1044,7 +1178,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '⍸' => {
             let n = s.pop_i64(pos, "⍸")?;
             let items: Vec<Value> = (0..n.max(0)).map(Value::int).collect();
-            s.push(Value::List(Rc::new(items)));
+            s.push(Value::List(Arc::new(items)));
         }
         // ── sequences ──
         '#' => {
@@ -1069,7 +1203,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 (Value::List(x), Value::List(y)) => {
                     let mut v = x.as_ref().clone();
                     v.extend(y.iter().cloned());
-                    s.push(Value::List(Rc::new(v)));
+                    s.push(Value::List(Arc::new(v)));
                 }
                 _ => {
                     return glitch(
@@ -1124,7 +1258,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 Value::List(l) => {
                     let i = i.min(l.len());
                     let j = j.min(l.len()).max(i);
-                    s.push(Value::List(Rc::new(l[i..j].to_vec())));
+                    s.push(Value::List(Arc::new(l[i..j].to_vec())));
                 }
                 _ => {
                     return glitch(
@@ -1144,7 +1278,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                     } else {
                         x.split(y.as_str()).map(Value::str).collect()
                     };
-                    s.push(Value::List(Rc::new(parts)));
+                    s.push(Value::List(Arc::new(parts)));
                 }
                 _ => {
                     return glitch(
@@ -1227,7 +1361,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             match &v {
                 Value::Str(x) => s.push(Value::str(x.chars().rev().collect::<String>())),
                 Value::List(l) => {
-                    s.push(Value::List(Rc::new(l.iter().rev().cloned().collect())))
+                    s.push(Value::List(Arc::new(l.iter().rev().cloned().collect())))
                 }
                 _ => {
                     return glitch(
@@ -1251,14 +1385,14 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                     if nums {
                         let mut v2 = l.as_ref().clone();
                         v2.sort_by(|a, b| num_cmp(a, b));
-                        s.push(Value::List(Rc::new(v2)));
+                        s.push(Value::List(Arc::new(v2)));
                     } else if strs {
                         let mut v2 = l.as_ref().clone();
                         v2.sort_by(|a, b| match (a, b) {
                             (Value::Str(x), Value::Str(y)) => x.cmp(y),
                             _ => unreachable!(),
                         });
-                        s.push(Value::List(Rc::new(v2)));
+                        s.push(Value::List(Arc::new(v2)));
                     } else {
                         return glitch("⍋ needs all numbers or all strings", pos);
                     }
@@ -1331,10 +1465,15 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         // ── bindings ──
         '≔' => {
-            if vm.globals.contains_key(&arg) {
+            if vm.global_lookup(arg).is_some() {
                 return glitch(format!("sigil '{arg}' is already defined"), pos);
             }
             let v = s.pop(pos, "a value to bind")?;
+            if let Some(bus) = &vm.bus {
+                if !bus.global_define(arg, v.clone()) {
+                    return glitch(format!("sigil '{arg}' is already defined"), pos);
+                }
+            }
             vm.globals.insert(arg, v);
         }
         '⇒' => {
@@ -1344,18 +1483,16 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         // ── strands & channels ──
         '↥' => {
             let v = s.pop(pos, "a value to send")?;
-            vm.channels.entry(arg).or_default().push_back(v);
+            vm.chan_send(arg, v);
         }
         '↧' => {
-            let ch_q = vm.channels.entry(arg).or_default();
-            match ch_q.pop_front() {
+            match vm.chan_recv(arg, s.sid, &s.label, pos) {
                 Some(v) => s.push(v),
                 None => return Err(Sig::Block(BlockOn::Chan(arg), pos)),
             }
         }
         '⇂' => {
-            let ch_q = vm.channels.entry(arg).or_default();
-            match ch_q.pop_front() {
+            match vm.chan_try_recv(arg) {
                 Some(v) => {
                     s.push(v);
                     s.push(Value::int(1));
@@ -1365,9 +1502,10 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         '⇈' => {
             let items = s.pop_seq(pos, "⇈")?;
-            let q = vm.channels.entry(arg).or_default();
-            q.extend(items.iter().cloned());
-            q.push_back(Value::Nil);
+            for v in items.iter() {
+                vm.chan_send(arg, v.clone());
+            }
+            vm.chan_send(arg, Value::Nil);
         }
         '⇟' => {
             s.frames.push(Frame::Drain { chan: arg, out: Vec::new(), pos });
@@ -1378,15 +1516,15 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         '⚡' => {
             let q = s.pop_quot(pos, "⚡")?;
-            let sid = vm.next_spawn_sid;
-            vm.next_spawn_sid += 1;
-            let child = Strand::new(
-                sid,
-                format!("⚡ of strand {}", fmt_i64(s.sid)),
-                q,
-                s.locals.clone(),
-            );
-            vm.register(child);
+            let label = format!("⚡ of strand {}", fmt_i64(s.sid));
+            let sid = if let Some(bus) = &vm.bus {
+                bus.clone().spawn(label, q, s.locals.clone())
+            } else {
+                let sid = vm.next_spawn_sid;
+                vm.next_spawn_sid += 1;
+                vm.register(Strand::new(sid, label, q, s.locals.clone()));
+                sid
+            };
             s.push(Value::int(sid));
         }
         '⋈' => {
@@ -1401,11 +1539,20 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 );
             }
             let sid = top.as_f64().unwrap() as i64;
-            let Some(&t) = vm.by_sid.get(&sid) else {
-                return glitch(format!("⋈ no strand with id {}", fmt_i64(sid)), pos);
-            };
-            if !matches!(vm.strands[t].status, Status::Done | Status::Dead) {
-                return Err(Sig::Block(BlockOn::Strand(sid), pos));
+            if let Some(bus) = &vm.bus {
+                let bus = bus.clone();
+                if !bus.knows_strand(sid) {
+                    return glitch(format!("⋈ no strand with id {}", fmt_i64(sid)), pos);
+                }
+                let _ = vm.out.flush();
+                bus.join_wait(sid, s.sid, &s.label, pos);
+            } else {
+                let Some(&t) = vm.by_sid.get(&sid) else {
+                    return glitch(format!("⋈ no strand with id {}", fmt_i64(sid)), pos);
+                };
+                if !matches!(vm.strands[t].status, Status::Done | Status::Dead) {
+                    return Err(Sig::Block(BlockOn::Strand(sid), pos));
+                }
             }
             s.stack.pop();
         }
@@ -1480,25 +1627,27 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             // the program blocks on input.
             let _ = vm.out.flush();
             let mut line = String::new();
-            match vm.stdin.read_line(&mut line) {
-                Ok(0) => s.push(Value::Nil),
-                Ok(_) => {
-                    if line.ends_with('\n') {
-                        line.pop();
-                    }
-                    // Windows consoles hand lines to programs CRLF-terminated;
-                    // the terminator is not part of the line's content.
-                    if line.ends_with('\r') {
-                        line.pop();
-                    }
-                    s.push(Value::str(line));
+            let n = match &vm.bus {
+                Some(bus) => bus.read_line(&mut line),
+                None => vm.stdin.read_line(&mut line).unwrap_or(0),
+            };
+            if n == 0 {
+                s.push(Value::Nil);
+            } else {
+                if line.ends_with('\n') {
+                    line.pop();
                 }
-                Err(_) => s.push(Value::Nil),
+                // Windows consoles hand lines to programs CRLF-terminated;
+                // the terminator is not part of the line's content.
+                if line.ends_with('\r') {
+                    line.pop();
+                }
+                s.push(Value::str(line));
             }
         }
         '⌂' => {
             let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
-            s.push(Value::List(Rc::new(items)));
+            s.push(Value::List(Arc::new(items)));
         }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();
