@@ -1,0 +1,611 @@
+{
+ "cases": [
+  {
+   "name": "int",
+   "source": "42⍞",
+   "stdin": ""
+  },
+  {
+   "name": "digit-runs",
+   "source": "1 2 3++⍞",
+   "stdin": ""
+  },
+  {
+   "name": "negative",
+   "source": "¯5⍞ ¯5 3+⍞",
+   "stdin": ""
+  },
+  {
+   "name": "float",
+   "source": "2.5⍞ .5 2×⍞ 3.0⍞",
+   "stdin": ""
+  },
+  {
+   "name": "bignum",
+   "source": "2 100^⍞ 2 100^ 2 100^×⍞",
+   "stdin": ""
+  },
+  {
+   "name": "string",
+   "source": "«Hello, Matrix»⍞ «a⏎b»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "string-raw-print",
+   "source": "«x»⊸«y»⊸",
+   "stdin": ""
+  },
+  {
+   "name": "list",
+   "source": "⟨1 «two» ⟨3 4⟩ 2.5⟩⍞",
+   "stdin": ""
+  },
+  {
+   "name": "nil",
+   "source": "∅⍞ ∅∅=⍞ ∅0=⍞ ∅¬⍞",
+   "stdin": ""
+  },
+  {
+   "name": "dup-swap-drop",
+   "source": "1∂+⍞ 1 2⇅-⍞ 1 2⌫⍞",
+   "stdin": ""
+  },
+  {
+   "name": "over-rot-depth",
+   "source": "1 2⊚⍞⍞⍞ 1 2 3⥀⍞⍞⍞ 7 8≢⍞",
+   "stdin": ""
+  },
+  {
+   "name": "underflow",
+   "source": "+",
+   "stdin": ""
+  },
+  {
+   "name": "arith",
+   "source": "3 4+⍞ 10 3-⍞ 6 7×⍞ 2 10^⍞",
+   "stdin": ""
+  },
+  {
+   "name": "division",
+   "source": "8 2÷⍞ 7 2÷⍞ ¯8 2÷⍞ 1 3÷⍞",
+   "stdin": ""
+  },
+  {
+   "name": "modulo",
+   "source": "7 3%⍞ ¯7 3%⍞ 7 ¯3%⍞ 7.5 2%⍞",
+   "stdin": ""
+  },
+  {
+   "name": "unary-math",
+   "source": "2√⍞ 2.7⌊⍞ 2.1⌈⍞ 5±⍞ ¯2.5⌊⍞",
+   "stdin": ""
+  },
+  {
+   "name": "div-zero",
+   "source": "1 0÷",
+   "stdin": ""
+  },
+  {
+   "name": "mod-zero",
+   "source": "1 0%",
+   "stdin": ""
+  },
+  {
+   "name": "sqrt-negative",
+   "source": "¯1√",
+   "stdin": ""
+  },
+  {
+   "name": "type-error-add",
+   "source": "1«x»+",
+   "stdin": ""
+  },
+  {
+   "name": "compare",
+   "source": "1 2<⍞ 2 2≤⍞ 3 2>⍞ 1 2≥⍞ 1 1=⍞ 1 2≠⍞ 1 1.0=⍞",
+   "stdin": ""
+  },
+  {
+   "name": "string-compare",
+   "source": "«a»«b»<⍞ «b»«a»≥⍞ «x»«x»=⍞",
+   "stdin": ""
+  },
+  {
+   "name": "list-deep-eq",
+   "source": "⟨1 ⟨2 3⟩⟩⟨1 ⟨2 3⟩⟩=⍞ ⟨1⟩⟨2⟩=⍞",
+   "stdin": ""
+  },
+  {
+   "name": "mixed-compare-glitch",
+   "source": "1«a»<",
+   "stdin": ""
+  },
+  {
+   "name": "logic",
+   "source": "1 0∧⍞ 1 0∨⍞ 0¬⍞ 1 1⊻⍞ 1 0⊻⍞",
+   "stdin": ""
+  },
+  {
+   "name": "apply",
+   "source": "[1 2+]!⍞ [[3]!]!⍞",
+   "stdin": ""
+  },
+  {
+   "name": "if",
+   "source": "1[«y»][«n»]?⍞ 0[«y»][«n»]?⍞ 1 5 9?⍞",
+   "stdin": ""
+  },
+  {
+   "name": "while-fib",
+   "source": "0 1[∂1000<][∂⍞⇅⊚+]⟳⌫⌫",
+   "stdin": ""
+  },
+  {
+   "name": "repeat",
+   "source": "0 5[1+]⍣⍞ 0 0[1+]⍣⍞",
+   "stdin": ""
+  },
+  {
+   "name": "range-map",
+   "source": "5⍸[∂×]∵⍞ 0⍸[∂×]∵⍞",
+   "stdin": ""
+  },
+  {
+   "name": "each",
+   "source": "3⍸[⍞]∀",
+   "stdin": ""
+  },
+  {
+   "name": "filter",
+   "source": "10⍸[2%0=]⌿⍞",
+   "stdin": ""
+  },
+  {
+   "name": "fold",
+   "source": "101⍸ 0[+]⍀⍞",
+   "stdin": ""
+  },
+  {
+   "name": "iterate-string",
+   "source": "«abc»[⍞]∀ «ab»[«!»⧺]∵⍞",
+   "stdin": ""
+  },
+  {
+   "name": "seq-basics",
+   "source": "«abc»#⍞ ⟨1 2⟩⟨3⟩⧺⍞ «ab»«cd»⧺⍞ ⟨7 8 9⟩1@⍞ «xyz»2@⍞",
+   "stdin": ""
+  },
+  {
+   "name": "slice",
+   "source": "«matrix»1 4⊂⍞ «ab»0 99⊂⍞ ⟨1 2 3 4⟩1 3⊂⍞",
+   "stdin": ""
+  },
+  {
+   "name": "split-join",
+   "source": "«a,b,c»«,»⊆⍞ «ab»«»⊆⍞ ⟨1 2 3⟩«-»⊇⍞",
+   "stdin": ""
+  },
+  {
+   "name": "str-parse",
+   "source": "42⍕«!»⧺⍞ «¯3»⍎⍞ «2.5»⍎⍞ ⟨1 2⟩⍕#⍞",
+   "stdin": ""
+  },
+  {
+   "name": "codepoints",
+   "source": "«A»⌗⍞ 66⍘⍞ «⍳»⌗⍞",
+   "stdin": ""
+  },
+  {
+   "name": "index-oob",
+   "source": "⟨1⟩5@",
+   "stdin": ""
+  },
+  {
+   "name": "parse-garbage",
+   "source": "«nope»⍎",
+   "stdin": ""
+  },
+  {
+   "name": "define-call",
+   "source": "[∂×]≔² 9²⍞ 3.14≔κ κ⍞",
+   "stdin": ""
+  },
+  {
+   "name": "locals",
+   "source": "1⇒x x 1+⇒x x⍞",
+   "stdin": ""
+  },
+  {
+   "name": "redefine-glitch",
+   "source": "1≔x 2≔x",
+   "stdin": ""
+  },
+  {
+   "name": "reserved-sigil",
+   "source": "1≔+",
+   "stdin": ""
+  },
+  {
+   "name": "undefined-sigil",
+   "source": "Ω",
+   "stdin": ""
+  },
+  {
+   "name": "try-catch",
+   "source": "[1 0÷][«got: »⇅⍕⧺⍞]⍥«after»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "try-restores-stack",
+   "source": "7[1 2 3 0÷][⌫]⍥⍞",
+   "stdin": ""
+  },
+  {
+   "name": "raise-custom",
+   "source": "[⟨1 2⟩↯][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "nested-try",
+   "source": "[[«inner»↯][«re-»⇅⍕⧺↯]⍥][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "try-disarms",
+   "source": "[1][«no»⍞]⍥⍞",
+   "stdin": ""
+  },
+  {
+   "name": "uncaught-kills-strand",
+   "source": "1 0÷\n«survivor»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "lone-negative",
+   "source": "¯⍞",
+   "stdin": ""
+  },
+  {
+   "name": "unterminated-string",
+   "source": "«abc",
+   "stdin": ""
+  },
+  {
+   "name": "unclosed-quotation",
+   "source": "[1 2",
+   "stdin": ""
+  },
+  {
+   "name": "stray-dot",
+   "source": "1 .⍞",
+   "stdin": ""
+  },
+  {
+   "name": "double-dot",
+   "source": "1.2.3⍞",
+   "stdin": ""
+  },
+  {
+   "name": "unmatched-close",
+   "source": "1]⍞",
+   "stdin": ""
+  },
+  {
+   "name": "tabs-rejected",
+   "source": "1\t2+⍞",
+   "stdin": ""
+  },
+  {
+   "name": "loose-rain-marker",
+   "source": "⇓«Hello, Matrix»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "loose-divider",
+   "source": "1⇊2",
+   "stdin": ""
+  },
+  {
+   "name": "loose-continuation",
+   "source": "1 ⋮⍞",
+   "stdin": ""
+  },
+  {
+   "name": "loose-newline-glyph",
+   "source": "⏎⍞",
+   "stdin": ""
+  },
+  {
+   "name": "pipeline",
+   "source": "9⍸[1+∂×↥α]∀∅↥α\n[↧α∂∅≠][2×↥β]⟳⌫∅↥β\n[↧β∂∅≠][⍞]⟳⌫",
+   "stdin": ""
+  },
+  {
+   "name": "fifo",
+   "source": "1↥c 2↥c 3↥c\n↧c⍞↧c⍞↧c⍞",
+   "stdin": ""
+  },
+  {
+   "name": "try-recv",
+   "source": "⇂q⍞ 5↥q ⇂q⍞⍞",
+   "stdin": ""
+  },
+  {
+   "name": "strand-id-count",
+   "source": "⍳↥a\n⍳↥b\n↧a⍞↧b⍞≣⍞",
+   "stdin": ""
+  },
+  {
+   "name": "spawn-join",
+   "source": "[42↥r]⚡⋈↧r⍞",
+   "stdin": ""
+  },
+  {
+   "name": "spawn-locals-copy",
+   "source": "7⇒x [x↥r]⚡⋈ 9⇒x ↧r⍞ x⍞",
+   "stdin": ""
+  },
+  {
+   "name": "join-unknown",
+   "source": "99⋈",
+   "stdin": ""
+  },
+  {
+   "name": "deadlock",
+   "source": "↧a\n↧b",
+   "stdin": ""
+  },
+  {
+   "name": "interleave-deterministic",
+   "source": "5⍸[«A»⍞]∀\n5⍸[«B»⍞]∀",
+   "stdin": ""
+  },
+  {
+   "name": "yield",
+   "source": "3⍸[«A»⍞⌛]∀\n3⍸[«B»⍞⌛]∀",
+   "stdin": ""
+  },
+  {
+   "name": "pour-drain",
+   "source": "⟨1 2 3⟩⇈a ⇟a⍞ ⟨⟩⇈b ⇟b⍞ «xy»⇈c ⇟c⍞",
+   "stdin": ""
+  },
+  {
+   "name": "pump-pipeline",
+   "source": "9⍸[1+∂×]∵⇈α\n[2×]⇉αβ\n⇟β[⍞]∀",
+   "stdin": ""
+  },
+  {
+   "name": "pump-empty",
+   "source": "⟨⟩⇈a\n[∂×]⇉ab\n⇟b#⍞",
+   "stdin": ""
+  },
+  {
+   "name": "pump-chained",
+   "source": "5⍸⇈a\n[1+]⇉ab\n[10×]⇉bc\n⇟c⍞",
+   "stdin": ""
+  },
+  {
+   "name": "drain-cross-strand",
+   "source": "3⍸⇈q\n⇟q⍞",
+   "stdin": ""
+  },
+  {
+   "name": "pump-type-error",
+   "source": "5⇉ab",
+   "stdin": ""
+  },
+  {
+   "name": "pour-type-error",
+   "source": "5⇈a",
+   "stdin": ""
+  },
+  {
+   "name": "prim-type",
+   "source": "5⍙⍞⍞ 2.5⍙⇅⌫⍞ «x»⍙⇅⌫⍞ ⟨⟩⍙⇅⌫⍞ [∂]⍙⇅⌫⍞ ∅⍙⇅⌫⍞",
+   "stdin": ""
+  },
+  {
+   "name": "prim-reverse",
+   "source": "«matrix»⌽⍞ ⟨1 2 3⟩⌽⍞ «»⌽⍞",
+   "stdin": ""
+  },
+  {
+   "name": "prim-sort",
+   "source": "⟨3 1.5 2⟩⍋⍞ «cba»⍋⍞ ⟨«b» «a»⟩⍋⍞",
+   "stdin": ""
+  },
+  {
+   "name": "prim-sort-mixed",
+   "source": "⟨1 «a»⟩⍋",
+   "stdin": ""
+  },
+  {
+   "name": "prim-contains-find",
+   "source": "«wake up»«ake»∈⍞ ⟨1 ⟨2⟩⟩⟨2⟩∈⍞ «abcd»«cd»⍷⍞ ⟨7 8⟩9⍷⍞",
+   "stdin": ""
+  },
+  {
+   "name": "prim-search-type-error",
+   "source": "«ab»5∈",
+   "stdin": ""
+  },
+  {
+   "name": "std-constants",
+   "source": "π⍞ τ⍞ ℯ⍞ ∞⍞ ∞±⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-numbers",
+   "source": "¯7∣⍞ 3 9⊓⍞ 3 9⊔⍞ 6‼⍞ 462 1071⟌⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-aggregates",
+   "source": "⟨1 2 3 4⟩∑⍞ ⟨2 3 4⟩∏⍞ ⟨1 2 3 4⟩µ⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-list-helpers",
+   "source": "⟨7 8 9⟩⊃⍞ ⟨7 8 9⟩⌷⍞ ⟨7 8 9⟩⍫⍞ ⟨7 8 9⟩2⊤⍞ ⟨7 8 9⟩2⊥⍞ ⟨3 1 2⟩⍒⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-zip",
+   "source": "⟨1 2 3⟩⟨«a» «b»⟩⍚⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-text",
+   "source": "«Neo!»⇑⍞ «NEO»⇩⍞ « the  matrix »⍭⍞ «a⏎b⏎c»⍖#⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-redefine-glitches",
+   "source": "1≔π",
+   "stdin": ""
+  },
+  {
+   "name": "std-in-boot-and-strands",
+   "source": "π≔c\n⇊\nc τ<⍞\n[⟨4 2⟩⍋↥r]⚡⋈↧r⍞",
+   "stdin": ""
+  },
+  {
+   "name": "boot-defs",
+   "source": "[∂×]≔²\n⇊\n7²↥a\n↧a 1+⍞",
+   "stdin": ""
+  },
+  {
+   "name": "boot-glitch-stops",
+   "source": "1 0÷\n⇊\n«never»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "continuation",
+   "source": "1 2\n⋮+⍞",
+   "stdin": ""
+  },
+  {
+   "name": "comment-lines",
+   "source": "※ a comment\n⍳⍞ ※ trailing\n",
+   "stdin": ""
+  },
+  {
+   "name": "rain-hello",
+   "source": "⇓\n«\nH\ni\n»\n⍞",
+   "stdin": ""
+  },
+  {
+   "name": "rain-two-strands",
+   "source": "⇓\n1  «\n⍞  A\n   »\n   ⍞",
+   "stdin": ""
+  },
+  {
+   "name": "rain-comment-column",
+   "source": "⇓\n1\n⍞\n※\n9",
+   "stdin": ""
+  },
+  {
+   "name": "rain-boot",
+   "source": "⇓\n[\n∂\n×\n]\n≔\n²\n⇊\n6\n²\n⍞",
+   "stdin": ""
+  },
+  {
+   "name": "stdin-echo",
+   "source": "[⌨∂∅≠][⍞]⟳⌫",
+   "stdin": "x\ny\n"
+  },
+  {
+   "name": "stdin-eof",
+   "source": "⌨⍞⌨⍞⌨⍞",
+   "stdin": "a\nb\n"
+  },
+  {
+   "name": "debug-stderr",
+   "source": "1«s»⟨2 3⟩⍟",
+   "stdin": ""
+  },
+  {
+   "name": "quot-identity-eq",
+   "source": "[1]∂=⍞ [1][1]=⍞",
+   "stdin": ""
+  },
+  {
+   "name": "list-build-nested",
+   "source": "⟨1⟨2⟨3⟩⟩⟩#⍞",
+   "stdin": ""
+  },
+  {
+   "name": "unmatched-list-close",
+   "source": "1⟩⍞",
+   "stdin": ""
+  },
+  {
+   "name": "empty-things-falsy",
+   "source": "«»[«t»][«f»]?⍞ ⟨⟩[«t»][«f»]?⍞ 0.0[«t»][«f»]?⍞",
+   "stdin": ""
+  }
+ ],
+ "examples": [
+  {
+   "name": "hello.ml",
+   "file": "examples/hello.ml",
+   "stdin": ""
+  },
+  {
+   "name": "hello-rain.ml",
+   "file": "examples/hello-rain.ml",
+   "stdin": ""
+  },
+  {
+   "name": "fibonacci.ml",
+   "file": "examples/fibonacci.ml",
+   "stdin": ""
+  },
+  {
+   "name": "fizzbuzz.ml",
+   "file": "examples/fizzbuzz.ml",
+   "stdin": ""
+  },
+  {
+   "name": "pipeline.ml",
+   "file": "examples/pipeline.ml",
+   "stdin": ""
+  },
+  {
+   "name": "pipeline-manual.ml",
+   "file": "examples/pipeline-manual.ml",
+   "stdin": ""
+  },
+  {
+   "name": "parallel-sum.ml",
+   "file": "examples/parallel-sum.ml",
+   "stdin": ""
+  },
+  {
+   "name": "spawn.ml",
+   "file": "examples/spawn.ml",
+   "stdin": ""
+  },
+  {
+   "name": "glitch.ml",
+   "file": "examples/glitch.ml",
+   "stdin": ""
+  },
+  {
+   "name": "mandelbrot.ml",
+   "file": "examples/mandelbrot.ml",
+   "stdin": ""
+  },
+  {
+   "name": "calc.ml",
+   "file": "examples/calc.ml",
+   "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"
+  },
+  {
+   "name": "std-tour.ml",
+   "file": "examples/std-tour.ml",
+   "stdin": ""
+  }
+ ]
+}

@@ -445,39 +445,73 @@ impl<'io> VM<'io> {
         }
     }
 
-    pub fn run_program(&mut self, prog: &Program) -> Result<i32, LoadError> {
-        let mut woven = Vec::new();
-        for (label, cells) in &prog.strands {
-            let code = lex_strand(cells.clone(), prog.axis)?;
-            if !code.is_empty() {
-                woven.push((label.clone(), Rc::new(code)));
-            }
-        }
-        self.main_count = woven.len();
-        self.next_spawn_sid = woven.len() as i64;
+    pub fn run_compiled(&mut self, prog: &CompiledProgram) -> i32 {
+        self.main_count = prog.strands.len();
+        self.next_spawn_sid = prog.strands.len() as i64;
 
         // The boot strand always runs: the standard library first, then the
-        // program's own boot section (if any).
-        let mut boot_code = std_code();
-        if let Some(cells) = &prog.boot_cells {
-            boot_code.extend(lex_strand(cells.clone(), prog.axis)?);
-        }
-        let boot = Strand::new(-1, "boot".into(), Rc::new(boot_code), HashMap::new());
+        // program's own boot section (both already woven in at compile time).
+        let boot = Strand::new(
+            -1,
+            "boot".into(),
+            Rc::new(prog.boot.clone()),
+            HashMap::new(),
+        );
         self.register(boot);
         self.run_scheduler();
         let boot_dead = self.strands[self.by_sid[&-1]].status == Status::Dead;
         if boot_dead || self.failed {
-            return Ok(1);
+            return 1;
         }
-        for (i, (label, code)) in woven.into_iter().enumerate() {
-            self.register(Strand::new(i as i64, label, code, HashMap::new()));
+        for (i, (label, code)) in prog.strands.iter().enumerate() {
+            self.register(Strand::new(
+                i as i64,
+                label.clone(),
+                Rc::new(code.clone()),
+                HashMap::new(),
+            ));
         }
         self.run_scheduler();
-        Ok(if self.failed { 1 } else { 0 })
+        if self.failed {
+            1
+        } else {
+            0
+        }
     }
 }
 
-pub const STD_SOURCE: &str = include_str!("../../mlang/std.ml");
+/// A fully compiled program: the standard library and boot section woven
+/// into one boot instruction strip, plus one strip per main strand. This is
+/// what `mlang build` serializes into a native binary.
+#[derive(Debug)]
+pub struct CompiledProgram {
+    pub boot: Vec<Instr>,
+    pub strands: Vec<(String, Vec<Instr>)>,
+}
+
+/// Compile a parsed source form to a CompiledProgram.
+pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
+    let mut strands = Vec::new();
+    for (label, cells) in &prog.strands {
+        let code = lex_strand(cells.clone(), prog.axis)?;
+        if !code.is_empty() {
+            // comment-only lines/columns are not strands
+            strands.push((label.clone(), code));
+        }
+    }
+    let mut boot = std_code();
+    if let Some(cells) = &prog.boot_cells {
+        boot.extend(lex_strand(cells.clone(), prog.axis)?);
+    }
+    Ok(CompiledProgram { boot, strands })
+}
+
+/// Compile MLang source text (rain or flat form).
+pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
+    compile(&crate::forms::parse_source(text)?)
+}
+
+pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
 
 /// The standard library, lexed. Infallible: std.ml is verified by CI.
 fn std_code() -> Vec<Instr> {

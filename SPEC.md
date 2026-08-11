@@ -1,8 +1,11 @@
 # The MLang Specification
 
-Version 0.1. This document is normative for the reference interpreter in
-`mlang/` and is written so that an independent (e.g. native-code)
-implementation can be built from it without language changes.
+Version 0.1. This document is normative for the MLang toolchain in
+`compiler/` and is written so that an independent implementation can be
+built from it without language changes. The observable behavior it
+describes is additionally pinned, byte for byte, by the recorded
+conformance corpus in `conformance/` — any implementation must reproduce
+those goldens exactly.
 
 ## 1. Model
 
@@ -266,7 +269,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 
 ## 6. The standard library
 
-The standard library is written in MLang (`mlang/std.ml`, printed by
+The standard library is written in MLang (`std/std.ml`, printed by
 `mlang std`) and is woven into every program: its definitions execute at
 the start of the boot strand, before the program's own boot section. Every
 entry is an ordinary `≔` global, so std sigils behave exactly like user

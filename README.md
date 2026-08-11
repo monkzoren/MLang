@@ -46,31 +46,40 @@ of punched-tape readers, one tape per machine.
 
 ## Try it
 
-**Native engine** (Rust — the primary implementation):
+MLang is its own language with its own toolchain: one native binary,
+`mlang`, is the compiler, runner, and runtime. (The toolchain is
+implemented in Rust — the way C's first compilers were implemented in
+assembly — but MLang programs never touch Rust, and nothing else is
+involved: no C compiler, no linker, no interpreter dependency.)
 
 ```sh
-cd rust && cargo build --release && cd ..
-rust/target/release/mlang run examples/pipeline.ml   # run a program
-rust/target/release/mlang eval '«Hello, Matrix»⍞'    # run inline source
-rust/target/release/mlang rain examples/pipeline.ml  # render the rain view
-rust/target/release/mlang ops                        # the sigil reference
+cd compiler && cargo build --release && cd ..   # build the toolchain once
+alias mlang=$PWD/compiler/target/release/mlang
+
+mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
+./mandelbrot                                       # standalone: no toolchain needed
+
+mlang run examples/pipeline.ml       # or compile-and-run in one step
+mlang eval '«Hello, Matrix»⍞'        # inline source
+mlang check examples/calc.ml         # compile only, report weave errors
+mlang rain examples/pipeline.ml      # render the vertical rain view
+mlang ops                            # the sigil reference
+mlang std                            # the standard library source
 ```
 
-**Reference implementation** (pure Python, no dependencies — the executable
-spec): the same commands via `python3 -m mlang …`, or `pip install .` for an
-`mlang` entry point.
+`mlang build` compiles source to MLang bytecode and welds it into a copy
+of the toolchain's own runtime image — the same shape as a Go binary,
+where the runtime is linked into every executable. The result is a
+self-contained native executable: it starts in milliseconds, embeds the
+standard library, and can never hit a runtime-version mismatch, because
+it carries the exact runtime it was built with.
 
-Both engines are verified byte-for-byte against a shared conformance corpus
-(121 cases: stdout, stderr, and exit codes, including glitch coordinates and
-scheduler interleaving):
-
-```sh
-python3 conformance/run.py rust/target/release/mlang
-python3 conformance/run.py python3 -m mlang
-```
-
-On a 10⁶-iteration loop the native engine runs ~15× faster than the
-reference (0.45s vs 6.9s on the machine this was developed on).
+The language's observable behavior is pinned by a recorded conformance
+corpus — 121 cases covering every operation, concurrency, glitches, both
+source forms, and all example programs, compared byte-for-byte on stdout,
+stderr, and exit code (`cargo test` runs it; the goldens in
+`conformance/expected.json` are the spec's ground truth, and any future
+second implementation must reproduce them exactly).
 
 ## The idea
 
@@ -81,7 +90,7 @@ reference (0.45s vs 6.9s on the machine this was developed on).
 | **Linking machines without breaking code** | Strands share *nothing*. They communicate only over named channels — raw `↥α` send / `↧α` receive, or the stream combinators `⇈` pour, `⇉` pump, `⇟` drain, which carry the end-of-stream protocol for you. Adding, removing, or reordering strands never changes the meaning of another strand — the channel names are the entire interface. |
 | **Memory safety** | Every value is immutable. There are no pointers, no references, no shared mutable state. Data races are impossible *by construction*, not by discipline. Indexing is bounds-checked; arithmetic on wrong types is a caught fault, never corruption. |
 | **Error handling** | Any fault is a **glitch** carrying a value and exact grid coordinates. `⍥` catches glitches with the stack restored to a known depth. An uncaught glitch kills only its own strand — the rest of the grid keeps running (Erlang-style isolation) and the run exits nonzero with a precise report. If every remaining strand is blocked, the scheduler *proves* the deadlock and reports who waits on what, instead of hanging. |
-| **Performance & reproducibility** | Strands are scheduled round-robin with a fixed slice: identical input ⇒ identical run, including output interleaving. Deterministic concurrency is what makes machine-written concurrent code debuggable by a machine. This repo is the reference interpreter; the spec is written so a native compiler needs no language changes. |
+| **Performance & reproducibility** | Programs compile to standalone native binaries (`mlang build`). Strands are scheduled round-robin with a fixed slice: identical input ⇒ identical run, including output interleaving. Deterministic concurrency is what makes machine-written concurrent code debuggable by a machine. |
 
 ## Thirty seconds of MLang
 
@@ -146,17 +155,17 @@ a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 ## Repository
 
 ```
-rust/             the native engine (Rust) — the primary implementation
-  src/values.rs   immutable values (bignum ints, floats, strings, lists, quotations)
+compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   src/lex.rs      glyph stream → instructions
   src/forms.rs    rain/flat grid parsing and rendering
-  src/vm.rs       strands, channels, glitches, deterministic scheduler
-mlang/            the reference implementation (pure Python) and std.ml —
-                  the executable specification the native engine is held to
-conformance/      shared corpus: record.py snapshots the reference,
-                  run.py verifies any engine byte-for-byte (121 cases)
-examples/         runnable programs (hello, fizzbuzz, pipeline, spawn, …)
-tests/            102 tests: python3 -m unittest discover -s tests
+  src/vm.rs       compile, strands, channels, glitches, deterministic scheduler
+  src/payload.rs  bytecode serialization + native binary welding (mlang build)
+  tests/          cargo test: unit, payload round-trip, standalone-binary
+                  execution, and the full conformance corpus
+std/std.ml        the standard library — written in MLang
+conformance/      cases.json + expected.json: 121 recorded goldens, the
+                  language's observable ground truth (RECORD=1 to re-record)
+examples/         runnable programs (mandelbrot, calc, pipeline, spawn, …)
 SPEC.md           the full language specification
 ```
 
@@ -168,7 +177,7 @@ SPEC.md           the full language specification
   makes a dedicated tokenizer trivial (one token per sigil). Density also
   buys correctness: there is no syntax to misindent and no identifier to
   misspell twice.
-* **Determinism over raw parallelism.** Both engines interleave strands
+* **Determinism over raw parallelism.** The runtime interleaves strands
   deterministically (round-robin, fixed slice) rather than using OS
   threads. The language model (immutable values, channel-only
   communication) is exactly the one that admits true parallel execution
