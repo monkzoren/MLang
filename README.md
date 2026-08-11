@@ -33,13 +33,20 @@ $ mlang run examples/deadlock.ml
 18
 32
 ✗ glitch in strand 1 (row 2) at 2:13: boom
+  2│ [∂25=[«boom»↯][]?2×]⇉αβ
+                 ↑ 2:13
+  stack: 25
 ✗ deadlock — every remaining strand is blocked:
   strand 2 (row 3) waiting on channel β at 3:5
+  3│ [∂⍞]⇉βγ
+         ↑ 3:5
 ```
 
-The glitch names its strand and grid coordinates; the scheduler then
-proves that every remaining strand is blocked and reports who waits on
-which channel, at which coordinates — and exits nonzero, instantly. The
+The glitch quotes the offending line, points a caret at the exact glyph,
+and shows the stack as the fault left it — `stack: 25` is the poison
+value itself; the scheduler then proves that every remaining strand is
+blocked and reports who waits on which channel, with the same excerpt
+treatment — and exits nonzero, instantly. The
 Python twin prints a traceback from the dead worker thread (interleaved
 nondeterministically with the output) and then sits frozen until you kill
 it. This output is pinned by the conformance suite — the demo above cannot

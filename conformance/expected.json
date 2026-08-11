@@ -26,7 +26,7 @@
  },
  "boot-glitch-stops": {
   "exit": 1,
-  "stderr": "✗ glitch in strand ¯1 (boot) at 1:4: ÷ by zero\n",
+  "stderr": "✗ glitch in strand ¯1 (boot) at 1:4: ÷ by zero\n  1│ 1 0÷\n        ↑ 1:4\n  stack: (empty)\n",
   "stdout": ""
  },
  "codepoints": {
@@ -51,7 +51,7 @@
  },
  "deadlock": {
   "exit": 1,
-  "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n",
+  "stderr": "✗ deadlock — every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel a at 1:1\n  1│ ↧a\n     ↑ 1:1\n  strand 1 (row 2) waiting on channel b at 2:1\n  2│ ↧b\n     ↑ 2:1\n",
   "stdout": ""
  },
  "debug-stderr": {
@@ -71,7 +71,7 @@
  },
  "div-zero": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n  1│ 1 0÷\n        ↑ 1:4\n  stack: (empty)\n",
   "stdout": ""
  },
  "division": {
@@ -146,7 +146,7 @@
  },
  "example:deadlock.ml": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 1 (row 2) at 2:13: boom\n✗ deadlock — every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel β at 3:5\n",
+  "stderr": "✗ glitch in strand 1 (row 2) at 2:13: boom\n  2│ [∂25=[«boom»↯][]?2×]⇉αβ\n                 ↑ 2:13\n  stack: 25\n✗ deadlock — every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel β at 3:5\n  3│ [∂⍞]⇉βγ\n         ↑ 3:5\n",
   "stdout": "2\n8\n18\n32\n"
  },
  "example:editor.ml": {
@@ -166,7 +166,7 @@
  },
  "example:glitch.ml": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 2 (row 8) at 8:11: @ index 99 out of bounds (length 3)\n",
+  "stderr": "✗ glitch in strand 2 (row 8) at 8:11: @ index 99 out of bounds (length 3)\n  8│ ⟨1 2 3⟩ 99@⍞\n               ↑ 8:11\n  stack: (empty)\n",
   "stdout": "caught: ÷ by zero\nstrand 0 alive\ncaught: custom glitch\nstrand 1 alive\n"
  },
  "example:hello-rain.ml": {
@@ -261,7 +261,7 @@
  },
  "index-oob": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: @ index 5 out of bounds (length 1)\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: @ index 5 out of bounds (length 1)\n  1│ ⟨1⟩5@\n         ↑ 1:5\n  stack: (empty)\n",
   "stdout": ""
  },
  "int": {
@@ -281,7 +281,7 @@
  },
  "join-unknown": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: ⋈ no strand with id 99\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: ⋈ no strand with id 99\n  1│ 99⋈\n       ↑ 1:3\n  stack: 99\n",
   "stdout": ""
  },
  "list": {
@@ -336,12 +336,12 @@
  },
  "mixed-compare-glitch": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: < compares two numbers or two strings, got int str\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: < compares two numbers or two strings, got int str\n  1│ 1«a»<\n         ↑ 1:5\n  stack: (empty)\n",
   "stdout": ""
  },
  "mod-zero": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: % by zero\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: % by zero\n  1│ 1 0%\n        ↑ 1:4\n  stack: (empty)\n",
   "stdout": ""
  },
  "modulo": {
@@ -371,7 +371,7 @@
  },
  "parse-garbage": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:7: ⍎ cannot parse «nope» as a number\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:7: ⍎ cannot parse «nope» as a number\n  1│ «nope»⍎\n           ↑ 1:7\n  stack: (empty)\n",
   "stdout": ""
  },
  "pipeline": {
@@ -386,7 +386,7 @@
  },
  "pour-type-error": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇈ expects a list or string, got int\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇈ expects a list or string, got int\n  1│ 5⇈a\n      ↑ 1:2\n  stack: (empty)\n",
   "stdout": ""
  },
  "prim-contains-find": {
@@ -401,7 +401,7 @@
  },
  "prim-search-type-error": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: ∈ searching a string needs a string, got int\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: ∈ searching a string needs a string, got int\n  1│ «ab»5∈\n          ↑ 1:6\n  stack: (empty)\n",
   "stdout": ""
  },
  "prim-sort": {
@@ -411,7 +411,7 @@
  },
  "prim-sort-mixed": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:8: ⍋ needs all numbers or all strings\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:8: ⍋ needs all numbers or all strings\n  1│ ⟨1 «a»⟩⍋\n            ↑ 1:8\n  stack: (empty)\n",
   "stdout": ""
  },
  "prim-type": {
@@ -436,7 +436,7 @@
  },
  "pump-type-error": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇉ expects a [quotation], got int\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⇉ expects a [quotation], got int\n  1│ 5⇉ab\n      ↑ 1:2\n  stack: (empty)\n",
   "stdout": ""
  },
  "quot-identity-eq": {
@@ -476,7 +476,7 @@
  },
  "redefine-glitch": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: sigil 'x' is already defined\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:6: sigil 'x' is already defined\n  1│ 1≔x 2≔x\n          ↑ 1:6\n  stack: 2\n",
   "stdout": ""
  },
  "repeat": {
@@ -516,7 +516,7 @@
  },
  "sqrt-negative": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: √ of a negative number\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:3: √ of a negative number\n  1│ ¯1√\n       ↑ 1:3\n  stack: (empty)\n",
   "stdout": ""
  },
  "std-aggregates": {
@@ -546,7 +546,7 @@
  },
  "std-redefine-glitches": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: sigil 'π' is already defined\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: sigil 'π' is already defined\n  1│ 1≔π\n      ↑ 1:2\n  stack: 1\n",
   "stdout": ""
  },
  "std-text": {
@@ -636,7 +636,7 @@
  },
  "type-error-add": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: + expects numbers, got str\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:5: + expects numbers, got str\n  1│ 1«x»+\n         ↑ 1:5\n  stack: 1\n",
   "stdout": ""
  },
  "ui-channel-sigil-no-weave": {
@@ -701,7 +701,7 @@
  },
  "ui-weave-reserves-sigils": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:9: sigil 'Ⓛ' is already defined\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:9: sigil 'Ⓛ' is already defined\n  1│ [«mine»]≔Ⓛ «Go»«g»[1]Ⓑ⌫\n             ↑ 1:9\n  stack: [⋯]\n",
   "stdout": ""
  },
  "ui-widgets-render": {
@@ -731,7 +731,7 @@
  },
  "uncaught-kills-strand": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:4: ÷ by zero\n  1│ 1 0÷\n        ↑ 1:4\n  stack: (empty)\n",
   "stdout": "survivor\n"
  },
  "unclosed-quotation": {
@@ -741,12 +741,12 @@
  },
  "undefined-sigil": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: undefined sigil 'Ω'\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: undefined sigil 'Ω'\n  1│ Ω\n     ↑ 1:1\n  stack: (empty)\n",
   "stdout": ""
  },
  "underflow": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — needed a number\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:1: stack underflow — needed a number\n  1│ +\n     ↑ 1:1\n  stack: (empty)\n",
   "stdout": ""
  },
  "unmatched-close": {
@@ -756,7 +756,7 @@
  },
  "unmatched-list-close": {
   "exit": 1,
-  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⟩ without matching ⟨\n",
+  "stderr": "✗ glitch in strand 0 (row 1) at 1:2: ⟩ without matching ⟨\n  1│ 1⟩⍞\n      ↑ 1:2\n  stack: (empty)\n",
   "stdout": ""
  },
  "unterminated-string": {

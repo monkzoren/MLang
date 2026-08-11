@@ -46,6 +46,13 @@ one-letter named channels. A ⇊ line separates a boot section (runs first,
 holds shared ≔ definitions) from the strands below. A line starting ⋮
 continues the previous strand. ※ comments to end of line. A first line ⇓
 means rain form: columns are strands, read downward.
+
+Fault reports quote the offending source line with a caret under the
+exact glyph (a `  row│ …windowed line…` excerpt, `…` marks a trimmed
+side), then the strand's stack as the fault left it (`stack:`, deepest
+first). Coordinates like `std.ml 26:7` point into the standard library's
+own source, not your program. Trust the caret: the marked glyph is where
+the runtime faulted.
 """
 
 
@@ -177,7 +184,7 @@ def pick_mutants(arm, count, seeds, jobs, cases_filter=None, max_chars=400):
     def label(m):
         r = run(m["source"], m["stdin"], timeout=3.0)
         m["first_outcome"] = classify(r, m["expected"])
-        m["first_failure"] = common.failure_report(r)
+        m["first_failure"] = common.failure_report(r, m["expected"])
         return m
 
     with ThreadPoolExecutor(max_workers=jobs) as pool:
@@ -221,7 +228,8 @@ def heal_one(arm, mutant, rounds, complete, primer):
         result = run(patch, mutant["stdin"])
         outcome = classify(result, mutant["expected"])
         attempts.append({"source": patch, "outcome": outcome,
-                         "failure": common.failure_report(result)})
+                         "failure": common.failure_report(result,
+                                                          mutant["expected"])})
         if outcome == "pass":
             healed_round = r
             break
