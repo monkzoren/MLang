@@ -99,6 +99,31 @@
     "stderr": "",
     "stdout": "f\nf\nf\n"
   },
+  "event-arrows-delete": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "↑\n↓\n→\n←\n⌦\n"
+  },
+  "event-esc-pushback": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⎋\nZ\nq\n"
+  },
+  "event-keys": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "a\nb\n↵\n⇥\né\n⌫\n␃\n"
+  },
+  "event-lone-esc-is-eof": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "·\n"
+  },
+  "event-mouse-sgr-press-only": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟨«⌖» 12 5⟩\nx\n"
+  },
   "example:calc.ml": {
     "exit": 0,
     "stderr": "",
@@ -138,6 +163,11 @@
     "exit": 0,
     "stderr": "",
     "stdout": "Hello, Matrix\n"
+  },
+  "example:jack-in.ml": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neo▏▁▁▁▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neon▏▁▁▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neoni▏▁▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonit▏▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonity▏▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonity▁▁▁▁▁ (n)                   │\n│ ⟦ Jack in ⟧(j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Neonity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\nNeonity is aboard\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  ⟦ ⟧ Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Neonity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  ⟦ + ⟧(+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Neonity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n\u001b[H\u001b[2J┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neonity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  ⟦ + ⟧(+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Neonity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\nConnection terminated.\n"
   },
   "example:mandelbrot.ml": {
     "exit": 0,
@@ -608,6 +638,26 @@
     "exit": 0,
     "stderr": "",
     "stdout": "two\nlines\n\n"
+  },
+  "ui-live-counter": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 0    │\n│ ⟦ +1 ⟧(+)   │\n│ [ Quit ](q) │\n└─────────────┘\n\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 1    │\n│ ⟦ +1 ⟧(+)   │\n│ [ Quit ](q) │\n└─────────────┘\n\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 2    │\n│ ⟦ +1 ⟧(+)   │\n│ [ Quit ](q) │\n└─────────────┘\n\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 2    │\n│ [ +1 ](+)   │\n│ ⟦ Quit ⟧(q) │\n└─────────────┘\nbye\n"
+  },
+  "ui-live-mouse-click-buttons": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 0    │\n│ ⟦ +1 ⟧(+)   │\n│ [ Quit ](q) │\n└─────────────┘\n\u001b[H\u001b[2J┌─ Counter ───┐\n│ count: 1    │\n│ ⟦ +1 ⟧(+)   │\n│ [ Quit ](q) │\n└─────────────┘\nc=1\n"
+  },
+  "ui-live-toggle-wrap-glitch-deadclick": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "\u001b[H\u001b[2J⟦ ⟧ Rain (r)\n[ Boom ](b)\n\u001b[H\u001b[2J⟦×⟧ Rain (r)\n[ Boom ](b)\n\u001b[H\u001b[2J[×] Rain (r)\n⟦ Boom ⟧(b)\n\u001b[H\u001b[2J[×] Rain (r)\n⟦ Boom ⟧(b)\n✗ oops\n\u001b[H\u001b[2J[×] Rain (r)\n⟦ Boom ⟧(b)\n? x\n\u001b[H\u001b[2J[×] Rain (r)\n⟦ Boom ⟧(b)\n✗ oops\n\u001b[H\u001b[2J⟦ ⟧ Rain (r)\n[ Boom ](b)\nr=0\n"
+  },
+  "ui-live-typing-caret": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: ▏▁▁▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: N▏▁▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Ne▏▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Neo▏▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Ne▏▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: N▏▁▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Ni▏▁▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Nio▏▁▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Nio ▏▁▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Nio b▏▁▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Nio be▏▁▁▁▁▁ (n) │\n│ [ Done ](d)            │\n└────────────────────────┘\n\u001b[H\u001b[2J┌─ Login ────────────────┐\n│ Name: Nio be▁▁▁▁▁▁ (n) │\n│ ⟦ Done ⟧(d)            │\n└────────────────────────┘\nname=Nio be\n"
   },
   "ui-not-a-widget": {
     "exit": 0,

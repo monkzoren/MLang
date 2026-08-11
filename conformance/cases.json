@@ -624,6 +624,51 @@
    "name": "ui-channel-sigil-no-weave",
    "source": "7↥Ⓛ↧Ⓛ⍞",
    "stdin": ""
+  },
+  {
+   "name": "event-keys",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "ab\n\té\b\u0003"
+  },
+  {
+   "name": "event-arrows-delete",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001b[A\u001b[B\u001b[C\u001b[D\u001b[3~"
+  },
+  {
+   "name": "event-mouse-sgr-press-only",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001b[<0;12;5M\u001b[<0;12;5m\u001b[<64;3;3M\u001b[<32;9;9Mx"
+  },
+  {
+   "name": "event-esc-pushback",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫",
+   "stdin": "\u001bZq"
+  },
+  {
+   "name": "event-lone-esc-is-eof",
+   "source": "[⌥∂∅≠][⍕⍞]⟳⌫ «·»⍞",
+   "stdin": "\u001b"
+  },
+  {
+   "name": "ui-live-counter",
+   "source": "0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]⏵«bye»⍞",
+   "stdin": "\r\r\t\r"
+  },
+  {
+   "name": "ui-live-typing-caret",
+   "source": "«»⇒n [⟨«n»«Name»n[⇒n]Ⓔ «Done»«d»[◼]Ⓑ⟩Ⓥ«Login»Ⓦ]⏵«name=»n⧺⍞",
+   "stdin": "Neoio be\t\r"
+  },
+  {
+   "name": "ui-live-mouse-click-buttons",
+   "source": "0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]⏵«c=»c⍕⧺⍞",
+   "stdin": "\u001b[<0;5;3M\u001b[<0;6;4M\u001b[<0;3;2M"
+  },
+  {
+   "name": "ui-live-toggle-wrap-glitch-deadclick",
+   "source": "0⇒r [⟨«Rain»«r»r[r¬⇒r]Ⓒ «Boom»«b»[«oops»↯]Ⓑ⟩Ⓥ]⏵«r=»r⍕⧺⍞",
+   "stdin": " \u001b[A x\u001b[<0;3;2M\u001b[<0;3;1M\u001b"
   }
  ],
  "examples": [
@@ -696,6 +741,11 @@
    "name": "construct.ml",
    "file": "examples/construct.ml",
    "stdin": "+\nn Trinity\nj\nr\nx y\nq\n"
+  },
+  {
+   "name": "jack-in.ml",
+   "file": "examples/jack-in.ml",
+   "stdin": "nity\u001b[<0;5;5M\t\t \u0003"
   }
  ]
 }

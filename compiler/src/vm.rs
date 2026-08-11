@@ -289,6 +289,9 @@ pub struct VM<'io> {
     pub stdin: &'io mut dyn BufRead,
     pub out: &'io mut dyn Write,
     pub err: &'io mut dyn Write,
+    /// Bytes pushed back by the ⌥ event parser (an ESC that turned out
+    /// not to open a CSI sequence hands its follower back).
+    pushback: VecDeque<u8>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -316,6 +319,128 @@ impl<'io> VM<'io> {
             stdin,
             out,
             err,
+            pushback: VecDeque::new(),
+        }
+    }
+
+    // ── ⌥ input events ─────────────────────────────────────────────────
+    // One event per call, parsed from the same byte stream ⌨ reads, so a
+    // recorded pipe replays exactly what a live terminal produced. Keys
+    // become the glyph they are; a mouse press becomes ⟨«⌖» x y⟩.
+
+    fn read_byte(&mut self) -> Option<u8> {
+        if let Some(b) = self.pushback.pop_front() {
+            return Some(b);
+        }
+        let buf = self.stdin.fill_buf().ok()?;
+        if buf.is_empty() {
+            return None;
+        }
+        let b = buf[0];
+        self.stdin.consume(1);
+        Some(b)
+    }
+
+    /// Decode one UTF-8 scalar; malformed bytes become U+FFFD.
+    fn read_char(&mut self) -> Option<char> {
+        let b0 = self.read_byte()?;
+        let need = match b0 {
+            0x00..=0x7f => return Some(b0 as char),
+            0xc0..=0xdf => 1,
+            0xe0..=0xef => 2,
+            0xf0..=0xf7 => 3,
+            _ => return Some('\u{fffd}'),
+        };
+        let mut bytes = vec![b0];
+        for _ in 0..need {
+            match self.read_byte() {
+                Some(b) if b & 0xc0 == 0x80 => bytes.push(b),
+                Some(b) => {
+                    self.pushback.push_back(b);
+                    return Some('\u{fffd}');
+                }
+                None => return Some('\u{fffd}'),
+            }
+        }
+        match std::str::from_utf8(&bytes) {
+            Ok(s) => s.chars().next(),
+            Err(_) => Some('\u{fffd}'),
+        }
+    }
+
+    /// Parse one CSI sequence (the ⎋[ is already consumed). Returns a
+    /// deliverable event, or None for sequences ⌥ swallows (releases,
+    /// motion, wheel, unknown finals).
+    fn read_csi(&mut self) -> Option<Option<Value>> {
+        let mut params = String::new();
+        loop {
+            let b = self.read_byte()?;
+            if (0x40..=0x7e).contains(&b) {
+                let event = match b {
+                    b'A' => Some(Value::str("↑")),
+                    b'B' => Some(Value::str("↓")),
+                    b'C' => Some(Value::str("→")),
+                    b'D' => Some(Value::str("←")),
+                    b'~' if params == "3" => Some(Value::str("⌦")),
+                    b'M' if params.starts_with('<') => {
+                        let nums: Vec<i64> = params[1..]
+                            .split(';')
+                            .map(|p| p.parse().unwrap_or(-1))
+                            .collect();
+                        match nums.as_slice() {
+                            // SGR press: button < 32 (no motion/wheel bits)
+                            [b, x, y] if (0..32).contains(b) && *x >= 0 && *y >= 0 => {
+                                Some(Value::List(Rc::new(vec![
+                                    Value::str("⌖"),
+                                    Value::int(*x),
+                                    Value::int(*y),
+                                ])))
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                return Some(event);
+            }
+            params.push(b as char);
+            if params.len() > 32 {
+                return Some(None); // runaway sequence — bail out
+            }
+        }
+    }
+
+    /// Read the next input event for ⌥. ∅ at end of input.
+    fn read_event(&mut self) -> Value {
+        loop {
+            let Some(c) = self.read_char() else {
+                return Value::Nil;
+            };
+            match c {
+                // «↵», not «⏎»: inside MLang strings the ⏎ glyph denotes a
+                // newline, so a ⏎ event could never be written or compared.
+                '\r' | '\n' => return Value::str("↵"),
+                '\t' => return Value::str("⇥"),
+                '\u{8}' | '\u{7f}' => return Value::str("⌫"),
+                '\u{1b}' => match self.read_byte() {
+                    None => return Value::Nil,
+                    Some(b'[') => match self.read_csi() {
+                        None => return Value::Nil,
+                        Some(Some(event)) => return event,
+                        Some(None) => continue,
+                    },
+                    Some(other) => {
+                        self.pushback.push_back(other);
+                        return Value::str("⎋");
+                    }
+                },
+                c if (c as u32) < 32 => {
+                    // control keys as their ␀-block symbols: ␃ is Ctrl-C
+                    let symbol = char::from_u32(0x2400 + c as u32).unwrap();
+                    return Value::str(symbol.to_string());
+                }
+                c => return Value::str(c.to_string()),
+            }
         }
     }
 
@@ -552,6 +677,19 @@ fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>
             _ => {}
         }
     }
+}
+
+/// Does this program execute ⌥ anywhere? Decides whether the runner
+/// should switch a real terminal into raw/mouse-reporting mode.
+pub fn uses_interactive(prog: &CompiledProgram) -> bool {
+    fn has_event_op(code: &[Instr]) -> bool {
+        code.iter().any(|i| match &i.op {
+            Op::B('⌥', _, _) => true,
+            Op::Push(Value::Quot(q)) => has_event_op(q),
+            _ => false,
+        })
+    }
+    has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
 }
 
 /// Lex a library source into one instruction strip. Infallible: bundled
@@ -1405,6 +1543,12 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 }
                 Err(_) => s.push(Value::Nil),
             }
+        }
+        '⌥' => {
+            // Prompts written with ⊸ must appear before blocking, like ⌨.
+            let _ = vm.out.flush();
+            let event = vm.read_event();
+            s.push(event);
         }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();
