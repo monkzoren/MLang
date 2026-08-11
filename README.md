@@ -72,8 +72,8 @@ of a wait graph.
 | silent wrong output | 31/33 | 2/2 |
 | hang | — | 1/1 |
 
-A small current model repairs one-edit bugs in a language it has *never
-seen in training* at essentially the same rate as Python (98% vs 100%),
+A small current model repairs one-edit bugs in a language it has ***never
+seen in training*** at essentially the same rate as Python (98% vs 100%),
 from an op-reference primer plus the runtime's failure report alone —
 every loud failure healed: all 36 glitches with coordinates, all 8
 weave errors, and all three proven-deadlock mutants, in one round from
