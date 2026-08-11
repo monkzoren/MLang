@@ -758,6 +758,11 @@
    "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"
   },
   {
+   "name": "oracle.ml",
+   "file": "examples/oracle.ml",
+   "stdin": "Wake up Neo\nThe Matrix has you\nFollow the white rabbit\nKnock knock Neo\nThe Matrix is everywhere it is all around us\nThere is no spoon\nI know kung fu\nFree your mind\n.\ncount neo\ncount matrix\ncount spoon\ntop 3\nstats\ncount\nwarp 9\nq\n"
+  },
+  {
    "name": "std-tour.ml",
    "file": "examples/std-tour.ml",
    "stdin": ""

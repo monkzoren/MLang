@@ -158,15 +158,19 @@ def completer(provider, model):
 
 # ---------------------------------------------------------------- the corpus
 
-def pick_mutants(arm, count, seeds, jobs):
+def pick_mutants(arm, count, seeds, jobs, cases_filter=None, max_chars=400):
     """A stratified corpus of verified-broken mutants: round-robin across
     cases so no single program dominates."""
     if arm == "mlang":
-        cases = common.load_corpus(max_source_chars=400)
+        cases = common.load_corpus(max_source_chars=None if cases_filter
+                                   else max_chars)
         run, classify = common.run_mlang, common.classify_mlang
     else:
         cases = common.load_python_corpus()
         run, classify = common.run_python, common.classify_python
+    if cases_filter:
+        cases = [c for c in cases if c["name"] in cases_filter]
+        assert cases, f"no cases match {sorted(cases_filter)}"
 
     candidates = mutate.make_mutants(arm, cases, seeds)
 
@@ -230,7 +234,9 @@ def heal_one(arm, mutant, rounds, complete, primer):
 
 def run_arm(arm, args, complete):
     primer = mlang_primer() if arm == "mlang" else None
-    corpus = pick_mutants(arm, args.mutants, args.seeds, args.jobs)
+    cases_filter = set(args.cases.split(",")) if args.cases else None
+    corpus = pick_mutants(arm, args.mutants, args.seeds, args.jobs,
+                          cases_filter, args.max_chars)
     print(f"[{arm}] healing {len(corpus)} mutants "
           f"(≤{args.rounds} rounds, {args.model})")
     done = [0]
@@ -254,6 +260,8 @@ def run_arm(arm, args, complete):
            "records": records}
     os.makedirs(os.path.join(common.BENCH, "results"), exist_ok=True)
     slug = re.sub(r"[^a-z0-9.-]+", "-", args.model.lower())
+    if args.tag:
+        slug = f"{args.tag}-{slug}"
     path = os.path.join(common.BENCH, "results", f"heal-{arm}-{slug}.json")
     with open(path, "w") as f:
         json.dump(out, f, indent=1)
@@ -271,6 +279,15 @@ def main():
     ap.add_argument("--rounds", type=int, default=3)
     ap.add_argument("--seeds", type=int, default=6,
                     help="mutation seeds per program when building the corpus")
+    ap.add_argument("--cases", default=None,
+                    help="comma-separated case names to target (e.g. "
+                         "example:oracle.ml for the MLang arm, oracle for "
+                         "the Python arm); lifts --max-chars")
+    ap.add_argument("--max-chars", type=int, default=400,
+                    help="MLang arm: skip programs longer than this "
+                         "(ignored when --cases is given)")
+    ap.add_argument("--tag", default=None,
+                    help="prefix for the results file name, e.g. oracle")
     ap.add_argument("--jobs", type=int, default=8,
                     help="parallel program runs (labeling/verification)")
     ap.add_argument("--llm-jobs", type=int, default=4,

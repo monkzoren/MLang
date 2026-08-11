@@ -59,6 +59,11 @@
   "stderr": "",
   "stdout": "1\n2\n-2\n1.5\n"
  },
+ "oracle": {
+  "exit": 0,
+  "stderr": "",
+  "stdout": "neo: 2\nmatrix: 2\nspoon: 1\nis \u00d7 3\nthe \u00d7 3\nknock \u00d7 2\nlines 8 \u00b7 words 34 \u00b7 distinct 27\n\u2717 count\n\u2717 warp 9\ngoodbye, operator\n"
+ },
  "pour-drain": {
   "exit": 0,
   "stderr": "",

@@ -101,20 +101,32 @@ def main():
     ap.add_argument("--seeds-mlang", type=int, default=10)
     ap.add_argument("--seeds-python", type=int, default=32)
     ap.add_argument("--jobs", type=int, default=8)
+    ap.add_argument("--cases", default=None,
+                    help="comma-separated case names to target; give the "
+                         "MLang name and the port name (e.g. "
+                         "example:oracle.ml,oracle)")
+    ap.add_argument("--tag", default=None,
+                    help="suffix for the results files, e.g. oracle")
     args = ap.parse_args()
+    cases_filter = set(args.cases.split(",")) if args.cases else None
 
     common.ensure_mlang()
     results = {"meta": {"seeds_mlang": args.seeds_mlang,
                         "seeds_python": args.seeds_python,
+                        "cases": args.cases,
                         "timeout_s": TIMEOUT}}
 
     ml_cases = common.load_corpus()
+    if cases_filter:
+        ml_cases = [c for c in ml_cases if c["name"] in cases_filter]
     labeled_ml = sweep("mlang", ml_cases, args.seeds_mlang, args.jobs)
     results["meta"]["mlang_programs"] = len(ml_cases)
     results["mlang"] = summarize(labeled_ml)
     results["mlang"]["mutants"] = labeled_ml
 
     py_cases = common.load_python_corpus()
+    if cases_filter:
+        py_cases = [c for c in py_cases if c["name"] in cases_filter]
     labeled_py = sweep("python", py_cases, args.seeds_python, args.jobs)
     results["meta"]["python_programs"] = len(py_cases)
     results["python"] = summarize(labeled_py)
@@ -122,11 +134,12 @@ def main():
 
     outdir = os.path.join(common.BENCH, "results")
     os.makedirs(outdir, exist_ok=True)
-    with open(os.path.join(outdir, "robustness.json"), "w") as f:
+    stem = "robustness" + (f"-{args.tag}" if args.tag else "")
+    with open(os.path.join(outdir, f"{stem}.json"), "w") as f:
         json.dump(results, f, indent=1)
         f.write("\n")
     table = render(results)
-    with open(os.path.join(outdir, "robustness.md"), "w") as f:
+    with open(os.path.join(outdir, f"{stem}.md"), "w") as f:
         f.write(table)
     print(table)
 
