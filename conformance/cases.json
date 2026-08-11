@@ -748,6 +748,11 @@
    "stdin": "z\nw\nr\nq\n"
   },
   {
+   "name": "mandelbrot-dive.ml",
+   "file": "examples/mandelbrot-dive.ml",
+   "stdin": ""
+  },
+  {
    "name": "calc.ml",
    "file": "examples/calc.ml",
    "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"
@@ -766,6 +771,11 @@
    "name": "editor.ml",
    "file": "examples/editor.ml",
    "stdin": "Wake up, Neo.\rThe Matrix has you.\u001b[A\u001b[H* \u001b[F!\u0006Matrix\r\u001a\u001a\u0019\u0013mlang-pad-conf.tmp\r\u001b[3~\u0018\u0018"
+  },
+  {
+   "name": "sublime.ml",
+   "file": "examples/sublime.ml",
+   "stdin": "9⍸[1+∂×]∵⍞ ※ sq\rneo «neo neo»⍞\u001b[H\u0004\u0004\u0004ONE\u001b\u0010dup\r\u0006sq\r\u001a\u000ehi\u0013mlang-sub-conf.tmp\r\u0005\u001b[<0;7;3M\u0011\u0011"
   },
   {
    "name": "construct.ml",
