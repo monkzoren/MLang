@@ -1309,7 +1309,44 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let v = s.pop_any(pos)?;
             let _ = write!(vm.out, "{}", fmt(&v, false));
         }
+        '⍇' => {
+            let v = s.pop(pos, "a file path")?;
+            let Value::Str(path) = &v else {
+                return glitch(
+                    format!("⍇ expects a path string, got {}", type_name(&v)),
+                    pos,
+                );
+            };
+            match std::fs::read_to_string(path.as_str()) {
+                Ok(text) => s.push(Value::str(text)),
+                // No OS detail in the message: glitches are part of the
+                // language's deterministic, conformance-pinned output.
+                Err(_) => return glitch(format!("⍇ cannot read «{path}»"), pos),
+            }
+        }
+        '⍈' => {
+            let pth = s.pop(pos, "a file path")?;
+            let Value::Str(path) = &pth else {
+                return glitch(
+                    format!("⍈ expects a path string, got {}", type_name(&pth)),
+                    pos,
+                );
+            };
+            let content = s.pop(pos, "a string to write")?;
+            let Value::Str(text) = &content else {
+                return glitch(
+                    format!("⍈ expects a string to write, got {}", type_name(&content)),
+                    pos,
+                );
+            };
+            if std::fs::write(path.as_str(), text.as_bytes()).is_err() {
+                return glitch(format!("⍈ cannot write «{path}»"), pos);
+            }
+        }
         '⌨' => {
+            // An interactive prompt written with ⊸ must be visible before
+            // the program blocks on input.
+            let _ = vm.out.flush();
             let mut line = String::new();
             match vm.stdin.read_line(&mut line) {
                 Ok(0) => s.push(Value::Nil),

@@ -18,20 +18,23 @@
 ※   r N txt    replace line N with txt
 ※   f txt      list the lines containing txt
 ※   p          list the document, numbered
-※   w          write the document to the screen (the «file»)
+※   w [file]   write: to the screen, or save to file (⍈)
+※   o file     open a file into the document (⍇)
 ※   q          quit
-※ Dispatch runs inside ⍥, so a bad command («d oops», «z») answers
-※ «? …» and the session continues — the command crashes, never the
-※ editor. Try:
-※   printf 'a⏎WAKE UP, NEO...⏎.⏎p⏎q⏎' | mlang run examples/editor.ml
+※ Dispatch runs inside ⍥, so a bad command («d oops», «z») or an
+※ unreadable file answers «? …» and the session continues — the
+※ command crashes, never the editor. Try:
+※   printf 'a⏎WAKE UP, NEO...⏎.⏎w neo.txt⏎q⏎' | mlang run examples/editor.ml
 [b#⍸[⇒x x1+⍕« │ »⧺bx@⧺↥o]∀]≔V                            ※ view: numbered listing
 [b[↥o]∀]≔W                                               ※ write: the raw document
+[⇒f b#0=[«»][b«⏎»⊇«⏎»⧺]? f⍈ «wrote »f⧺↥o]≔S              ※ save document to file f
+[⇒f f⍇⍖∂#0>[∂⌷«»=[∂#1-⊤][]?][]?⇒b «opened »f⧺↥o]≔O       ※ open file f as document
 [b 0 p⊂⟨L⟩⧺ b p b#⊂⧺⇒b p1+⇒p]≔I                          ※ insert line L at point p
 [⇒x b 0 x1-⊂ b x b#⊂⧺⇒b]≔D                               ※ delete line x
 [a⍭⊃⍎⇒x a« »⍷1+∂[a⇅⊥][⌫«»]?⇒y b 0 x1-⊂⟨y⟩⧺ b x b#⊂⧺⇒b]≔R ※ replace line x with y
 [b#⍸[⇒x bx@a∈[x1+⍕« │ »⧺bx@⧺↥o][]?]∀]≔F                  ※ find: lines containing a
-[L 0 1⊂⇒t L 2⊥⇒a t«a»=[b#⇒p 1⇒m][t«i»=[a⍭⊃⍎1-0⊔b#⊓⇒p 1⇒m][t«d»=[a⍭⊃⍎D][t«r»=[R][t«f»=[F][t«p»=[V][t«w»=[W][t«q»=[0⇒g][«? »L⧺↥o]?]?]?]?]?]?]?]?]≔C
+[L 0 1⊂⇒t L 2⊥⇒a t«a»=[b#⇒p 1⇒m][t«i»=[a⍭⊃⍎1-0⊔b#⊓⇒p 1⇒m][t«d»=[a⍭⊃⍎D][t«r»=[R][t«f»=[F][t«p»=[V][t«w»=[a#0=[W][a S]?][t«o»=[a O][t«q»=[0⇒g][«? »L⧺↥o]?]?]?]?]?]?]?]?]?]≔C
 ⇊
 [⌨∂∅≠][↥k]⟳⌫∅↥k
-⟨⟩⇒b 0⇒m 0⇒p 1⇒g «MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w:write q:quit (. ends input)»↥o [g[↧k∂∅≠][∅ 0]?][⇒L m[L«.»=[0⇒m][I]?][[C][«? »⇅⍕⧺↥o]⍥]?]⟳⌫∅↥o
+⟨⟩⇒b 0⇒m 0⇒p 1⇒g «MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find p:list w [file]:write/save o file:open q:quit (. ends input)»↥o [g[↧k∂∅≠][∅ 0]?][⇒L m[L«.»=[0⇒m][I]?][[C][«? »⇅⍕⧺↥o]⍥]?]⟳⌫∅↥o
 [↧o∂∅≠][⍞]⟳⌫

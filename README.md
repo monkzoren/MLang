@@ -52,20 +52,41 @@ implemented in Rust — the way C's first compilers were implemented in
 assembly — but MLang programs never touch Rust, and nothing else is
 involved: no C compiler, no linker, no interpreter dependency.)
 
+Build the toolchain once (from the repo root, any platform):
+
 ```sh
-cd compiler && cargo build --release && cd ..   # build the toolchain once
-alias mlang=$PWD/compiler/target/release/mlang
-
-mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
-./mandelbrot                                       # standalone: no toolchain needed
-
-mlang run examples/pipeline.ml       # or compile-and-run in one step
-mlang eval '«Hello, Matrix»⍞'        # inline source
-mlang check examples/calc.ml         # compile only, report weave errors
-mlang rain examples/pipeline.ml      # render the vertical rain view
-mlang ops                            # the sigil reference
-mlang std                            # the standard library source
+cargo build --release --manifest-path compiler/Cargo.toml
 ```
+
+Then use the bundled launcher — `./mlang` on Linux/macOS, `.\mlang.cmd` in
+PowerShell — no alias or PATH setup needed. Linux / macOS:
+
+```sh
+./mlang build examples/mandelbrot.ml -o mandelbrot   # compile → native binary
+./mandelbrot                                         # standalone: no toolchain needed
+
+./mlang run examples/editor.ml         # or compile-and-run in one step
+./mlang eval '«Hello, Matrix»⍞'      # inline source
+./mlang check examples/calc.ml       # compile only, report weave errors
+./mlang rain examples/pipeline.ml    # render the vertical rain view
+./mlang ops                          # the sigil reference
+./mlang std                          # the standard library source
+```
+
+Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
+output `.exe`:
+
+```powershell
+.\mlang.cmd build examples\mandelbrot.ml -o mandelbrot.exe
+.\mandelbrot.exe
+.\mlang.cmd run examples\editor.ml
+```
+
+Windows notes: WSL is *not* required — the toolchain and welded binaries
+are fully native on Windows. Use Windows Terminal (not legacy conhost)
+with a Unicode-capable font so the glyphs render. The `cargo test` suite,
+however, assumes a Unix-like filesystem (`/tmp` paths in the recorded
+file-I/O goldens; CI runs Ubuntu) — run it on Linux, macOS, or WSL.
 
 `mlang build` compiles source to MLang bytecode and welds it into a copy
 of the toolchain's own runtime image — the same shape as a Go binary,
@@ -75,7 +96,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 122 cases covering every operation, concurrency, glitches, both
+corpus — 125 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -151,12 +172,35 @@ iteration, palette lookup, and row assembly in 5 strands and two boot
 definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-`examples/editor.ml` is MatrixPad, a Notepad-style line editor wired
-like a real editor's event loop — keyboard, editor core, and screen are
-three strands joined by channels. The document is an immutable list of
-lines; every edit (insert, delete, replace) is slice-and-concat, and
-command dispatch runs inside `⍥`, so a bad command answers `? …` while
-the editor and the document survive untouched.
+And `examples/editor.ml` is **MatrixPad** — a real application: a
+Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
+editor's event loop. Keyboard, editor core, and screen are three strands
+joined by channels; the document is an immutable list of lines, so every
+edit (append, insert, replace, delete) is slice-and-concat and a stray
+command can never corrupt it; `w file` and `o file` save and open real
+files with the `⍇`/`⍈` primitives; and dispatch runs inside `⍥`, so a bad
+command or an unreadable file answers `? …` while the editor and the
+document survive untouched. Compile it to a standalone binary and edit
+away:
+
+```
+$ mlang build examples/editor.ml -o matrixpad && ./matrixpad
+MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find …
+a
+The Matrix has you.
+Follow the white rabbit.
+.
+i 2
+Wake up, Neo.
+.
+p
+1 │ The Matrix has you.
+2 │ Wake up, Neo.
+3 │ Follow the white rabbit.
+w neo.txt
+wrote neo.txt
+q
+```
 
 ## Repository
 

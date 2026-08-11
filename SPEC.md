@@ -264,8 +264,13 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
-| `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF |
+| `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
+| `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
+| `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |
+
+File-operation glitch messages carry no operating-system detail — they are
+part of the language's deterministic, conformance-pinned output.
 
 ## 6. The standard library
 

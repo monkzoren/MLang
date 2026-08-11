@@ -296,6 +296,21 @@
    "stdin": ""
   },
   {
+   "name": "file-io-roundtrip",
+   "source": "«neo⏎trinity»«/tmp/mlang-conf-io.txt»⍈ «/tmp/mlang-conf-io.txt»⍇⍖⍞",
+   "stdin": ""
+  },
+  {
+   "name": "file-missing-glitch",
+   "source": "[«/definitely/not/here.ml»⍇][«✗ »⇅⧺⍞]⍥«alive»⍞",
+   "stdin": ""
+  },
+  {
+   "name": "file-op-type-errors",
+   "source": "[5⍇][⍞]⍥ [«x»5⍈][⍞]⍥",
+   "stdin": ""
+  },
+  {
    "name": "loose-rain-marker",
    "source": "⇓«Hello, Matrix»⍞",
    "stdin": ""
@@ -610,7 +625,7 @@
   {
    "name": "editor.ml",
    "file": "examples/editor.ml",
-   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nq\n"
+   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nw /tmp/mlang-matrixpad.txt\nd 1\nd 1\np\no /tmp/mlang-matrixpad.txt\np\no /no/such\nq\n"
   }
  ]
 }
