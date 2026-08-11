@@ -71,6 +71,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
 ./mlang ops                          # the sigil reference
 ./mlang std                          # the standard library source
+./mlang ui                           # the Construct — the UI library source
 ```
 
 Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
@@ -96,7 +97,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 129 cases covering every operation, concurrency, glitches, both
+corpus — 153 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -176,8 +177,8 @@ calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
 editor. The document fills the terminal, you type to insert, the cursor
-keys move you around: `↑ ↓ ← → Home End PgUp PgDn`, Enter/Backspace/
-Delete edit, `^S` saves (asking for a name if there is none), `^O`
+keys move you around: `↑ ↓ ← → Home End PgUp PgDn` — or a mouse click, which places the
+cursor where you point — Enter/Backspace/Delete edit, `^S` saves (asking for a name if there is none), `^O`
 opens, `^Z`/`^Y` undo and redo, `^F` finds (wrapping around), and `^X`
 exits — warning once if there are unsaved changes. The screen looks
 like an editor because it is one:
@@ -191,19 +192,93 @@ Follow the white rabbit.
  ^S save  ^O open  ^Z undo  ^Y redo  ^F find  ^X exit · Ln 2 Col 14
 ```
 
-Under the hood it is the same three-strand event loop — keyboard (`⌦`
-raw keys), editor core, and screen (ANSI frames) joined by channels —
+Under the hood it is the same three-strand event loop — keyboard (`⌥`
+raw input events), editor core, and screen (ANSI frames) joined by channels —
 and the whole editor rests on the language's guarantees: the document
 is an immutable list of lines, every edit a slice-and-concat, so
 undo/redo is literally a list of old `⟨buffer cursor⟩` snapshots;
 dispatch runs inside `⍥`, so a glitch becomes a status-bar message and
-the document survives by construction. Because `⌦` decodes piped bytes
+the document survives by construction. Because `⌥` decodes piped bytes
 exactly like live keys, the *same recorded keystrokes always produce
 the same screens* — the conformance corpus drives this editor with a
 scripted session and pins every frame it draws. Weld it
 (`mlang build examples/editor.ml -o matrixpad.exe`) and dropping a
 .txt onto the executable opens that file (`⌂`), on any platform —
 the runtime enables ANSI processing even in a legacy Windows console.
+
+## The Construct — the UI library
+
+> "This is the Construct. It's our loading program. We can load anything…"
+
+MLang has a widget toolkit in the lineage of Qt/PySide, written in MLang
+itself: **the Construct** (`std/ui.ml`, printed by `mlang ui`). The Qt
+cast is all here, one glyph each — `Ⓛ` QLabel, `Ⓑ` QPushButton, `Ⓔ`
+QLineEdit, `Ⓒ` QCheckBox, `Ⓟ` QProgressBar, `Ⓘ` QListWidget, `Ⓥ`/`Ⓗ`
+box layouts, `Ⓦ` QMainWindow — plus `⌺` draw, `▶` `app.exec()`, `⏵`
+the live event loop, `◼` `quit()`, and `✎` the status bar. And there
+is no import statement: reference a Construct sigil and the loom
+weaves the library into your program's boot strand (SPEC §6.1).
+Libraries load like weapons racks in the Construct — you name them,
+they appear.
+
+Widgets are immutable values, so a PySide program's shape inverts, and
+Qt's signals-and-slots become the good kind of simple: a **slot** is a
+quotation carried by the widget, and the event loop runs it when the
+widget's key arrives on stdin (`key`, or `key argument` for a line
+edit). State lives in your strand's locals; the view quotation rebuilds
+the widget tree from them every frame, so a stray slot can corrupt
+nothing — the worst it can do is glitch, which `▶` catches and shows as
+a `✗` status message while the app keeps running. A whole application
+is a view and a handful of slots:
+
+```
+0⇒c [⟨«count: »c⍕⧺Ⓛ «+1»«+»[c1+⇒c]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓥ«Counter»Ⓦ]▶
+```
+
+```
+┌─ Counter ───┐
+│ count: 0    │
+│ [ +1 ](+)   │
+│ [ Quit ](q) │
+└─────────────┘
+```
+
+And it is genuinely interactive — keyboard and mouse. The engine op
+`⌥` reads one input event: keys arrive as the glyph they are («↑»
+«↵» «⌫», Ctrl-C is «␃»), a mouse press as `⟨«⌖» x y⟩`. `⏵` is `▶`
+gone live: Tab and the arrow keys move focus (the focused widget wears
+`⟦brackets⟧`), typing lands in the focused line edit behind a `▏`
+caret, `↵` or space activates, a click lands on whatever drew the
+`(key)` under the pointer, and Ctrl-C jacks out. On a real terminal
+the runtime flips to raw input with mouse reporting on the alternate
+screen and restores everything on exit; piped, the same bytes replay
+the same session — which is exactly how the conformance corpus pins
+it. Views and slots don't change at all: `examples/jack-in.ml` is the
+operator console below with one glyph changed, `▶` → `⏵`.
+
+The showcase is `examples/construct.ml`, the Nebuchadnezzar's operator
+console — line edit, buttons, checkbox, progress bar, item list, status
+bar, all live (`printf '+⏎n Trinity⏎j⏎r⏎q⏎' | mlang run
+examples/construct.ml`, or weld it into a standalone binary like any
+other program):
+
+```
+┌─ Nebuchadnezzar — operator console ──────────┐
+│ Wake up, Neo…                                │
+│ ──────────────────────────────────────────── │
+│ Operator: Neo▁▁▁▁▁▁▁▁▁ (n)                   │
+│ [ Jack in ](j)  [ ] Red pill (r)             │
+│ ──────────────────────────────────────────── │
+│ Signal strength                              │
+│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │
+│ ──────────────────────────────────────────── │
+│ Crew aboard                                  │
+│ • Morpheus                                   │
+│ • Trinity                                    │
+│                                              │
+│ [ Exit ](q)                                  │
+└──────────────────────────────────────────────┘
+```
 
 ## Repository
 
@@ -216,7 +291,8 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
-conformance/      cases.json + expected.json: 129 recorded goldens, the
+std/ui.ml         the Construct — the UI library, also written in MLang
+conformance/      cases.json + expected.json: 153 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification

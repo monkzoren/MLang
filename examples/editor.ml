@@ -2,7 +2,8 @@
 ※
 ※ This is a real editor, not a command shell: the document fills the
 ※ screen, you type to insert, and the cursor keys move you around.
-※   ↑ ↓ ← → ⇱(Home) ⇲(End) ⇞(PgUp) ⇟(PgDn)   navigate
+※   ↑ ↓ ← → ⇱(Home) ⇲(End) ⇞(PgUp) ⇟(PgDn)   navigate — or click:
+※   a mouse press ⟨«⌖» x y⟩ places the cursor where you point
 ※   Enter / Backspace / Delete                edit
 ※   ^S save (asks for a name)   ^O open      ^Z undo   ^Y redo
 ※   ^F find (wraps around)      ^X exit (warns once if unsaved)
@@ -11,10 +12,10 @@
 ※ drop a .txt onto the executable.
 ※
 ※ Three strands, a real editor's event loop:
-※   strand 0  keyboard — ⌦ reads raw keys           → k
+※   strand 0  keyboard — ⌥ reads raw input events   → k
 ※   strand 1  the editor core: document + dispatch  → o
 ※   strand 2  screen — ⊸ prints ANSI frames from o
-※ ⌦ and ⌨ have the lowest scheduling priority (SPEC §4.2), so every
+※ ⌥ and ⌨ have the lowest scheduling priority (SPEC §4.2), so every
 ※ frame reaches the screen before the program waits on the next key —
 ※ the pipeline is interactive and still fully deterministic: the same
 ※ key bytes always produce the same screens, which is how the recorded
@@ -39,7 +40,7 @@
 0⇒y 0⇒x 0⇒v 0⇒d ⟨⟩⇒h ⟨⟩⇒z ¯1⇒e]≔O         ※ open file n
 [b«⏎»⊇«⏎»⧺ n⍈ 0⇒d «saved »n⧺« · »⧺b#«line»Z⧺⇒m]≔V
 [⇒t«»⇒u 1⇒f [f][r 1 G«7m»E⧺t⧺u⧺«K»E⧺«0m»E⧺↥o ↧k⇒a
-a∅=[∅⇒u 0⇒f 0⇒g][a«⏎»=[0⇒f][a«⎋»=[∅⇒u 0⇒f][a«⌫»=[u«»≠[u∂#1- 0⇅⊂⇒u][]?][a#1=[u a⧺⇒u][]?]?]?]?]?]⟳ u]≔A
+a∅=[∅⇒u 0⇒f 0⇒g][a«↵»=[0⇒f][a«⎋»=[∅⇒u 0⇒f][a«⌫»=[u«»≠[u∂#1- 0⇅⊂⇒u][]?][a#1=[u a⧺⇒u][]?]?]?]?]?]⟳ u]≔A
 [n«»=[«save as: »A ∂∅=[⌫«save cancelled»⇒m][∂«»=[⌫«save cancelled»⇒m][⇒n S]?]?][[V][⍕⇒m]⍥]?]≔S
 [«open: »A ∂∅=[⌫][∂«»=[⌫][⇒n O]?]?]≔Q     ※ ^O: prompt and open
 [«find: »A ∂∅=[⌫][∂«»=[⌫][⇒t ¯1⇒p b#⍸[⇒i y 1+i+b#%⇒j p ¯1=[b j@ t⍷ ¯1≠[j⇒p][]?][]?]∀
@@ -56,9 +57,9 @@ p ¯1≠[p⇒y b y@ t⍷ 0⊔⇒x «found: »t⧺⇒m][«not found: »t⧺⇒m]?
 r 2-⍸[⇒q q 2+ 1 G⧺ v q+b#<[b v q+@][«»]?⧺«K»E⧺]∀
 m«»=[«^S save  ^O open  ^Z undo  ^Y redo  ^F find  ^X exit»][m]?« · Ln »⧺y 1+⍕⧺« Col »⧺x 1+⍕⧺⇒t
 r 1 G⧺«7m»E⧺t c K⧺«0m»E⧺
-y v-2+ x 1+G⧺↥o «»⇒m]≔F                   ※ draw one frame → o
-[L«↑»=[y 0>[y 1-⇒y][]?¯1⇒e][L«↓»=[y b#1-<[y 1+⇒y][]?¯1⇒e][L«←»=[x 0>[x 1-⇒x][y 0>[y 1-⇒y b y@#⇒x][]?]?¯1⇒e][L«→»=[x b y@#<[x 1+⇒x][y b#1-<[y 1+⇒y 0⇒x][]?]?¯1⇒e][L«⇱»=[0⇒x][L«⇲»=[b y@#⇒x][L«⇞»=[y r 3-- 0⊔⇒y¯1⇒e][L«⇟»=[y r 3-+ b#1-⊓⇒y¯1⇒e][L«⏎»=[R][L«⌫»=[B][L«⌦»=[D][L«^S»=[S][L«^O»=[Q][L«^Z»=[U][L«^Y»=[Y][L«^F»=[X][L«^X»=[d w¬∧[1⇒w«unsaved — ^X again discards, ^S saves»⇒m][0⇒g]?][L#1=[I][]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]≔C
+y v-2+ x 1+G⧺«?25h»E⧺↥o «»⇒m]≔F                   ※ draw one frame → o
+[L«↑»=[y 0>[y 1-⇒y][]?¯1⇒e][L«↓»=[y b#1-<[y 1+⇒y][]?¯1⇒e][L«←»=[x 0>[x 1-⇒x][y 0>[y 1-⇒y b y@#⇒x][]?]?¯1⇒e][L«→»=[x b y@#<[x 1+⇒x][y b#1-<[y 1+⇒y 0⇒x][]?]?¯1⇒e][L«⇱»=[0⇒x][L«⇲»=[b y@#⇒x][L«⇞»=[y r 3-- 0⊔⇒y¯1⇒e][L«⇟»=[y r 3-+ b#1-⊓⇒y¯1⇒e][L«↵»=[R][L«⌫»=[B][L«⌦»=[D][L«^S»=[S][L«^O»=[Q][L«^Z»=[U][L«^Y»=[Y][L«^F»=[X][L«^X»=[d w¬∧[1⇒w«unsaved — ^X again discards, ^S saves»⇒m][0⇒g]?][L⍙«list»=⇅⌫[L 2@ 2-v+ b#1-⊓ 0⊔⇒y L 1@ 1- 0⊔ b y@#⊓⇒x ¯1⇒e][L#1=[I][]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]≔C
 ⇊
-[⌦∂∅≠][↥k]⟳⌫∅↥k
+[⌥∂∅≠][↥k]⟳⌫∅↥k
 ⍜∂0@⇒r 1@⇒c ⟨«»⟩⇒b «»⇒n 0⇒y 0⇒x 0⇒v 0⇒d ⟨⟩⇒h ⟨⟩⇒z ¯1⇒e 0⇒w «»⇒m 1⇒g «2J»E↥o ⌂#[⌂⊃⇒n O][]? [g][F ↧k⇒L L∅=[0⇒g][L«^X»≠[0⇒w][]?[C][⍕⇒m]⍥]?]⟳ «2J»E«H»E⧺↥o ∅↥o
 [↧o∂∅≠][⊸]⟳⌫

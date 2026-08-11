@@ -8,7 +8,7 @@ use crate::values::{fmt, fmt_i64, truthy, type_name, val_eq, Instr, Op, Pos, Val
 use num_bigint::BigInt;
 use num_traits::{Signed, ToPrimitive, Zero};
 use std::borrow::Cow;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, Write};
 use std::rc::Rc;
 
@@ -365,6 +365,9 @@ pub struct VM<'io> {
     pub err: &'io mut dyn Write,
     /// The program's command-line arguments, pushed as a string list by ⌂.
     pub args: Vec<String>,
+    /// Bytes pushed back by the ⌥ event parser (an ESC that turned out
+    /// not to open a CSI sequence hands its follower back).
+    pushback: VecDeque<u8>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -393,6 +396,135 @@ impl<'io> VM<'io> {
             out,
             err,
             args: Vec::new(),
+            pushback: VecDeque::new(),
+        }
+    }
+
+    // ── ⌥ input events ─────────────────────────────────────────────────
+    // One event per call, parsed from the same byte stream ⌨ reads, so a
+    // recorded pipe replays exactly what a live terminal produced. Keys
+    // become the glyph they are; a mouse press becomes ⟨«⌖» x y⟩.
+
+    fn read_byte(&mut self) -> Option<u8> {
+        if let Some(b) = self.pushback.pop_front() {
+            return Some(b);
+        }
+        let buf = self.stdin.fill_buf().ok()?;
+        if buf.is_empty() {
+            return None;
+        }
+        let b = buf[0];
+        self.stdin.consume(1);
+        Some(b)
+    }
+
+    /// Decode one UTF-8 scalar; malformed bytes become U+FFFD.
+    fn read_char(&mut self) -> Option<char> {
+        let b0 = self.read_byte()?;
+        let need = match b0 {
+            0x00..=0x7f => return Some(b0 as char),
+            0xc0..=0xdf => 1,
+            0xe0..=0xef => 2,
+            0xf0..=0xf7 => 3,
+            _ => return Some('\u{fffd}'),
+        };
+        let mut bytes = vec![b0];
+        for _ in 0..need {
+            match self.read_byte() {
+                Some(b) if b & 0xc0 == 0x80 => bytes.push(b),
+                Some(b) => {
+                    self.pushback.push_back(b);
+                    return Some('\u{fffd}');
+                }
+                None => return Some('\u{fffd}'),
+            }
+        }
+        match std::str::from_utf8(&bytes) {
+            Ok(s) => s.chars().next(),
+            Err(_) => Some('\u{fffd}'),
+        }
+    }
+
+    /// Parse one CSI sequence (the ⎋[ is already consumed). Returns a
+    /// deliverable event, or None for sequences ⌥ swallows (releases,
+    /// motion, wheel, unknown finals).
+    fn read_csi(&mut self) -> Option<Option<Value>> {
+        let mut params = String::new();
+        loop {
+            let b = self.read_byte()?;
+            if (0x40..=0x7e).contains(&b) {
+                let event = match b {
+                    b'A' => Some(Value::str("↑")),
+                    b'B' => Some(Value::str("↓")),
+                    b'C' => Some(Value::str("→")),
+                    b'D' => Some(Value::str("←")),
+                    b'H' => Some(Value::str("⇱")),
+                    b'F' => Some(Value::str("⇲")),
+                    b'~' if params == "1" || params == "7" => Some(Value::str("⇱")),
+                    b'~' if params == "4" || params == "8" => Some(Value::str("⇲")),
+                    b'~' if params == "2" => Some(Value::str("⎀")),
+                    b'~' if params == "3" => Some(Value::str("⌦")),
+                    b'~' if params == "5" => Some(Value::str("⇞")),
+                    b'~' if params == "6" => Some(Value::str("⇟")),
+                    b'M' if params.starts_with('<') => {
+                        let nums: Vec<i64> = params[1..]
+                            .split(';')
+                            .map(|p| p.parse().unwrap_or(-1))
+                            .collect();
+                        match nums.as_slice() {
+                            // SGR press: button < 32 (no motion/wheel bits)
+                            [b, x, y] if (0..32).contains(b) && *x >= 0 && *y >= 0 => {
+                                Some(Value::List(Rc::new(vec![
+                                    Value::str("⌖"),
+                                    Value::int(*x),
+                                    Value::int(*y),
+                                ])))
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                return Some(event);
+            }
+            params.push(b as char);
+            if params.len() > 32 {
+                return Some(None); // runaway sequence — bail out
+            }
+        }
+    }
+
+    /// Read the next input event for ⌥. ∅ at end of input.
+    fn read_event(&mut self) -> Value {
+        loop {
+            let Some(c) = self.read_char() else {
+                return Value::Nil;
+            };
+            match c {
+                // «↵», not «⏎»: inside MLang strings the ⏎ glyph denotes a
+                // newline, so a ⏎ event could never be written or compared.
+                '\r' | '\n' => return Value::str("↵"),
+                '\t' => return Value::str("⇥"),
+                '\u{8}' | '\u{7f}' => return Value::str("⌫"),
+                '\u{1b}' => match self.read_byte() {
+                    None => return Value::Nil,
+                    Some(b'[') => match self.read_csi() {
+                        None => return Value::Nil,
+                        Some(Some(event)) => return event,
+                        Some(None) => continue,
+                    },
+                    Some(other) => {
+                        self.pushback.push_back(other);
+                        return Value::str("⎋");
+                    }
+                },
+                c if (c as u32) < 32 => {
+                    // control chords in caret notation: Ctrl-C is «^C»
+                    let chord = char::from((c as u8) + 0x40);
+                    return Value::str(format!("^{chord}"));
+                }
+                c => return Value::str(c.to_string()),
+            }
         }
     }
 
@@ -620,10 +752,26 @@ pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
             strands.push((label.clone(), code));
         }
     }
+    let program_boot = match &prog.boot_cells {
+        Some(cells) => lex_strand(cells.clone(), prog.axis)?,
+        None => Vec::new(),
+    };
     let mut boot = std_code();
-    if let Some(cells) = &prog.boot_cells {
-        boot.extend(lex_strand(cells.clone(), prog.axis)?);
+    let mut refs = HashSet::new();
+    let mut defs = HashSet::new();
+    scan_names(&program_boot, &mut refs, &mut defs);
+    for (_, code) in &strands {
+        scan_names(code, &mut refs, &mut defs);
     }
+    for (_, source) in LIBS {
+        let lib = lib_code(source);
+        let mut lib_defs = HashSet::new();
+        scan_names(&lib, &mut HashSet::new(), &mut lib_defs);
+        if refs.iter().any(|c| lib_defs.contains(c) && !defs.contains(c)) {
+            boot.extend(lib);
+        }
+    }
+    boot.extend(program_boot);
     Ok(CompiledProgram { boot, strands })
 }
 
@@ -633,15 +781,59 @@ pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
 }
 
 pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
+pub const UI_SOURCE: &str = include_str!("../../std/ui.ml");
+
+/// Bundled libraries, in weave order. A library is woven into the boot
+/// strand — after std, before the program's own boot section — exactly
+/// when the program references a sigil the library defines without
+/// defining that sigil itself (§6.1). Weaving is decided at compile time,
+/// so welded binaries carry only the libraries they use.
+const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE)];
+
+/// Collect referenced names and defined sigils (≔ and ⇒ targets),
+/// recursing into quotations.
+fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>) {
+    for instr in code {
+        match &instr.op {
+            Op::Name(c) => {
+                refs.insert(*c);
+            }
+            Op::B('≔', c, _) | Op::B('⇒', c, _) => {
+                defs.insert(*c);
+            }
+            Op::Push(Value::Quot(q)) => scan_names(q, refs, defs),
+            _ => {}
+        }
+    }
+}
+
+/// Does this program execute ⌥ anywhere? Decides whether the runner
+/// should switch a real terminal into raw/mouse-reporting mode.
+pub fn uses_interactive(prog: &CompiledProgram) -> bool {
+    fn has_event_op(code: &[Instr]) -> bool {
+        code.iter().any(|i| match &i.op {
+            Op::B('⌥', _, _) => true,
+            Op::Push(Value::Quot(q)) => has_event_op(q),
+            _ => false,
+        })
+    }
+    has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
+}
+
+/// Lex a library source into one instruction strip. Infallible: bundled
+/// libraries are verified by CI.
+fn lib_code(source: &str) -> Vec<Instr> {
+    let prog = crate::forms::parse_source(source).expect("library parses");
+    let mut code = Vec::new();
+    for (_, cells) in prog.strands {
+        code.extend(lex_strand(cells, prog.axis).expect("library lexes"));
+    }
+    code
+}
 
 /// The standard library, lexed. Infallible: std.ml is verified by CI.
 fn std_code() -> Vec<Instr> {
-    let prog = crate::forms::parse_source(STD_SOURCE).expect("std.ml parses");
-    let mut code = Vec::new();
-    for (_, cells) in prog.strands {
-        code.extend(lex_strand(cells, prog.axis).expect("std.ml lexes"));
-    }
-    code
+    lib_code(STD_SOURCE)
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────
@@ -1496,22 +1688,20 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 Err(_) => s.push(Value::Nil),
             }
         }
-        '⌂' => {
-            let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
-            s.push(Value::List(Rc::new(items)));
-        }
-        '⌦' => {
-            // Same lowest scheduling priority as ⌨ (§4.2): the grid's
-            // pending work flushes before the program waits on a keystroke.
+        '⌥' => {
+            // Stdin reads share ⌨'s lowest scheduling priority: other
+            // strands flush their pending work before the UI waits.
             if vm.others_active(s.sid) {
                 return Err(Sig::Block(BlockOn::Stdin, pos));
             }
+            // Prompts written with ⊸ must appear before blocking, like ⌨.
             let _ = vm.out.flush();
-            crate::term::enter_raw();
-            match crate::term::read_key(vm.stdin) {
-                Some(k) => s.push(Value::str(k)),
-                None => s.push(Value::Nil),
-            }
+            let event = vm.read_event();
+            s.push(event);
+        }
+        '⌂' => {
+            let items: Vec<Value> = vm.args.iter().map(|a| Value::str(a.clone())).collect();
+            s.push(Value::List(Rc::new(items)));
         }
         '⍜' => {
             let (rows, cols) = crate::term::size();
