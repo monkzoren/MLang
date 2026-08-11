@@ -97,3 +97,9 @@ the top-level README's honest notes.
   channel — the scheduler proves the deadlock and reports the wait graph
   — but a seeded busy-loop still hangs both languages, and is counted
   against both.
+* The application arm is one application in one architecture
+  (channel-heavy MapReduce + actor). Programs are presented to the model
+  exactly as committed — the MLang side includes its comment header, the
+  Python side is bare idiomatic code. A hang hands the model whatever
+  partial output appeared before the timeout; that asymmetry (wait graph
+  vs. frozen partial traceback) is precisely the thing under test.
