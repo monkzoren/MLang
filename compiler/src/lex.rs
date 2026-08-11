@@ -119,7 +119,10 @@ impl Lexer {
         let val = if dots > 0 {
             Value::Float(s.parse::<f64>().unwrap())
         } else {
-            Value::Int(Rc::new(s.parse().unwrap()))
+            match s.parse::<i64>() {
+                Ok(i) => Value::Int(i),
+                Err(_) => Value::from_big(s.parse().unwrap()),
+            }
         };
         Ok(Instr { op: Op::Push(val), pos: self.pos(&cell) })
     }
