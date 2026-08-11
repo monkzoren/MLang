@@ -24,9 +24,13 @@ pub enum Op {
     B(char, char, char),
 }
 
+/// Integers keep a canonical form: `Int` whenever the value fits in i64,
+/// `Big` only beyond that. Both are the single language-level "int" type;
+/// the split is invisible to programs (⍙, =, ⍕ agree across it).
 #[derive(Clone, Debug)]
 pub enum Value {
-    Int(Rc<BigInt>),
+    Int(i64),
+    Big(Rc<BigInt>),
     Float(f64),
     Str(Rc<String>),
     List(Rc<Vec<Value>>),
@@ -37,27 +41,35 @@ pub enum Value {
 
 impl Value {
     pub fn int(i: i64) -> Value {
-        Value::Int(Rc::new(BigInt::from(i)))
+        Value::Int(i)
+    }
+    pub fn from_big(b: BigInt) -> Value {
+        match b.to_i64() {
+            Some(i) => Value::Int(i),
+            None => Value::Big(Rc::new(b)),
+        }
     }
     pub fn str(s: impl Into<String>) -> Value {
         Value::Str(Rc::new(s.into()))
     }
     pub fn as_f64(&self) -> Option<f64> {
         match self {
-            Value::Int(i) => Some(i.to_f64().unwrap_or(f64::INFINITY)),
+            Value::Int(i) => Some(*i as f64),
+            Value::Big(b) => Some(b.to_f64().unwrap_or(f64::INFINITY)),
             Value::Float(f) => Some(*f),
             _ => None,
         }
     }
     pub fn is_num(&self) -> bool {
-        matches!(self, Value::Int(_) | Value::Float(_))
+        matches!(self, Value::Int(_) | Value::Big(_) | Value::Float(_))
     }
 }
 
 pub fn truthy(v: &Value) -> bool {
     match v {
         Value::Nil => false,
-        Value::Int(i) => **i != BigInt::from(0),
+        Value::Int(i) => *i != 0,
+        Value::Big(_) => true, // canonical form: zero always fits i64
         Value::Float(f) => *f != 0.0,
         Value::Str(s) => !s.is_empty(),
         Value::List(l) => !l.is_empty(),
@@ -71,9 +83,12 @@ pub fn val_eq(a: &Value, b: &Value) -> bool {
     match (a, b) {
         (Value::Nil, Value::Nil) => true,
         (Value::Int(x), Value::Int(y)) => x == y,
+        (Value::Big(x), Value::Big(y)) => x == y,
+        // canonical form makes a small Big impossible, so Int ≠ Big always
+        (Value::Int(_), Value::Big(_)) | (Value::Big(_), Value::Int(_)) => false,
         (Value::Float(x), Value::Float(y)) => x == y,
-        (Value::Int(_), Value::Float(y)) => a.as_f64() == Some(*y),
-        (Value::Float(x), Value::Int(_)) => Some(*x) == b.as_f64(),
+        (Value::Int(_) | Value::Big(_), Value::Float(y)) => a.as_f64() == Some(*y),
+        (Value::Float(x), Value::Int(_) | Value::Big(_)) => Some(*x) == b.as_f64(),
         (Value::Str(x), Value::Str(y)) => x == y,
         (Value::List(x), Value::List(y)) => {
             x.len() == y.len() && x.iter().zip(y.iter()).all(|(p, q)| val_eq(p, q))
@@ -86,7 +101,7 @@ pub fn val_eq(a: &Value, b: &Value) -> bool {
 pub fn type_name(v: &Value) -> &'static str {
     match v {
         Value::Nil => "∅",
-        Value::Int(_) => "int",
+        Value::Int(_) | Value::Big(_) => "int",
         Value::Float(_) => "float",
         Value::Str(_) => "str",
         Value::List(_) => "list",
@@ -119,7 +134,8 @@ fn fmt_f64(x: f64) -> String {
 pub fn fmt(v: &Value, quote: bool) -> String {
     match v {
         Value::Nil => "∅".into(),
-        Value::Int(i) => i.to_string().replace('-', "¯"),
+        Value::Int(i) => fmt_i64(*i),
+        Value::Big(b) => b.to_string().replace('-', "¯"),
         Value::Float(f) => fmt_f64(*f),
         Value::Str(s) => {
             if quote {
