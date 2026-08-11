@@ -1,0 +1,3432 @@
+{
+ "meta": {
+  "seeds_mlang": 250,
+  "seeds_python": 250,
+  "cases": "example:oracle.ml,oracle",
+  "timeout_s": 3.0,
+  "mlang_programs": 1,
+  "python_programs": 1
+ },
+ "mlang": {
+  "total": 243,
+  "buckets": {
+   "before-run": 26,
+   "runtime-fault": 120,
+   "deadlock-proven": 35,
+   "wrong-output": 39,
+   "hang": 0,
+   "pass": 23
+  },
+  "hang_with_traceback": 0,
+  "by_op": {
+   "chan-rename": {
+    "deadlock-proven": 26,
+    "pass": 4,
+    "wrong-output": 6
+   },
+   "drop": {
+    "before-run": 15,
+    "runtime-fault": 25,
+    "pass": 4,
+    "wrong-output": 8,
+    "deadlock-proven": 1
+   },
+   "swap-op": {
+    "before-run": 6,
+    "wrong-output": 16,
+    "runtime-fault": 74,
+    "deadlock-proven": 5,
+    "pass": 11
+   },
+   "transpose": {
+    "runtime-fault": 21,
+    "wrong-output": 9,
+    "pass": 4,
+    "deadlock-proven": 3,
+    "before-run": 5
+   }
+  },
+  "mutants": [
+   {
+    "id": "mlang:example:oracle.ml:0",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:1",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:2",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:3",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:4",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:5",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:6",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:7",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:8",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:9",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:10",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:11",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:12",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:13",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:14",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:15",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:16",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:17",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:18",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:19",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:20",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:21",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:22",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:23",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:24",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:25",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:26",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:27",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:28",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:29",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:30",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:31",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:32",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:33",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:34",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:35",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:36",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:37",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:38",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:39",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:40",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:41",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:42",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:43",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:44",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:46",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:47",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:48",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:49",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:50",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:51",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:52",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:53",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:54",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:55",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:56",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:57",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:58",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:59",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:60",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:61",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:62",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:63",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:64",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:65",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:66",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:67",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:68",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:69",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:70",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:71",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:72",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:73",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:74",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:75",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:76",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:77",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:78",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:79",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:80",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:81",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:82",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:83",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:84",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:85",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:86",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:88",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:89",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:90",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:91",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:92",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:93",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:94",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:95",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:96",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:97",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:98",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:99",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:101",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:102",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:103",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:104",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:105",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:106",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:107",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:108",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:109",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:110",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:111",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:112",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:113",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:114",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:115",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:116",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:117",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:118",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:119",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:120",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:121",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:122",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:123",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:124",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:125",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:126",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:127",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:128",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:129",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:130",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:131",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:132",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:133",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:134",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:135",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:136",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:137",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:138",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:139",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:140",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:141",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:142",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:143",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:144",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:145",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:146",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:147",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:148",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:149",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:150",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:151",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:152",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:153",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:154",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:155",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:156",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:157",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:158",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:159",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:160",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:161",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:162",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:163",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:164",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:165",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:166",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:167",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:168",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:169",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:170",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:171",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:172",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:173",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:174",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:175",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:176",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:177",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:178",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:179",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:180",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:181",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:182",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:183",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:184",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:185",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:186",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:187",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:188",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:189",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:190",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:191",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:192",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:193",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:195",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:196",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:197",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:198",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:199",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:200",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:201",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:202",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:204",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:205",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:206",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:207",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:208",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:209",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:210",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:211",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:212",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:213",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:214",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:215",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:216",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:217",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:218",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:219",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:220",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:221",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:222",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:223",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:224",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:225",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:226",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:227",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:228",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:229",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:230",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:231",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:232",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:233",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:234",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:235",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:236",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:237",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:238",
+    "case": "example:oracle.ml",
+    "op": "chan-rename",
+    "outcome": "deadlock",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:239",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:240",
+    "case": "example:oracle.ml",
+    "op": "drop",
+    "outcome": "weave",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:241",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:242",
+    "case": "example:oracle.ml",
+    "op": "transpose",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:243",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:244",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:246",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   },
+   {
+    "id": "mlang:example:oracle.ml:248",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "mlang:example:oracle.ml:249",
+    "case": "example:oracle.ml",
+    "op": "swap-op",
+    "outcome": "glitch",
+    "stderr_seen": true
+   }
+  ]
+ },
+ "python": {
+  "total": 234,
+  "buckets": {
+   "before-run": 182,
+   "runtime-fault": 14,
+   "deadlock-proven": 0,
+   "wrong-output": 11,
+   "hang": 25,
+   "pass": 2
+  },
+  "hang_with_traceback": 23,
+  "by_op": {
+   "drop": {
+    "before-run": 45,
+    "hang": 7,
+    "wrong-output": 2,
+    "runtime-fault": 1
+   },
+   "ident-rename": {
+    "hang": 15,
+    "runtime-fault": 11,
+    "before-run": 2,
+    "pass": 1,
+    "wrong-output": 6
+   },
+   "swap-op": {
+    "before-run": 93,
+    "wrong-output": 2,
+    "runtime-fault": 2,
+    "hang": 1,
+    "pass": 1
+   },
+   "transpose": {
+    "before-run": 42,
+    "hang": 2,
+    "wrong-output": 1
+   }
+  },
+  "mutants": [
+   {
+    "id": "python:oracle:0",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:1",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:2",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:3",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:4",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:5",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:6",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:7",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:8",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:9",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:10",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:11",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:12",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:13",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:14",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:15",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:16",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:17",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:18",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:19",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:20",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:21",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:22",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:23",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:24",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:25",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:26",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:28",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:29",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:30",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:31",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:32",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:33",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:34",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:35",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:36",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:37",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:38",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:39",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:40",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:41",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:42",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:43",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:44",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:45",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:46",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:47",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:48",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:49",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:50",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:51",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:52",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:53",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:54",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:55",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:56",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:57",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:58",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:59",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:60",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:61",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:62",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:63",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:64",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:65",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:66",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:67",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:68",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:69",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:70",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:71",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:72",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:73",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:74",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:75",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:76",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:77",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:78",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:79",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:80",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:81",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:82",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:83",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:84",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:85",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:86",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:87",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:88",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:89",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:90",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:91",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:92",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:93",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:94",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:95",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:96",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:97",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:98",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:99",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:100",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:101",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:102",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:103",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:105",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:106",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "hang",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:107",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:108",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:109",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:110",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:111",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:113",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:114",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:115",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:116",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:117",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:118",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:119",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:120",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:121",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:122",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:123",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:124",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:125",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:126",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:127",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:128",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:129",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:131",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:132",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:133",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:134",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:135",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:136",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:137",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:138",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:139",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:140",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:141",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:142",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:143",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:144",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:145",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:146",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:147",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:148",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:149",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:150",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:151",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:152",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:153",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:154",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:156",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:157",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:158",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:159",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:160",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:161",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:162",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:163",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:164",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:165",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:166",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:167",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:168",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:169",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:170",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:171",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:172",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:173",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:174",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:176",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:177",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:178",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:179",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:180",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:181",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:182",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:183",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:184",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:185",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:186",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:187",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:188",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:189",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:190",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:191",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:192",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:193",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:194",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:195",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:196",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "pass",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:197",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:198",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:199",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:200",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:201",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:202",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:203",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:204",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:205",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:206",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:207",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:209",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:210",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:211",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:212",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:213",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:216",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:217",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:218",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:219",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:220",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "wrong-output",
+    "stderr_seen": false
+   },
+   {
+    "id": "python:oracle:221",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:222",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:223",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:224",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:225",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:227",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:228",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:229",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "exception",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:231",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:233",
+    "case": "oracle",
+    "op": "drop",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:234",
+    "case": "oracle",
+    "op": "ident-rename",
+    "outcome": "hang",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:235",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:237",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:240",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:241",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:242",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:243",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:244",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:245",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:246",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:248",
+    "case": "oracle",
+    "op": "swap-op",
+    "outcome": "syntax",
+    "stderr_seen": true
+   },
+   {
+    "id": "python:oracle:249",
+    "case": "oracle",
+    "op": "transpose",
+    "outcome": "syntax",
+    "stderr_seen": true
+   }
+  ]
+ }
+}

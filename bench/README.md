@@ -36,6 +36,22 @@ literals and comments masked so every mutation lands in code:
 | transpose adjacent glyphs | transpose adjacent tokens |
 | rename one channel use | rename one identifier occurrence |
 
+## The application-scale arm: the Oracle
+
+The corpus programs are small, so the benchmark also targets one
+deliberately complicated application: `examples/oracle.ml` (**the
+Oracle** — a 7-strand concurrent MapReduce analytics engine with a
+work-stealing mapper pool, an actor-style state owner, per-command
+crash-isolated parsers, and a two-phase channel protocol) against
+`python_ports/oracle.py`, the same architecture in natural Python
+threads + queues. Both are driven by the same recorded query session;
+the MLang side is conformance-pinned. This is the arm where the
+languages' failure modes actually diverge: in the Python twin a
+one-token bug regularly hangs the process (often *after* printing a
+thread traceback), while MLang converts that entire class of bug into
+proven deadlock reports with a wait graph — see the app-scale tables in
+the top-level README.
+
 ## Running it
 
 ```sh
@@ -45,6 +61,12 @@ python3 bench/robustness.py
 # the self-repair benchmark
 python3 bench/heal.py --arm both --provider claude-cli \
     --model claude-haiku-4-5-20251001 --mutants 80 --rounds 3
+
+# the application-scale arms (the Oracle only)
+python3 bench/robustness.py --cases example:oracle.ml,oracle \
+    --tag oracle --seeds-mlang 250 --seeds-python 250
+python3 bench/heal.py --arm both --cases example:oracle.ml,oracle \
+    --tag oracle --mutants 40 --seeds 60 --rounds 3
 
 # render the tables from whatever results exist
 python3 bench/report.py
