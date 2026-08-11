@@ -7,6 +7,7 @@ use crate::lex::{lex_strand, LoadError};
 use crate::values::{fmt, fmt_i64, truthy, type_name, val_eq, Instr, Op, Pos, Value};
 use num_bigint::BigInt;
 use num_traits::{Signed, ToPrimitive, Zero};
+use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, Write};
 use std::rc::Rc;
@@ -97,14 +98,16 @@ pub struct Strand {
     pub label: String,
     frames: Vec<Frame>,
     stack: Vec<Value>,
-    locals: HashMap<char, Value>,
+    // Strands hold a handful of single-glyph locals; a linear scan beats
+    // hashing at this size, and name references are the hottest path.
+    locals: Vec<(char, Value)>,
     pub status: Status,
     pub block: Option<(BlockOn, Pos)>,
     pub glitch: Option<(Value, Pos)>,
 }
 
 impl Strand {
-    fn new(sid: i64, label: String, code: Rc<Vec<Instr>>, locals: HashMap<char, Value>) -> Self {
+    fn new(sid: i64, label: String, code: Rc<Vec<Instr>>, locals: Vec<(char, Value)>) -> Self {
         Strand {
             sid,
             label,
@@ -118,11 +121,22 @@ impl Strand {
     }
 
     fn placeholder() -> Self {
-        Strand::new(i64::MIN, String::new(), Rc::new(Vec::new()), HashMap::new())
+        Strand::new(i64::MIN, String::new(), Rc::new(Vec::new()), Vec::new())
     }
 
     fn push(&mut self, v: Value) {
         self.stack.push(v);
+    }
+
+    fn local_get(&self, c: char) -> Option<&Value> {
+        self.locals.iter().find(|(k, _)| *k == c).map(|(_, v)| v)
+    }
+
+    fn local_set(&mut self, c: char, v: Value) {
+        match self.locals.iter_mut().find(|(k, _)| *k == c) {
+            Some(slot) => slot.1 = v,
+            None => self.locals.push((c, v)),
+        }
     }
 
     fn pop(&mut self, pos: Pos, what: &str) -> R<Value> {
@@ -147,7 +161,8 @@ impl Strand {
     fn pop_i64(&mut self, pos: Pos, op: &str) -> R<i64> {
         let v = self.pop_num(pos, op)?;
         Ok(match v {
-            Value::Int(i) => i.to_i64().unwrap_or(i64::MAX),
+            Value::Int(i) => i,
+            Value::Big(b) => b.to_i64().unwrap_or(i64::MAX),
             Value::Float(f) => f as i64,
             _ => unreachable!(),
         })
@@ -196,25 +211,78 @@ impl Strand {
 }
 
 // ── numeric helpers ────────────────────────────────────────────────────
-fn both_ints<'a>(a: &'a Value, b: &'a Value) -> Option<(&'a BigInt, &'a BigInt)> {
-    match (a, b) {
-        (Value::Int(x), Value::Int(y)) => Some((x, y)),
-        _ => None,
-    }
+/// Both operands are language-level ints, as BigInts (borrowed where the
+/// value is already big) for the arbitrary-precision path.
+fn both_big<'a>(a: &'a Value, b: &'a Value) -> Option<(Cow<'a, BigInt>, Cow<'a, BigInt>)> {
+    let big = |v: &'a Value| -> Option<Cow<'a, BigInt>> {
+        match v {
+            Value::Int(i) => Some(Cow::Owned(BigInt::from(*i))),
+            Value::Big(b) => Some(Cow::Borrowed(&**b)),
+            _ => None,
+        }
+    };
+    Some((big(a)?, big(b)?))
 }
 
 fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
-    if let Some((x, y)) = both_ints(a, b) {
+    // i64 fast path; overflow (and i64::MIN edge cases, where checked ops
+    // return None) falls through to the arbitrary-precision path below.
+    if let (Value::Int(x), Value::Int(y)) = (a, b) {
+        let (x, y) = (*x, *y);
+        match op {
+            '+' => {
+                if let Some(r) = x.checked_add(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '-' => {
+                if let Some(r) = x.checked_sub(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '×' => {
+                if let Some(r) = x.checked_mul(y) {
+                    return Ok(Value::Int(r));
+                }
+            }
+            '÷' => {
+                if y == 0 {
+                    return glitch("÷ by zero", pos);
+                }
+                match x.checked_rem(y) {
+                    Some(0) => return Ok(Value::Int(x / y)),
+                    Some(_) => return Ok(Value::Float(x as f64 / y as f64)),
+                    None => {}
+                }
+            }
+            '%' => {
+                if y == 0 {
+                    return glitch("% by zero", pos);
+                }
+                if let Some(mut r) = x.checked_rem(y) {
+                    if r != 0 && (r < 0) != (y < 0) {
+                        r += y;
+                    }
+                    return Ok(Value::Int(r));
+                }
+            }
+            // ^ keeps its semantics in one place, on the big path
+            '^' => {}
+            _ => unreachable!(),
+        }
+    }
+    if let Some((x, y)) = both_big(a, b) {
+        let (x, y) = (x.as_ref(), y.as_ref());
         return Ok(match op {
-            '+' => Value::Int(Rc::new(x + y)),
-            '-' => Value::Int(Rc::new(x - y)),
-            '×' => Value::Int(Rc::new(x * y)),
+            '+' => Value::from_big(x + y),
+            '-' => Value::from_big(x - y),
+            '×' => Value::from_big(x * y),
             '÷' => {
                 if y.is_zero() {
                     return glitch("÷ by zero", pos);
                 }
                 if (x % y).is_zero() {
-                    Value::Int(Rc::new(x / y))
+                    Value::from_big(x / y)
                 } else {
                     Value::Float(a.as_f64().unwrap() / b.as_f64().unwrap())
                 }
@@ -227,14 +295,14 @@ fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
                 if !r.is_zero() && (r.is_negative() != y.is_negative()) {
                     r += y;
                 }
-                Value::Int(Rc::new(r))
+                Value::from_big(r)
             }
             '^' => {
                 if y.is_negative() {
                     Value::Float(a.as_f64().unwrap().powf(b.as_f64().unwrap()))
                 } else {
                     match y.to_u32() {
-                        Some(e) => Value::Int(Rc::new(x.pow(e))),
+                        Some(e) => Value::from_big(x.pow(e)),
                         None => return glitch("^ exponent too large", pos),
                     }
                 }
@@ -269,8 +337,13 @@ fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
 }
 
 fn num_cmp(a: &Value, b: &Value) -> std::cmp::Ordering {
-    if let Some((x, y)) = both_ints(a, b) {
+    if let (Value::Int(x), Value::Int(y)) = (a, b) {
         return x.cmp(y);
+    }
+    if matches!(a, Value::Big(_)) || matches!(b, Value::Big(_)) {
+        if let Some((x, y)) = both_big(a, b) {
+            return x.as_ref().cmp(y.as_ref());
+        }
     }
     a.as_f64()
         .unwrap()
@@ -503,7 +576,7 @@ impl<'io> VM<'io> {
             -1,
             "boot".into(),
             Rc::new(prog.boot.clone()),
-            HashMap::new(),
+            Vec::new(),
         );
         self.register(boot);
         self.run_scheduler();
@@ -516,7 +589,7 @@ impl<'io> VM<'io> {
                 i as i64,
                 label.clone(),
                 Rc::new(code.clone()),
-                HashMap::new(),
+                Vec::new(),
             ));
         }
         self.run_scheduler();
@@ -575,17 +648,13 @@ fn std_code() -> Vec<Instr> {
 fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
     let fi = s.frames.len() - 1;
     match &s.frames[fi] {
-        Frame::CF { .. } => {
-            let (code, ip) = match &s.frames[fi] {
-                Frame::CF { code, ip } => (code.clone(), *ip),
-                _ => unreachable!(),
-            };
+        Frame::CF { code, ip } => {
+            let (code, ip) = (code.clone(), *ip);
             if ip >= code.len() {
                 s.frames.pop();
                 return Ok(());
             }
-            let instr = code[ip].clone();
-            match execute(vm, s, &instr) {
+            match execute(vm, s, &code[ip]) {
                 Ok(()) => {}
                 Err(Sig::Yield) => {
                     // Yield completed — resume at the next instruction.
@@ -756,7 +825,7 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             Ok(())
         }
         Op::Name(c) => {
-            let v = if let Some(v) = s.locals.get(c) {
+            let v = if let Some(v) = s.local_get(*c) {
                 v.clone()
             } else if let Some(v) = vm.globals.get(c) {
                 v.clone()
@@ -845,11 +914,11 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '⌊' | '⌈' => {
             let v = s.pop_num(pos, &ch.to_string())?;
             match v {
-                Value::Int(i) => s.push(Value::Int(i)),
+                Value::Int(_) | Value::Big(_) => s.push(v),
                 Value::Float(f) => {
                     let r = if ch == '⌊' { f.floor() } else { f.ceil() };
                     let big = BigInt::from_f64(r).unwrap_or_default();
-                    s.push(Value::Int(Rc::new(big)));
+                    s.push(Value::from_big(big));
                 }
                 _ => unreachable!(),
             }
@@ -857,7 +926,11 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '±' => {
             let v = s.pop_num(pos, "±")?;
             match v {
-                Value::Int(i) => s.push(Value::Int(Rc::new(-&*i))),
+                Value::Int(i) => match i.checked_neg() {
+                    Some(r) => s.push(Value::Int(r)),
+                    None => s.push(Value::from_big(-BigInt::from(i))),
+                },
+                Value::Big(b) => s.push(Value::from_big(-&*b)),
                 Value::Float(f) => s.push(Value::Float(-f)),
                 _ => unreachable!(),
             }
@@ -1110,7 +1183,10 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let parsed = if t.contains('.') || t.contains('e') || t.contains('E') {
                 t.parse::<f64>().ok().map(Value::Float)
             } else {
-                t.parse::<BigInt>().ok().map(|b| Value::Int(Rc::new(b)))
+                t.parse::<i64>()
+                    .ok()
+                    .map(Value::Int)
+                    .or_else(|| t.parse::<BigInt>().ok().map(Value::from_big))
             };
             match parsed {
                 Some(n) => s.push(n),
@@ -1263,7 +1339,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         '⇒' => {
             let v = s.pop(pos, "a value to store")?;
-            s.locals.insert(arg, v);
+            s.local_set(arg, v);
         }
         // ── strands & channels ──
         '↥' => {
