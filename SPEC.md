@@ -136,6 +136,15 @@ point every live strand is blocked, the runtime reports the full wait graph
 (strand, what it awaits, coordinates) and exits 1. Programs never hang on
 an internal deadlock.
 
+Reading stdin has the **lowest scheduling priority**: a strand executing
+`⌨` waits until no other strand can make progress (each is blocked,
+waiting on `⌨` itself, or finished) before the read happens. An
+interactive pipeline therefore flushes all pending work — greetings,
+prompts, responses — before the program waits on the user, and the
+interleaving remains deterministic because it never depends on input
+timing. (A strand waiting its turn at `⌨` is not deadlocked — its read
+can always proceed once the grid goes quiet.)
+
 ### 4.3 Spawning
 
 `⚡` pops a quotation and starts it as a new strand with an empty stack and
@@ -264,7 +273,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
-| `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF (pending `⊸` output is flushed first, so prompts appear) |
+| `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF; runs only once every other strand is quiet (§4.2), with pending `⊸` output flushed first, so prompts appear |
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍟` | `→` | dump this strand's stack to stderr |

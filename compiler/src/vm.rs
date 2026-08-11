@@ -25,6 +25,7 @@ pub enum Status {
 pub enum BlockOn {
     Chan(char),
     Strand(i64),
+    Stdin,
 }
 
 pub enum Sig {
@@ -350,6 +351,7 @@ impl<'io> VM<'io> {
             let what = match on {
                 BlockOn::Chan(c) => format!("channel {c}"),
                 BlockOn::Strand(id) => format!("strand {}", fmt_i64(id)),
+                BlockOn::Stdin => "stdin".into(),
             };
             let _ = writeln!(
                 self.err,
@@ -371,11 +373,46 @@ impl<'io> VM<'io> {
                 .get(&id)
                 .map(|&t| matches!(self.strands[t].status, Status::Done | Status::Dead))
                 .unwrap_or(false),
+            BlockOn::Stdin => !self.others_active(self.strands[i].sid),
         };
         if free {
             self.strands[i].status = Status::Run;
             self.strands[i].block = None;
         }
+    }
+
+    /// True if any strand other than `me` could make progress right now:
+    /// runnable, or blocked on something already available. Strands waiting
+    /// on ⌨ don't count — they would defer the same way. Stdin reads carry
+    /// the lowest scheduling priority (see the '⌨' arm), so this decides
+    /// both when a read must defer and when a deferred read may wake.
+    fn others_active(&self, me: i64) -> bool {
+        self.strands.iter().any(|t| {
+            t.sid != me
+                && t.sid != i64::MIN
+                && match t.status {
+                    // A Run strand whose frames have emptied is finished in all
+                    // but name — it is marked Done on its next visit and can
+                    // produce nothing more.
+                    Status::Run => !t.frames.is_empty(),
+                    Status::Blocked => match t.block {
+                        Some((BlockOn::Chan(c), _)) => self
+                            .channels
+                            .get(&c)
+                            .map(|q| !q.is_empty())
+                            .unwrap_or(false),
+                        Some((BlockOn::Strand(id), _)) => self
+                            .by_sid
+                            .get(&id)
+                            .map(|&x| {
+                                matches!(self.strands[x].status, Status::Done | Status::Dead)
+                            })
+                            .unwrap_or(false),
+                        Some((BlockOn::Stdin, _)) | None => false,
+                    },
+                    _ => false,
+                }
+        })
     }
 
     fn run_slice(&mut self, idx: usize) -> usize {
@@ -441,8 +478,16 @@ impl<'io> VM<'io> {
                     .filter(|&i| self.strands[i].status == Status::Blocked)
                     .collect();
                 if !blocked.is_empty() && blocked.len() == live.len() {
-                    self.report_deadlock(&blocked);
-                    return;
+                    // A strand waiting its turn at ⌨ is not deadlocked: the
+                    // grid has gone quiet, so the next round wakes it and the
+                    // read proceeds (blocking on the OS, not the scheduler).
+                    let stdin_waiter = blocked.iter().any(|&i| {
+                        matches!(self.strands[i].block, Some((BlockOn::Stdin, _)))
+                    });
+                    if !stdin_waiter {
+                        self.report_deadlock(&blocked);
+                        return;
+                    }
                 }
             }
         }
@@ -1347,6 +1392,14 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
         }
         '⌨' => {
+            // Stdin has the lowest scheduling priority: the read happens
+            // only once no other strand can make progress, so a pipeline
+            // flushes its pending work — greetings, prompts, responses —
+            // before the program waits on the user. The interleaving stays
+            // deterministic because it never depends on input timing.
+            if vm.others_active(s.sid) {
+                return Err(Sig::Block(BlockOn::Stdin, pos));
+            }
             // An interactive prompt written with ⊸ must be visible before
             // the program blocks on input.
             let _ = vm.out.flush();

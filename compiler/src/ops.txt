@@ -61,7 +61,7 @@ sigil  name          effect              description
 ↯      raise         v ↯ →               raise v as a glitch
 ⍞      println       v ⍞ →               print v and a newline
 ⊸      print         v ⊸ →               print v without a newline
-⌨      readline      → s|∅               read a line from stdin, stripping the \n or \r\n ending (∅ at end of input; flushes pending ⊸ output first)
+⌨      readline      → s|∅               read a line from stdin, stripping the \n or \r\n ending (∅ at end of input; waits until all other strands are quiet, flushing pending ⊸ output first)
 ⍇      read-file     path ⍇ → s          read a whole file as a string; glitches if unreadable
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
 ⍟      debug         →                   dump this strand's stack to stderr
