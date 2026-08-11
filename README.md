@@ -155,44 +155,46 @@ naming every blocked strand, the channel it waits on, and its grid
 coordinates — and nothing hangs, ever. Then the same repair protocol
 runs on both — same model, same rounds, same byte-exact bar:
 
-| Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
+| Self-repair on the Oracle, ≤3 rounds, byte-exact | healed | in one round |
 |---|---|---|
-| seeded one-edit bugs | 40 | 40 |
-| **healed (byte-exact output)** | **82%** | **100%** |
-| healed in one round | 55% | 100% |
-| median rounds to green | 1 | 1 |
+| Python — claude-haiku-4-5 | 40/40 (100%) | 100% |
+| MLang — claude-haiku-4-5 | 33/40 (82%) | 55% |
+| **MLang — claude-opus-5** | **40/40 (100%)** | **98%** |
 
-| healed, by what the bug turned into | MLang | Python |
-|---|---|---|
-| caught before running | 1/2 | 35/35 |
-| runtime fault, precise report | 19/22 | 2/2 |
-| proven deadlock | 5/6 | — |
-| silent wrong output | 8/10 | 1/1 |
-| hang | — | 2/2 |
+**With a small model Python wins; with a frontier model MLang draws
+level — 40/40, and 39 of those in a single round.** Same forty
+deterministic mutants, same toolchain, same ≤3 rounds; only the model
+differs. Every class went perfect: 6/6 proven deadlocks, 22/22
+glitches, 10/10 silent wrong-output. So the application-scale gap was
+**a model-capability gap, not a missing-information gap** — MLang's
+runtime was already handing over enough to fix the bug; the small model
+just couldn't always use it. haiku's losses concentrate exactly where
+you would expect from a language it has never read: semantic bugs in a
+dense notation, where Python's redundancy instead converts 35 of its 40
+mutants into familiar one-round syntax errors.
 
-**At application scale Python wins, and we publish that** — the small
-model healed every Python mutant, because Python's redundancy converts
-35 of its 40 one-token bugs into syntax errors, and a syntax error in a
-language the model has read for years is a one-round fix. What the
-MLang column shows is something rarer: **the number moving because the
-language listened to the benchmark.** The first run of this experiment
-healed only 65% — the failure transcripts showed the model repeatedly
-editing the *wrong glyph*, because a bare `at 29:22` in a 150-glyph
-line is uncountable for an LLM, and a `] without matching [` names
-neither bracket. So the runtime's fault reports were rebuilt for a
-reader that cannot count columns — every report now quotes the
-offending line with a caret under the exact glyph, shows the stack as
-the fault left it, and names library sources honestly (`std.ml 26:7`);
-the harness also began appending a first-divergence hint to both arms
-(SPEC §4.6, and the demo at the top of this page shows the format).
-Re-running the identical benchmark: **65% → 82%**, with glitch repairs
-up from 15/22 to 19/22 and silent wrong-output from 5/10 to 8/10.
-Python's familiarity plus shallow failure modes still beat MLang's
-better evidence plus deeper bugs — a small model's skill in a
-never-seen dense notation remains the binding constraint — but half
-the gap was diagnostics, not destiny, and the harness measures exactly
-what a stronger model or an MLang-native tokenizer would close next.
-Run it with any model: `bench/heal.py --cases example:oracle.ml,oracle`.
+**How much of that is noise?** Two runs of the *identical*
+configuration disagree on 6 of 40 individual mutants and land 2 apart
+in aggregate — a **≈5-point noise floor** at this sample size, from
+model sampling alone. So the opus-vs-haiku gap (7 mutants) is real, and
+any claim smaller than about 3 mutants is not. That cuts against a
+claim this README made earlier: a round of diagnostic improvements
+(source excerpts and carets, a channel census naming orphaned channels,
+a call chain through `≔` definitions, capped stack dumps — SPEC §4.6)
+was measured at 65% → 82%, which is larger than the noise floor and
+probably real, but a *second* round of diagnostics aimed at the
+remaining failures produced no measurable aggregate change at all
+(82% → 78% → 82% across replicates). What that second round did do,
+reproducibly across both replicates, is fix the specific failures it
+was designed for: proven deadlocks went 5/6 → 6/6 and weave errors
+1/2 → 2/2, and all four mutants diagnosed in advance — a four-round
+bracket-chase, a renamed channel, a report flooded by one huge stack
+value, and a fault inside a definition with no caller link — flipped to
+healed. Diagnostics fix the failures you can name; they do not move an
+aggregate on their own.
+
+Run any of it with any model:
+`bench/heal.py --cases example:oracle.ml,oracle --model <id>`.
 
 ## Programs are grids
 
@@ -579,14 +581,13 @@ SPEC.md           the full language specification
   design, and the Python control arm is 29 hand-verified ports, not all
   120 programs. Models have seen enormous amounts of Python and
   essentially zero MLang — the MLang arm leans entirely on an
-  op-reference primer in the prompt, and the application-scale run shows
-  what that costs: with a small model, repair parity holds on small
-  programs but flips to Python's favor (100% vs 82%) on the Oracle —
-  MLang's one-token bugs run semantically deeper than Python's, which
-  mostly die shallow at the parser. Excerpt-and-caret fault reports
-  closed half of an initially wider gap (65% → 82%); the rest is the
-  model's unfamiliarity with the notation. `bench/README.md` spells out
-  the protocol and every caveat.
+  op-reference primer in the prompt. With a small model that costs real
+  points at application scale (82% vs Python's 100% on the Oracle); with
+  a frontier model it costs nothing measurable (100%, 39 of 40 in one
+  round). Read the small-model number as the floor and the frontier
+  number as the ceiling, and note that both sit above a ≈5-point
+  run-to-run noise floor that any single-run comparison here has to
+  clear. `bench/README.md` spells out the protocol and every caveat.
 
 ## Name
 
