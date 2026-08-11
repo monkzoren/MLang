@@ -22,12 +22,18 @@ fn read_source(path: &str) -> Result<String, String> {
     }
 }
 
-fn weave_error(e: &LoadError) -> ExitCode {
+fn weave_error(text: &str, e: &LoadError) -> ExitCode {
     let loc = match e.pos {
         Some((r, c)) => format!(" at {r}:{c}"),
         None => String::new(),
     };
     eprintln!("✗ weave error{loc}: {}", e.msg);
+    if let Some(pos) = e.pos {
+        let lines: Vec<String> = text.lines().map(String::from).collect();
+        if let Some(x) = vm::excerpt(&lines, pos) {
+            eprintln!("{x}");
+        }
+    }
     ExitCode::from(2)
 }
 
@@ -164,7 +170,7 @@ fn run_compiled(
 fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     match vm::compile_text(text) {
         Ok(prog) => run_compiled(&prog, prog_args, parallel, None),
-        Err(e) => weave_error(&e),
+        Err(e) => weave_error(text, &e),
     }
 }
 
@@ -193,7 +199,7 @@ fn build(src_path: &str, out_path: &str) -> ExitCode {
     };
     let prog = match vm::compile_text(&text) {
         Ok(p) => p,
-        Err(e) => return weave_error(&e),
+        Err(e) => return weave_error(&text, &e),
     };
     let exe = match std::env::current_exe().and_then(std::fs::read) {
         Ok(image) => image,
@@ -305,7 +311,7 @@ fn main() -> ExitCode {
             };
             let prog = match vm::compile_text(&text) {
                 Ok(p) => p,
-                Err(e) => return weave_error(&e),
+                Err(e) => return weave_error(&text, &e),
             };
             // An optional port follows the file; anything after it — or a
             // first argument that is not a number — belongs to ⌂.
@@ -341,7 +347,7 @@ fn main() -> ExitCode {
                     eprintln!("✓ weaves clean ({} strands)", prog.strands.len());
                     ExitCode::SUCCESS
                 }
-                Err(e) => weave_error(&e),
+                Err(e) => weave_error(&text, &e),
             },
             Err(e) => {
                 eprintln!("✗ {e}");
@@ -366,7 +372,7 @@ fn main() -> ExitCode {
                     print!("{s}");
                     ExitCode::SUCCESS
                 }
-                Err(e) => weave_error(&e),
+                Err(e) => weave_error(&text, &e),
             }
         }
         ("ops", 2) => {

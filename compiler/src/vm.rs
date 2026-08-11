@@ -387,14 +387,70 @@ pub struct VM<'io> {
     /// Replay-mode request ids (⎆ counts up from 1) still awaiting a ⍅.
     next_request_id: i64,
     open_requests: HashSet<i64>,
+    /// The program's physical source lines, for report excerpts. Empty
+    /// when the source is unavailable (payloads from older toolchains).
+    src_lines: Vec<String>,
+}
+
+/// Library code carries its positions in high row bands so a report can
+/// name the source it points into: std.ml rows live at +STD_ROWS, ui.ml
+/// rows at +UI_ROWS, json.ml rows at +JSON_ROWS. Program rows are
+/// untouched.
+pub const STD_ROWS: u32 = 1_000_000;
+pub const UI_ROWS: u32 = 2_000_000;
+pub const JSON_ROWS: u32 = 3_000_000;
+
+/// Split a position into (source label, display row, col).
+fn pos_origin(pos: Pos) -> (&'static str, u32, u32) {
+    match pos.0 {
+        r if r >= JSON_ROWS => ("json.ml ", r - JSON_ROWS, pos.1),
+        r if r >= UI_ROWS => ("ui.ml ", r - UI_ROWS, pos.1),
+        r if r >= STD_ROWS => ("std.ml ", r - STD_ROWS, pos.1),
+        r => ("", r, pos.1),
+    }
 }
 
 fn coords(pos: Pos) -> String {
     if pos == (0, 0) {
         "?".into()
     } else {
-        format!("{}:{}", pos.0, pos.1)
+        let (src, row, col) = pos_origin(pos);
+        format!("{src}{row}:{col}")
     }
+}
+
+/// Render a two-line source excerpt for a position: the (windowed) line
+/// and a caret marking the exact glyph. `lines` are the program's physical
+/// source lines; library positions resolve against the bundled sources.
+/// Returns None when the position is unlocatable (e.g. a payload built by
+/// an older toolchain, or eval'd code no longer at hand).
+pub fn excerpt(lines: &[String], pos: Pos) -> Option<String> {
+    if pos == (0, 0) {
+        return None;
+    }
+    let (src, row, col) = pos_origin(pos);
+    let line: String = match src {
+        "" => lines.get(row.checked_sub(1)? as usize)?.clone(),
+        "std.ml " => STD_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
+        "json.ml " => JSON_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
+        _ => UI_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
+    };
+    let chars: Vec<char> = line.chars().collect();
+    let n = chars.len();
+    // 1-based col; a position just past the end (e.g. end-of-strand) is legal.
+    let ci = (col.max(1) as usize - 1).min(n);
+    const WIN: usize = 61;
+    let start = if n <= WIN { 0 } else { ci.saturating_sub(30).min(n - WIN) };
+    let end = (start + WIN).min(n);
+    let shown: String = chars[start..end].iter().collect();
+    let pre = if start > 0 { "…" } else { "" };
+    let post = if end < n { "…" } else { "" };
+    let label = format!("  {src}{row}│ ");
+    let caret_at = label.chars().count() + pre.chars().count() + (ci - start);
+    Some(format!(
+        "{label}{pre}{shown}{post}\n{spaces}↑ {src}{row}:{col}",
+        spaces = " ".repeat(caret_at)
+    ))
 }
 
 impl<'io> VM<'io> {
@@ -420,6 +476,7 @@ impl<'io> VM<'io> {
             http: None,
             next_request_id: 1,
             open_requests: HashSet::new(),
+            src_lines: Vec::new(),
         }
     }
 
@@ -637,6 +694,22 @@ impl<'io> VM<'io> {
             coords(*pos),
             fmt(v, false)
         );
+        if let Some(x) = excerpt(&self.src_lines, *pos) {
+            let _ = writeln!(self.err, "{x}");
+        }
+        // The stack exactly as the fault left it — the ⍟ rendering,
+        // deepest value first, capped to the topmost eight.
+        let d = s.stack.len();
+        let shown: Vec<String> = s.stack[d.saturating_sub(8)..]
+            .iter()
+            .map(|v| fmt(v, true))
+            .collect();
+        let _ = writeln!(
+            self.err,
+            "  stack: {}{}",
+            if d > 8 { "… " } else { "" },
+            if shown.is_empty() { "(empty)".into() } else { shown.join(" ") }
+        );
     }
 
     fn report_deadlock(&mut self, blocked: &[usize]) {
@@ -658,6 +731,9 @@ impl<'io> VM<'io> {
                 what,
                 coords(pos)
             );
+            if let Some(x) = excerpt(&self.src_lines, pos) {
+                let _ = writeln!(self.err, "{x}");
+            }
         }
     }
 
@@ -767,6 +843,7 @@ impl<'io> VM<'io> {
     pub fn run_compiled(&mut self, prog: &CompiledProgram) -> i32 {
         self.main_count = prog.strands.len();
         self.next_spawn_sid = prog.strands.len() as i64;
+        self.src_lines = prog.source.clone();
 
         // The boot strand always runs: the standard library first, then the
         // program's own boot section (both already woven in at compile time).
@@ -806,6 +883,9 @@ impl<'io> VM<'io> {
 pub struct CompiledProgram {
     pub boot: Vec<Instr>,
     pub strands: Vec<(String, Vec<Instr>)>,
+    /// The program's physical source lines, carried for report excerpts
+    /// (and welded into built binaries). Empty when unavailable.
+    pub source: Vec<String>,
 }
 
 /// Compile a parsed source form to a CompiledProgram.
@@ -829,8 +909,8 @@ pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
     for (_, code) in &strands {
         scan_names(code, &mut refs, &mut defs);
     }
-    for (_, source) in LIBS {
-        let lib = lib_code(source);
+    for (_, source, band) in LIBS {
+        let lib = lib_code(source, *band);
         let mut lib_defs = HashSet::new();
         scan_names(&lib, &mut HashSet::new(), &mut lib_defs);
         if refs.iter().any(|c| lib_defs.contains(c) && !defs.contains(c)) {
@@ -838,12 +918,14 @@ pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
         }
     }
     boot.extend(program_boot);
-    Ok(CompiledProgram { boot, strands })
+    Ok(CompiledProgram { boot, strands, source: Vec::new() })
 }
 
 /// Compile MLang source text (rain or flat form).
 pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
-    compile(&crate::forms::parse_source(text)?)
+    let mut prog = compile(&crate::forms::parse_source(text)?)?;
+    prog.source = text.lines().map(String::from).collect();
+    Ok(prog)
 }
 
 pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
@@ -855,7 +937,7 @@ pub const JSON_SOURCE: &str = include_str!("../../std/json.ml");
 /// when the program references a sigil the library defines without
 /// defining that sigil itself (§6.1). Weaving is decided at compile time,
 /// so welded binaries carry only the libraries they use.
-const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE), ("json", JSON_SOURCE)];
+const LIBS: &[(&str, &str, u32)] = &[("ui", UI_SOURCE, UI_ROWS), ("json", JSON_SOURCE, JSON_ROWS)];
 
 /// Collect referenced names and defined sigils (≔ and ⇒ targets),
 /// recursing into quotations.
@@ -887,20 +969,34 @@ pub fn uses_interactive(prog: &CompiledProgram) -> bool {
     has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
 }
 
-/// Lex a library source into one instruction strip. Infallible: bundled
-/// libraries are verified by CI.
-fn lib_code(source: &str) -> Vec<Instr> {
+/// Shift every position row (including inside nested quotations) into a
+/// library's row band, so reports can name the source it points into.
+fn offset_rows(code: &mut Vec<Instr>, off: u32) {
+    for i in code.iter_mut() {
+        if i.pos.0 != 0 {
+            i.pos.0 += off;
+        }
+        if let Op::Push(Value::Quot(q)) = &mut i.op {
+            offset_rows(Arc::make_mut(q), off);
+        }
+    }
+}
+
+/// Lex a library source into one instruction strip, positions shifted
+/// into its row band. Infallible: bundled libraries are verified by CI.
+fn lib_code(source: &str, row_band: u32) -> Vec<Instr> {
     let prog = crate::forms::parse_source(source).expect("library parses");
     let mut code = Vec::new();
     for (_, cells) in prog.strands {
         code.extend(lex_strand(cells, prog.axis).expect("library lexes"));
     }
+    offset_rows(&mut code, row_band);
     code
 }
 
 /// The standard library, lexed. Infallible: std.ml is verified by CI.
 fn std_code() -> Vec<Instr> {
-    lib_code(STD_SOURCE)
+    lib_code(STD_SOURCE, STD_ROWS)
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────

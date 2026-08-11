@@ -7,7 +7,7 @@
   "seeds": 6,
   "mutants": 80
  },
- "healed": 78,
+ "healed": 79,
  "records": [
   {
    "id": "mlang:apply:0",
@@ -20,10 +20,10 @@
     {
      "source": "[1 2+]!\u2365 [[3]!]!\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u2365 expects a [quotation], got int\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u2365 expects a [quotation], got int\n  1\u2502 [1 2+]!\u2365 [[3]!]!\u235e\n            \u2191 1:8\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 3\n  actual:   "
     },
     {
-     "source": "[1 2+][[3]!]\u2365\u235e[[3]!]!\u235e",
+     "source": "[1 2+]!\u235e[3]!\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n3\n3\n"
     }
@@ -40,7 +40,7 @@
     {
      "source": "\u2302\u235e \u2200#\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n\u27e8\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: stack underflow \u2014 needed a quotation\n"
+     "failure": "exit code: 1\nstdout:\n\u27e8\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: stack underflow \u2014 needed a quotation\n  1\u2502 \u2302\u235e \u2200#\u235e\n        \u2191 1:4\n  stack: (empty)\n\nfirst stdout divergence at line 2:\n  expected: 0\n  actual:   "
     },
     {
      "source": "\u2302\u2202\u235e#\u235e",
@@ -60,7 +60,7 @@
     {
      "source": "3 4+\u235e 10 3-\u235e 6 7\u00d7\u00f7 2 10^\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n7\n7\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:18: stack underflow \u2014 needed a number\n"
+     "failure": "exit code: 1\nstdout:\n7\n7\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:18: stack underflow \u2014 needed a number\n  1\u2502 3 4+\u235e 10 3-\u235e 6 7\u00d7\u00f7 2 10^\u235e\n                      \u2191 1:18\n  stack: (empty)\n\nfirst stdout divergence at line 3:\n  expected: 42\n  actual:   "
     },
     {
      "source": "3 4+\u235e 10 3-\u235e 6 7\u00d7\u235e 2 10^\u235e",
@@ -80,7 +80,7 @@
     {
      "source": "2 010^\u235e 2 100^ 2 100^\u00d7\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n1024\n1606938044258990275541962092341162602522202993782792835301376\n"
+     "failure": "exit code: 0\nstdout:\n1024\n1606938044258990275541962092341162602522202993782792835301376\n\nfirst stdout divergence at line 1:\n  expected: 1267650600228229401496703205376\n  actual:   1024"
     },
     {
      "source": "2 100^\u235e 2 100^ 2 100^\u00d7\u235e",
@@ -100,7 +100,7 @@
     {
      "source": "[\u2202\u00d7]\u2254\u00b2\n\u21ca\n7\u00b2\u21a5e\n\u21a7a 1+\u235e",
      "outcome": "deadlock",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel a at 4:1\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel a at 4:1\n  4\u2502 \u21a7a 1+\u235e\n     \u2191 4:1\n\nfirst stdout divergence at line 1:\n  expected: 50\n  actual:   "
     },
     {
      "source": "[\u2202\u00d7]\u2254\u00b2\n\u21ca\n7\u00b2\u21a5a\n\u21a7a 1+\u235e",
@@ -120,10 +120,10 @@
     {
      "source": "\u00abA\u00bb\u2317\u235e 66\u2358\u235e \u00ab\u2373\u2317\u00bb\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n65\nB\n\u2373\u2317\n"
+     "failure": "exit code: 0\nstdout:\n65\nB\n\u2373\u2317\n\nfirst stdout divergence at line 3:\n  expected: 9075\n  actual:   \u2373\u2317"
     },
     {
-     "source": "\u00abA\u00bb\u2317\u235e 66\u2358\u235e \u00ab\u2373\u00bb\u2317\u235e",
+     "source": "\u00abA\u00bb\u2317\u235e 66\u2358\u235e \u00ab\u2373\u2317\u00bb 0 @ \u2317\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n65\nB\n9075\n"
     }
@@ -140,7 +140,7 @@
     {
      "source": "\u203b a comment\n\u22b8\u235e \u203b trailing\n",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at 2:1: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at 2:1: stack underflow \u2014 needed a value\n  2\u2502 \u22b8\u235e \u203b trailing\n     \u2191 2:1\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 0\n  actual:   "
     },
     {
      "source": "\u203b a comment\n0\u235e \u203b trailing",
@@ -160,10 +160,10 @@
     {
      "source": "1 <\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a value\n  1\u2502 1 <\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e\n       \u2191 1:3\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
-     "source": "1 2 <\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e",
+     "source": "1 2<\u235e 2 2\u2264\u235e 3 2>\u235e 1 2\u2265\u235e 1 1=\u235e 1 2\u2260\u235e 1 1.0=\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n1\n1\n1\n0\n1\n1\n1\n"
     }
@@ -180,7 +180,7 @@
     {
      "source": "1 2\n\u22ee\u221e\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\ninf\n"
+     "failure": "exit code: 0\nstdout:\ninf\n\nfirst stdout divergence at line 1:\n  expected: 3\n  actual:   inf"
     },
     {
      "source": "1 2\n\u22ee+\u235e",
@@ -220,7 +220,7 @@
     {
      "source": "[\u2202\u00d7]\u2254\u00b2 9\u00b2\u235e 3.14\u21c5\u03ba \u03ba\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n81\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:16: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n81\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:16: stack underflow \u2014 needed a value\n  1\u2502 [\u2202\u00d7]\u2254\u00b2 9\u00b2\u235e 3.14\u21c5\u03ba \u03ba\u235e\n                    \u2191 1:16\n  stack: (empty)\n\nfirst stdout divergence at line 2:\n  expected: 3.14\n  actual:   "
     },
     {
      "source": "[\u2202\u00d7]\u2254\u00b2 9\u00b2\u235e 3.14\u235e",
@@ -240,10 +240,10 @@
     {
      "source": "1 2 3\u22a4+\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 30:4: \u2282 expects a list or string, got int\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 30:4: \u2282 expects a list or string, got int\n  std.ml 30\u2502 [0\u21c5\u2282]\u2254\u22a4                  \u203b take                  s n\u22a4 \u2192 first\u2026\n                \u2191 std.ml 30:4\n  stack: 1\n\nfirst stdout divergence at line 1:\n  expected: 6\n  actual:   "
     },
     {
-     "source": "1 2 3 + +\u235e",
+     "source": "1 2 3++\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n6\n"
     }
@@ -260,7 +260,7 @@
     {
      "source": "8 2\u00f7\u2356 7 2\u00f7\u235e \u00af8 2\u00f7\u235e 1 3\u00f7\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 39:5: \u2286 expects string sep-string, got int str\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 39:5: \u2286 expects string sep-string, got int str\n  std.ml 39\u2502 [\u00ab\u23ce\u00bb\u2286]\u2254\u2356                 \u203b lines                 s\u2356 \u2192 split a\u2026\n                 \u2191 std.ml 39:5\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 4\n  actual:   "
     },
     {
      "source": "8 2\u00f7\u235e 7 2\u00f7\u235e \u00af8 2\u00f7\u235e 1 3\u00f7\u235e",
@@ -280,7 +280,7 @@
     {
      "source": "3\u2293\u21c8q\n\u21dfq\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 18:2: stack underflow \u2014 needed a value\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel q at 2:1\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 18:2: stack underflow \u2014 needed a value\n  std.ml 18\u2502 [\u229a\u229a>[\u21c5][]?\u232b]\u2254\u2293           \u203b minimum               a b\u2293 \u2192 small\u2026\n              \u2191 std.ml 18:2\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel q at 2:1\n  2\u2502 \u21dfq\u235e\n     \u2191 2:1\n\nfirst stdout divergence at line 1:\n  expected: \u27e80 1 2\u27e9\n  actual:   "
     },
     {
      "source": "3\u2378\u21c8q\n\u21dfq\u235e",
@@ -300,10 +300,10 @@
     {
      "source": "\u22021+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:1: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:1: stack underflow \u2014 needed a value\n  1\u2502 \u22021+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e\n     \u2191 1:1\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
     },
     {
-     "source": "1 1+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e",
+     "source": "1\u2202+\u235e 1 2\u21c5-\u235e 1 2\u232b\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n2\n1\n1\n"
     }
@@ -320,7 +320,7 @@
     {
      "source": "3\u2378[\u235e]\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n[\u22ef]\n"
+     "failure": "exit code: 0\nstdout:\n[\u22ef]\n\nfirst stdout divergence at line 1:\n  expected: 0\n  actual:   [\u22ef]"
     },
     {
      "source": "3\u2378[\u235e]\u2200",
@@ -340,7 +340,7 @@
     {
      "source": "\u00ab\u00bb[\u00abt\u00bb][\u00abf\u00bb]?\u235e \u27e8\u27e9[\u00abt\u00bb][\u00abf\u00bb]\u2378\u235e 0.0[\u00abt\u00bb][\u00abf\u00bb]?\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\nf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:28: \u2378 expects numbers, got quot\n"
+     "failure": "exit code: 1\nstdout:\nf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:28: \u2378 expects numbers, got quot\n  1\u2502 \u00ab\u00bb[\u00abt\u00bb][\u00abf\u00bb]?\u235e \u27e8\u27e9[\u00abt\u00bb][\u00abf\u00bb]\u2378\u235e 0.0[\u00abt\u00bb][\u00abf\u00bb]?\u235e\n                                \u2191 1:28\n  stack: \u27e8\u27e9 [\u22ef]\n\nfirst stdout divergence at line 2:\n  expected: f\n  actual:   "
     },
     {
      "source": "\u00ab\u00bb[\u00abt\u00bb][\u00abf\u00bb]?\u235e \u27e8\u27e9[\u00abt\u00bb][\u00abf\u00bb]?\u235e 0.0[\u00abt\u00bb][\u00abf\u00bb]?\u235e",
@@ -360,10 +360,10 @@
     {
      "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u235c\u232b",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: \u2191\n  actual:   "
     },
     {
-     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n\u2191\n\u2193\n\u2192\n\u2190\n\u2326\n"
     }
@@ -375,15 +375,20 @@
    "op": "transpose",
    "first_outcome": "glitch",
    "healed": true,
-   "rounds": 1,
+   "rounds": 2,
    "attempts": [
     {
      "source": "[\u2325\u2202\u2205\u2260][\u2355]\u235e\u27f3\u232b",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n[\u22ef]\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a quotation\n"
+     "failure": "exit code: 1\nstdout:\n[\u22ef]\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a quotation\n  1\u2502 [\u2325\u2202\u2205\u2260][\u2355]\u235e\u27f3\u232b\n               \u2191 1:11\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: a\n  actual:   [\u22ef]"
     },
     {
-     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
+     "source": "[\u2325\u2202\u2205\u2260][\u21c5\u2355\u235e\u232b]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u21c5\u2355\u235e\u232b]\u27f3\u232b\n            \u2191 1:8\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: a\n  actual:   "
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\na\nZ\n\u2191\n\u2190\n\u21f1\n\u2326\n\u21df\n\u21b5\n\u232b\n\u21e5\n^Q\nq\n \n\u238b\nx\n\u03c0\n"
     }
@@ -394,23 +399,28 @@
    "case": "event-esc-pushback",
    "op": "swap-op",
    "first_outcome": "weave",
-   "healed": true,
-   "rounds": 2,
+   "healed": false,
+   "rounds": null,
    "attempts": [
     {
      "source": "[\u2325\u2202\u2205\u2260][\u21d2\u235e]\u27f3\u232b",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:9: '\u235e' is reserved and cannot follow \u21d2\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:9: '\u235e' is reserved and cannot follow \u21d2\n  1\u2502 [\u2325\u2202\u2205\u2260][\u21d2\u235e]\u27f3\u232b\n             \u2191 1:9\n\nfirst stdout divergence at line 1:\n  expected: \u238b\n  actual:   "
     },
     {
      "source": "[\u2325\u2202\u2205\u2260][\u21c5\u235e\u232b]\u27f3\u232b",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u21c5\u235e\u232b]\u27f3\u232b\n            \u2191 1:8\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u238b\n  actual:   "
     },
     {
-     "source": "[\u2325\u2202\u2205\u2260][\u235e]\u27f3\u232b",
-     "outcome": "pass",
-     "failure": "exit code: 0\nstdout:\n\u238b\nZ\nq\n"
+     "source": "[\u2325\u2202\u2205\u2260][\u21c5\u235e\u232b]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u21c5\u235e\u232b]\u27f3\u232b\n            \u2191 1:8\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u238b\n  actual:   "
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u232b\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:9: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u232b\u235e]\u27f3\u232b\n             \u2191 1:9\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u238b\n  actual:   "
     }
    ]
   },
@@ -420,12 +430,22 @@
    "op": "drop",
    "first_outcome": "glitch",
    "healed": true,
-   "rounds": 1,
+   "rounds": 3,
    "attempts": [
     {
      "source": "[\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n  1\u2502 [\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b\n      \u2191 1:2\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: a\n  actual:   "
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e\u232b]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\na\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:10: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u2355\u235e\u232b]\u27f3\u232b\n              \u2191 1:10\n  stack: (empty)\n\nfirst stdout divergence at line 2:\n  expected: b\n  actual:   "
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u232b\u2355\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:9: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u232b\u2355\u235e]\u27f3\u232b\n             \u2191 1:9\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: a\n  actual:   "
     },
     {
      "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
@@ -440,20 +460,15 @@
    "op": "transpose",
    "first_outcome": "glitch",
    "healed": true,
-   "rounds": 2,
+   "rounds": 1,
    "attempts": [
     {
      "source": "[\u2202\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:2: stack underflow \u2014 needed a value\n  1\u2502 [\u2202\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e\n      \u2191 1:2\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u00b7\n  actual:   "
     },
     {
-     "source": "[\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a value\n"
-    },
-    {
-     "source": "\u2205[\u2202\u2325\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
+     "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b \u00ab\u00b7\u00bb\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n\u00b7\n"
     }
@@ -465,12 +480,17 @@
    "op": "transpose",
    "first_outcome": "wrong-output",
    "healed": true,
-   "rounds": 1,
+   "rounds": 2,
    "attempts": [
     {
      "source": "[\u2325\u2205\u2202\u2260][\u2355\u235e]\u27f3\u232b",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: \u27e8\u00ab\u2316\u00bb 12 5\u27e9\n  actual:   "
+    },
+    {
+     "source": "[\u2325\u2202\u2205\u2260][\u232b\u2355\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:9: stack underflow \u2014 needed a value\n  1\u2502 [\u2325\u2202\u2205\u2260][\u232b\u2355\u235e]\u27f3\u232b\n             \u2191 1:9\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u27e8\u00ab\u2316\u00bb 12 5\u27e9\n  actual:   "
     },
     {
      "source": "[\u2325\u2202\u2205\u2260][\u2355\u235e]\u27f3\u232b",
@@ -490,12 +510,12 @@
     {
      "source": "\u203b Fibonacci numbers below 1000. One strand, one line.\n0 1[\u22021000<][\u2202\u21c5\u229a+]\u27f3\u232b\u232b\n",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
-     "source": "0 1[\u22021000<][\u232b\u235e\u21c5\u229a+]\u27f3",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n0\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:15: stack underflow \u2014 needed a value\n"
+     "source": "\u203b Fibonacci numbers below 1000. One strand, one line.\n1 0[\u22021000<][\u21c5\u229a+\u2202\u235e]\u27f3\u232b\u232b",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\n1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233\n377\n610\n987\n1597\n\nfirst stdout divergence at line 17:\n  expected: \n  actual:   1597"
     },
     {
      "source": "0 1[\u22021000<][\u2202\u235e\u21c5\u229a+]\u27f3\u232b\u232b",
@@ -510,22 +530,12 @@
    "op": "swap-op",
    "first_outcome": "glitch",
    "healed": true,
-   "rounds": 3,
+   "rounds": 1,
    "attempts": [
     {
      "source": "\u203b FizzBuzz 1..100 \u2014 71 glyphs of program.\n1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2337\u235e]?]?]?1+]\u27f3\u232b\n",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at 28:3: # expects a list or string, got int\n"
-    },
-    {
-     "source": "1[\u2202100\u2264][\u232b\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u235e]?]?]?1+]\u27f3\u232b",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:11: stack underflow \u2014 needed a value\n"
-    },
-    {
-     "source": "1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2355\u235e]?]?]?1+]\u27f3\u232b",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:69: stack underflow \u2014 needed a number\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 2) at std.ml 28:3: # expects a list or string, got int\n  std.ml 28\u2502 [\u2202#1-@]\u2254\u2337                \u203b last                  s\u2337 \u2192 last it\u2026\n               \u2191 std.ml 28:3\n  stack: 1\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
      "source": "1[\u2202100\u2264][\u220215%0=[\u00abFizzBuzz\u00bb\u235e][\u22023%0=[\u00abFizz\u00bb\u235e][\u22025%0=[\u00abBuzz\u00bb\u235e][\u2202\u235e]?]?]?1+]\u27f3\u232b",
@@ -539,28 +549,23 @@
    "case": "example:hello-rain.ml",
    "op": "swap-op",
    "first_outcome": "wrong-output",
-   "healed": false,
-   "rounds": null,
+   "healed": true,
+   "rounds": 2,
    "attempts": [
     {
      "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n\nM\na\nt\nr\ni\nx\n\u00bb\n\u21d1\n",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
-    },
-    {
-     "source": "\u21d3\n\u00abHello, Matrix\u00bb\n\u235e\n\u21d1",
-     "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 2:1: unterminated \u00ab string\n"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: Hello, Matrix\n  actual:   "
     },
     {
      "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n\nM\na\nt\nr\ni\nx\n\u00bb\n\u235e\n\u21d1",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\nHello, Matrix\n\nstderr:\n\u2717 glitch in strand 0 (col 1) at 36:4: stack underflow \u2014 needed a string\n"
+     "failure": "exit code: 1\nstdout:\nHello, Matrix\n\nstderr:\n\u2717 glitch in strand 0 (col 1) at std.ml 36:4: stack underflow \u2014 needed a string\n  std.ml 36\u2502 [\u00ab\u00bb\u2286[\u2317\u2202\u220297\u2265\u21c5123<\u2227[32-][]?\u2358]\u2235\u00ab\u00bb\u2287]\u2254\u21d1   \u203b uppercase   s\u21d1 \u2192 S\n                \u2191 std.ml 36:4\n  stack: (empty)\n"
     },
     {
-     "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n \nM\na\nt\nr\ni\nx\n\u00bb\n\u235e\n\u21d1",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\nHello, Matrix\n\nstderr:\n\u2717 glitch in strand 0 (col 1) at 36:4: stack underflow \u2014 needed a string\n"
+     "source": "\u21d3\n\u00ab\nH\ne\nl\nl\no\n,\n\nM\na\nt\nr\ni\nx\n\u00bb\n\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\nHello, Matrix\n"
     }
    ]
   },
@@ -575,7 +580,7 @@
     {
      "source": "\u00abHello, Matrix\u235e\u00bb\n",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: Hello, Matrix\n  actual:   "
     },
     {
      "source": "\u00abHello, Matrix\u00bb \u235e",
@@ -595,7 +600,7 @@
     {
      "source": "\u203b Sum 1..1000 across four worker strands plus a reducer.\n\u203b Each worker uses its own strand id \u2373 to pick its chunk of 250,\n\u203b sends its partial sum down channel \u03c3; strand 4 reduces.\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1+]+\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3+++\u235e\n",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 5) at 5:17: + expects numbers, got quot\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 4 (row 8) waiting on channel \u03c3 at 8:7\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 5) at 5:17: + expects numbers, got quot\n  5\u2502 0 250\u2378[\u2373250\u00d7+1+]+\u2200\u21a5\u03c3\n                     \u2191 5:17\n  stack: 0 \u27e80 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182 183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 198 199 200 201 202 203 204 205 206 207 208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223 224 225 226 227 228 229 230 231 232 233 234 235 236 237 238 239 240 241 242 243 244 245 246 247 248 249\u27e9\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 4 (row 8) waiting on channel \u03c3 at 8:7\n  8\u2502 \u21a7\u03c3\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3+++\u235e\n           \u2191 8:7\n\nfirst stdout divergence at line 1:\n  expected: 500500\n  actual:   "
     },
     {
      "source": "\u203b Sum 1..1000 across four worker strands plus a reducer.\n\u203b Each worker uses its own strand id \u2373 to pick its chunk of 250,\n\u203b sends its partial sum down channel \u03c3; strand 4 reduces.\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n0 250\u2378[\u2373250\u00d7+1++]\u2200\u21a5\u03c3\n\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3\u21a7\u03c3+++\u235e",
@@ -610,12 +615,17 @@
    "op": "swap-op",
    "first_outcome": "wrong-output",
    "healed": true,
-   "rounds": 1,
+   "rounds": 2,
    "attempts": [
     {
      "source": "\u203b The same three-strand pipeline as pipeline.ml, built by hand from\n\u203b raw sends and receives \u2014 this is the protocol the stream\n\u203b combinators (\u21c8 \u21c9 \u21df) package up: send values, end with \u2205,\n\u203b receive until \u2205, forward the \u2205 so downstream stages stop too.\n9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u2325]\u27f3\u232b\n",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
+    },
+    {
+     "source": "\u203b The same three-strand pipeline as pipeline.ml, built by hand from\n\u203b raw sends and receives \u2014 this is the protocol the stream\n\u203b combinators (\u21c8 \u21c9 \u21df) package up: send values, end with \u2205,\n\u203b receive until \u2205, forward the \u2205 so downstream stages stop too.\n9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][\u232b2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u232b\u235e]\u27f3\u232b",
+     "outcome": "glitch",
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 6) at 6:11: stack underflow \u2014 needed a number\n  6\u2502 [\u21a7\u03b1\u2202\u2205\u2260][\u232b2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n               \u2191 6:11\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 7) waiting on channel \u03b2 at 7:2\n  7\u2502 [\u21a7\u03b2\u2202\u2205\u2260][\u232b\u235e]\u27f3\u232b\n      \u2191 7:2\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
     },
     {
      "source": "\u203b The same three-strand pipeline as pipeline.ml, built by hand from\n\u203b raw sends and receives \u2014 this is the protocol the stream\n\u203b combinators (\u21c8 \u21c9 \u21df) package up: send values, end with \u2205,\n\u203b receive until \u2205, forward the \u2205 so downstream stages stop too.\n9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
@@ -635,7 +645,7 @@
     {
      "source": "\u203b A three-strand pipeline in 25 glyphs, using the stream combinators:\n\u203b   \u21c8\u03b1  pour a list into channel \u03b1 (then the \u2205 end-marker)\n\u203b   \u21c9\u03b1\u03b2 pump: transform each value from \u03b1, send to \u03b2, forward \u2205\n\u203b   \u21df\u03b2  drain channel \u03b2 into a list\n\u203b strand 0 emits the squares of 1..9, strand 1 doubles them,\n\u203b strand 2 prints them. All three run concurrently.\n9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u27f3\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200\n",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 8) at 8:5: stack underflow \u2014 needed a quotation\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 9) waiting on channel \u03b2 at 9:1\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 8) at 8:5: stack underflow \u2014 needed a quotation\n  8\u2502 [2\u00d7]\u27f3\u03b1\u03b2\n         \u2191 8:5\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 9) waiting on channel \u03b2 at 9:1\n  9\u2502 \u21df\u03b2[\u235e]\u2200\n     \u2191 9:1\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
     },
     {
      "source": "\u203b A three-strand pipeline in 25 glyphs, using the stream combinators:\n\u203b   \u21c8\u03b1  pour a list into channel \u03b1 (then the \u2205 end-marker)\n\u203b   \u21c9\u03b1\u03b2 pump: transform each value from \u03b1, send to \u03b2, forward \u2205\n\u203b   \u21df\u03b2  drain channel \u03b2 into a list\n\u203b strand 0 emits the squares of 1..9, strand 1 doubles them,\n\u203b strand 2 prints them. All three run concurrently.\n9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
@@ -655,10 +665,10 @@
     {
      "source": "\u203b Dynamic scaling: the grid is one strand wide, but \u26a1 adds machines\n\u203b at runtime. Each spawned strand announces itself and sends its id\n\u203b down channel \u03c1; the parent joins them all, then reduces.\n\u203b The boot section defines W, the worker body.\n[\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n\u21ca\n\u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u232b\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e\n",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 2 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 3 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 glitch in strand 4 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 7) waiting on channel \u03c1 at 7:24\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n  5\u2502 [\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n                             \u2191 5:25\n  stack: (empty)\n\u2717 glitch in strand 2 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n  5\u2502 [\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n                             \u2191 5:25\n  stack: (empty)\n\u2717 glitch in strand 3 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n  5\u2502 [\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n                             \u2191 5:25\n  stack: (empty)\n\u2717 glitch in strand 4 (\u26a1 of strand 0) at 5:25: \u2282 expects numbers, got str\n  5\u2502 [\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u2282 \u2373\u21a5\u03c1]\u2254W\n                             \u2191 5:25\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 7) waiting on channel \u03c1 at 7:24\n  7\u2502 \u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u232b\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e\n                            \u2191 7:24\n\nfirst stdout divergence at line 1:\n  expected: machine 1 online\n  actual:   "
     },
     {
-     "source": "\u203b Dynamic scaling: the grid is one strand wide, but \u26a1 adds machines\n\u203b at runtime. Each spawned strand announces itself and sends its id\n\u203b down channel \u03c1; the parent joins them all, then reduces.\n\u203b The boot section defines W, the worker body.\n[\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u235e \u2373\u21a5\u03c1]\u2254W\n\u21ca\n\u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u232b\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e",
+     "source": "\u203b Dynamic scaling: the grid is one strand wide, but \u26a1 adds machines\n\u203b at runtime. Each spawned strand announces itself and sends its id\n\u203b down channel \u03c1; the parent joins them all, then reduces.\n\u203b The boot section defines W, the worker body.\n[\u00abmachine \u00bb\u2373\u2355\u29fa\u00ab online\u00bb\u29fa\u235e \u2373\u21a5\u03c1]\u2254W\n\u21ca\n\u27e8\u27e9 4[\u27e8[W]\u26a1\u27e9\u29fa]\u2363 \u2202[\u22c8]\u2200 [\u21a7\u03c1]\u2235 0[+]\u2340 \u00abids sum: \u00bb\u21c5\u2355\u29fa\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\nmachine 1 online\nmachine 2 online\nmachine 3 online\nmachine 4 online\nids sum: 10\n"
     }
@@ -675,7 +685,7 @@
     {
      "source": "\u203b A tour of the standard library. (`mlang std` prints its source.)\n\u203b The \u22ee lines continue strand 0, so the tour runs top to bottom.\n\u27e831 4 15 9 2 6\u27e9\u234b\u235e\n\u22ee\u27e831 4 15 9 2 6\u27e9\u2352\u2283\u235e\n\u22ee\u27e81 2 3 4\u27e9\u00b5\u235e\n\u22ee10\u203c\u235e\n\u22ee462 1071\u27cc\u235e\n\u22ee\u00af42\u2223\u235e\n\u22ee3 9\u2293 3 9\u2294\u00d7\u235e\n\u22ee\u00abknock knock, neo\u00bb\u21d1\u235e\n\u22ee\u00abFOLLOW THE WHITE RABBIT\u00bb\u21e9\u236d#\u235e\n\u22ee\u00abthe matrix has you\u00bb\u236d\u233d\u00ab \u00bb\u2287\u235e\n\u22ee\u27e8\u00abred\u00bb \u00abblue\u27e9\u00bb\u27e8\u00abpill\u00bb \u00abshift\u00bb\u27e9\u235a\u235e\n\u22ee\u00abwake up\u00bb\u00abake\u00bb\u2377\u235e\n\u22ee\u27e81 1 2 3 5 8\u27e9\u2211 \u03c0\u00d7\u230a\u235e\n",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u27e82 4 6 9 15 31\u27e9\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n\u27e8\u27e8\u00abb\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abl\u00bb \u00abshift\u00bb\u27e9\u27e9\n1\n62\n"
+     "failure": "exit code: 0\nstdout:\n\u27e82 4 6 9 15 31\u27e9\n31\n2.5\n3628800\n21\n42\n27\nKNOCK KNOCK, NEO\n4\nyou has matrix the\n\u27e8\u27e8\u00abb\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abl\u00bb \u00abshift\u00bb\u27e9\u27e9\n1\n62\n\nfirst stdout divergence at line 11:\n  expected: \u27e8\u27e8\u00abred\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abblue\u00bb \u00abshift\u00bb\u27e9\u27e9\n  actual:   \u27e8\u27e8\u00abb\u00bb \u00abpill\u00bb\u27e9 \u27e8\u00abl\u00bb \u00abshift\u00bb\u27e9\u27e9"
     },
     {
      "source": "\u203b A tour of the standard library. (`mlang std` prints its source.)\n\u203b The \u22ee lines continue strand 0, so the tour runs top to bottom.\n\u27e831 4 15 9 2 6\u27e9\u234b\u235e\n\u22ee\u27e831 4 15 9 2 6\u27e9\u2352\u2283\u235e\n\u22ee\u27e81 2 3 4\u27e9\u00b5\u235e\n\u22ee10\u203c\u235e\n\u22ee462 1071\u27cc\u235e\n\u22ee\u00af42\u2223\u235e\n\u22ee3 9\u2293 3 9\u2294\u00d7\u235e\n\u22ee\u00abknock knock, neo\u00bb\u21d1\u235e\n\u22ee\u00abFOLLOW THE WHITE RABBIT\u00bb\u21e9\u236d#\u235e\n\u22ee\u00abthe matrix has you\u00bb\u236d\u233d\u00ab \u00bb\u2287\u235e\n\u22ee\u27e8\u00abred\u00bb \u00abblue\u00bb\u27e9\u27e8\u00abpill\u00bb \u00abshift\u00bb\u27e9\u235a\u235e\n\u22ee\u00abwake up\u00bb\u00abake\u00bb\u2377\u235e\n\u22ee\u27e81 1 2 3 5 8\u27e9\u2211 \u03c0\u00d7\u230a\u235e",
@@ -695,7 +705,7 @@
     {
      "source": "1\u21a5c 2\u21a5c 3\u21a5c\n\u21a7c\u235e\u2202c\u235e\u21a7c\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: stack underflow \u2014 needed a value\n  2\u2502 \u21a7c\u235e\u2202c\u235e\u21a7c\u235e\n        \u2191 2:4\n  stack: (empty)\n\nfirst stdout divergence at line 2:\n  expected: 2\n  actual:   "
     },
     {
      "source": "1\u21a5c 2\u21a5c 3\u21a5c\n\u21a7c\u235e \u21a7c\u235e \u21a7c\u235e",
@@ -715,7 +725,7 @@
     {
      "source": "\u00abneo\u23cetrinity\u00bb\u00abmlang-conf-io.tmp\u00bb\u2348 \u00abmlang-conf-io.tmp\u2347\u2356\u235e",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:35: unterminated \u00ab string\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:35: unterminated \u00ab string\n  1\u2502 \u00abneo\u23cetrinity\u00bb\u00abmlang-conf-io.tmp\u00bb\u2348 \u00abmlang-conf-io.tmp\u2347\u2356\u235e\n                                       \u2191 1:35\n\nfirst stdout divergence at line 1:\n  expected: \u27e8\u00abneo\u00bb \u00abtrinity\u00bb\u27e9\n  actual:   "
     },
     {
      "source": "\u00abneo\u23cetrinity\u00bb\u00abmlang-conf-io.tmp\u00bb\u2348 \u00abmlang-conf-io.tmp\u00bb\u2347\u00ab\u23ce\u00bb\u2286\u235e",
@@ -735,7 +745,7 @@
     {
      "source": "[\u00abno-such-dir/definitely-not-here.ml\u00bb\u2347][\u00ab\u2717 \u00bb\u21c5\u235e\u29fa]\u2365\u00abalive\u00bb\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n\u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:47: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n\u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:47: stack underflow \u2014 needed a value\n  1\u2502 [\u00abno-such-dir/definitely-not-here.ml\u00bb\u2347][\u00ab\u2717 \u00bb\u21c5\u235e\u29fa]\u2365\u00abalive\u00bb\u235e\n                                                   \u2191 1:47\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u2717 \u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb\n  actual:   \u2347 cannot read \u00abno-such-dir/definitely-not-here.ml\u00bb"
     },
     {
      "source": "[\u00abno-such-dir/definitely-not-here.ml\u00bb\u2347][\u00ab\u2717 \u00bb\u21c5\u29fa\u235e]\u2365\u00abalive\u00bb\u235e",
@@ -755,7 +765,7 @@
     {
      "source": "[5\u2347][\u235e]\u2365 [\u00abx\u00bb5\u2348][\u22a4]\u2365",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n\u2347 expects a path string, got int\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 30:4: \u2282 expects numbers, got str\n"
+     "failure": "exit code: 1\nstdout:\n\u2347 expects a path string, got int\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 30:4: \u2282 expects numbers, got str\n  std.ml 30\u2502 [0\u21c5\u2282]\u2254\u22a4                  \u203b take                  s n\u22a4 \u2192 first\u2026\n                \u2191 std.ml 30:4\n  stack: 0\n\nfirst stdout divergence at line 2:\n  expected: \u2348 expects a path string, got int\n  actual:   "
     },
     {
      "source": "[5\u2347][\u235e]\u2365 [\u00abx\u00bb5\u2348][\u235e]\u2365",
@@ -775,7 +785,7 @@
     {
      "source": "10\u2378[2%=0]\u233f\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:7: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:7: stack underflow \u2014 needed a value\n  1\u2502 10\u2378[2%=0]\u233f\u235e\n           \u2191 1:7\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u27e80 2 4 6 8\u27e9\n  actual:   "
     },
     {
      "source": "10\u2378[2%0=]\u233f\u235e",
@@ -795,7 +805,7 @@
     {
      "source": ".25\u235e .5 2\u00d7\u235e 3.0\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n0.25\n1.0\n3.0\n"
+     "failure": "exit code: 0\nstdout:\n0.25\n1.0\n3.0\n\nfirst stdout divergence at line 1:\n  expected: 2.5\n  actual:   0.25"
     },
     {
      "source": "2.5\u235e .5 2\u00d7\u235e 3.0\u235e",
@@ -815,7 +825,7 @@
     {
      "source": "011\u2378 0[+]\u2340\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n55\n"
+     "failure": "exit code: 0\nstdout:\n55\n\nfirst stdout divergence at line 1:\n  expected: 5050\n  actual:   55"
     },
     {
      "source": "101\u2378 0[+]\u2340\u235e",
@@ -835,7 +845,7 @@
     {
      "source": "1[\u00aby\u00bb][\u00abn\u00bb]?\u235c 0[\u00aby\u00bb][\u00abn\u00bb]?\u235e 1 5 9?\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\nn\n5\n"
+     "failure": "exit code: 0\nstdout:\nn\n5\n\nfirst stdout divergence at line 1:\n  expected: y\n  actual:   n"
     },
     {
      "source": "1[\u00aby\u00bb][\u00abn\u00bb]?\u235e 0[\u00aby\u00bb][\u00abn\u00bb]?\u235e 1 5 9?\u235e",
@@ -855,7 +865,7 @@
     {
      "source": "42\u00f7",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a number\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:3: stack underflow \u2014 needed a number\n  1\u2502 42\u00f7\n       \u2191 1:3\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 42\n  actual:   "
     },
     {
      "source": "42\u235e",
@@ -875,7 +885,7 @@
     {
      "source": "5\u2378\u00ab[A\u00bb\u235e]\u2200\n5\u2378[\u00abB\u00bb\u235e]\u2200",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:8: ] without matching [\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:8: ] without matching [\n  1\u2502 5\u2378\u00ab[A\u00bb\u235e]\u2200\n            \u2191 1:8\n\nfirst stdout divergence at line 1:\n  expected: A\n  actual:   "
     },
     {
      "source": "5\u2378[\u00abA\u00bb\u235e]\u2200\n5\u2378[\u00abB\u00bb\u235e]\u2200",
@@ -895,10 +905,10 @@
     {
      "source": "\u00ababc\u00bb[\u235e\u2200] \u00abab\u00bb[\u00ab!\u00bb\u29fa]\u2235\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9\n"
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9\n\nfirst stdout divergence at line 1:\n  expected: a\n  actual:   \u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9"
     },
     {
-     "source": "\u00ababc\u00bb [\u235e] \u2200 \u00abab\u00bb [\u00ab!\u00bb \u29fa] \u2235 \u235e",
+     "source": "\u00ababc\u00bb[\u235e]\u2200 \u00abab\u00bb[\u00ab!\u00bb\u29fa]\u2235\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\na\nb\nc\n\u27e8\u00aba!\u00bb \u00abb!\u00bb\u27e9\n"
     }
@@ -915,7 +925,7 @@
     {
      "source": "\u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\u2208",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a list or string\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a list or string\n  1\u2502 \u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\u2208\n                        \u2191 1:20\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\n  actual:   "
     },
     {
      "source": "\u27e81 \u00abtwo\u00bb \u27e83 4\u27e9 2.5\u27e9\u235e",
@@ -935,7 +945,7 @@
     {
      "source": "\u27e812\u27e83\u27e9\u27e9\u27e9#\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u27e9 without matching \u27e8\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:8: \u27e9 without matching \u27e8\n  1\u2502 \u27e812\u27e83\u27e9\u27e9\u27e9#\u235e\n            \u2191 1:8\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
     },
     {
      "source": "\u27e812\u27e83\u27e9\u27e9#\u235e",
@@ -955,7 +965,7 @@
     {
      "source": "\u27e81 \u27e82 3\u27e9\u27e9\u27e81 \u27e82 \u27e93\u27e9=\u235e \u27e81\u27e9\u27e82\u27e9=\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n0\n0\n"
+     "failure": "exit code: 0\nstdout:\n0\n0\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   0"
     },
     {
      "source": "\u27e81 \u27e82 3\u27e9\u27e9\u27e81 \u27e82 3\u27e9\u27e9=\u235e \u27e81\u27e9\u27e82\u27e9=\u235e",
@@ -975,7 +985,7 @@
     {
      "source": "1\u21d2x x 1\u2228\u21d2x x\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n1\n"
+     "failure": "exit code: 0\nstdout:\n1\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   1"
     },
     {
      "source": "1\u21d2x x 1+\u21d2x x\u235e",
@@ -995,7 +1005,7 @@
     {
      "source": "1 0\u2227\u235e 1 0\u2228\u235e 0\u00ac\u235e 1 1\u22bb\u235e 1 \u22bb\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n0\n1\n1\n0\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:25: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n0\n1\n1\n0\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:25: stack underflow \u2014 needed a value\n  1\u2502 1 0\u2227\u235e 1 0\u2228\u235e 0\u00ac\u235e 1 1\u22bb\u235e 1 \u22bb\u235e\n                             \u2191 1:25\n  stack: (empty)\n\nfirst stdout divergence at line 5:\n  expected: 1\n  actual:   "
     },
     {
      "source": "1 0\u2227\u235e 1 0\u2228\u235e 0\u00ac\u235e 1 1\u22bb\u235e 1 0\u22bb\u235e",
@@ -1015,7 +1025,7 @@
     {
      "source": "7 3\u22c8\u235e \u00af7 3%\u235e 7 \u00af3%\u235e 7.5 2%\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: \u22c8 no strand with id 3\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:4: \u22c8 no strand with id 3\n  1\u2502 7 3\u22c8\u235e \u00af7 3%\u235e 7 \u00af3%\u235e 7.5 2%\u235e\n        \u2191 1:4\n  stack: 7 3\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
      "source": "7 3%\u235e \u00af7 3%\u235e 7 \u00af3%\u235e 7.5 2%\u235e",
@@ -1035,7 +1045,7 @@
     {
      "source": "\u00af5\u235e \u00af5 3\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u00af5\n3\n"
+     "failure": "exit code: 0\nstdout:\n\u00af5\n3\n\nfirst stdout divergence at line 2:\n  expected: \u00af2\n  actual:   3"
     },
     {
      "source": "\u00af5\u235e \u00af5 3+\u235e",
@@ -1050,20 +1060,15 @@
    "op": "swap-op",
    "first_outcome": "wrong-output",
    "healed": true,
-   "rounds": 2,
+   "rounds": 1,
    "attempts": [
     {
      "source": "[[\u00abinner\u00bb\u21af][\u00abre-\u00bb\u21c5\u2355\u29fa\u21af]\u2356][\u235e]\u2365",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u2286 expects string sep-string, got quot str\n"
+     "failure": "exit code: 0\nstdout:\n\u2286 expects string sep-string, got quot str\n\nfirst stdout divergence at line 1:\n  expected: re-inner\n  actual:   \u2286 expects string sep-string, got quot str"
     },
     {
-     "source": "[[\u00abinner\u00bb\u21af]][\u00abre-\u00bb \u21c5 \u29fa \u235e]\u2365",
-     "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
-    },
-    {
-     "source": "[\u00abinner\u00bb\u21af] [\u00abre-\u00bb \u21c5 \u29fa \u235e] \u2365",
+     "source": "[[[\u00abinner\u00bb\u21af]!][]\u2365[\u00abre-\u00bb\u21c5\u2355\u29fa\u21af]!][\u235e]\u2365",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\nre-inner\n"
     }
@@ -1080,7 +1085,7 @@
     {
      "source": "\u2205\u235e \u2205\u2205=\u235e \u22050= \u2205\u00ac\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u2205\n1\n1\n"
+     "failure": "exit code: 0\nstdout:\n\u2205\n1\n1\n\nfirst stdout divergence at line 3:\n  expected: 0\n  actual:   1"
     },
     {
      "source": "\u2205\u235e \u2205\u2205=\u235e \u22050=\u235e \u2205\u00ac\u235e",
@@ -1100,7 +1105,7 @@
     {
      "source": "1 2\u229a\u235e\u235e\u00ac 1 2 3\u2940\u235e\u235e\u235e 7 8\u2262\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n1\n2\n1\n3\n2\n3\n"
+     "failure": "exit code: 0\nstdout:\n1\n2\n1\n3\n2\n3\n\nfirst stdout divergence at line 4:\n  expected: 1\n  actual:   3"
     },
     {
      "source": "1 2\u229a\u235e\u235e\u235e 1 2 3\u2940\u235e\u235e\u235e 7 8\u2262\u235e",
@@ -1120,7 +1125,7 @@
     {
      "source": "9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:12: stack underflow \u2014 needed a value to send\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel \u03b1 at 2:2\n  strand 2 (row 3) waiting on channel \u03b2 at 3:2\n"
+     "failure": "exit code: 1\nstdout:\n2\n8\n18\n32\n50\n72\n98\n128\n162\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:12: stack underflow \u2014 needed a value to send\n  1\u2502 9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u21a5\u03b1\n                \u2191 1:12\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 2) waiting on channel \u03b1 at 2:2\n  2\u2502 [\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n      \u2191 2:2\n  strand 2 (row 3) waiting on channel \u03b2 at 3:2\n  3\u2502 [\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b\n      \u2191 3:2\n"
     },
     {
      "source": "9\u2378[1+\u2202\u00d7\u21a5\u03b1]\u2200\u2205\u21a5\u03b1\n[\u21a7\u03b1\u2202\u2205\u2260][2\u00d7\u21a5\u03b2]\u27f3\u232b\u2205\u21a5\u03b2\n[\u21a7\u03b2\u2202\u2205\u2260][\u235e]\u27f3\u232b",
@@ -1140,7 +1145,7 @@
     {
      "source": "\u27e81 2 3\u27e9\u21c8a \u21dfa\u235e \u27e8\u27e9\u21c8b \u2228b\u235e \u00abxy\u00bb\u21c8c \u21dfc\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n\u27e81 2 3\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n\u27e81 2 3\u27e9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:20: stack underflow \u2014 needed a value\n  1\u2502 \u27e81 2 3\u27e9\u21c8a \u21dfa\u235e \u27e8\u27e9\u21c8b \u2228b\u235e \u00abxy\u00bb\u21c8c \u21dfc\u235e\n                        \u2191 1:20\n  stack: (empty)\n\nfirst stdout divergence at line 2:\n  expected: \u27e8\u27e9\n  actual:   "
     },
     {
      "source": "\u27e81 2 3\u27e9\u21c8a \u21dfa\u235e \u27e8\u27e9\u21c8b \u21dfb\u235e \u00abxy\u00bb\u21c8c \u21dfc\u235e",
@@ -1160,7 +1165,7 @@
     {
      "source": "\u00abwake up\u00bb\u00abake\u00bb\u2208\u21df \u27e81 \u27e82\u27e9\u27e9\u27e82\u27e9\u2208\u235e \u00ababcd\u00bb\u00abcd\u00bb\u2377\u235e \u27e87 8\u27e99\u2377\u235e",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:18: '\u27e8' is reserved and cannot follow \u21df\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:18: '\u27e8' is reserved and cannot follow \u21df\n  1\u2502 \u00abwake up\u00bb\u00abake\u00bb\u2208\u21df \u27e81 \u27e82\u27e9\u27e9\u27e82\u27e9\u2208\u235e \u00ababcd\u00bb\u00abcd\u00bb\u2377\u235e \u27e87 8\u27e99\u2377\u235e\n                      \u2191 1:18\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
      "source": "\u00abwake up\u00bb\u00abake\u00bb\u2208\u235e \u27e81 \u27e82\u27e9\u27e9\u27e82\u27e9\u2208\u235e \u00ababcd\u00bb\u00abcd\u00bb\u2377\u235e \u27e87 8\u27e99\u2377\u235e",
@@ -1175,15 +1180,20 @@
    "op": "swap-op",
    "first_outcome": "weave",
    "healed": true,
-   "rounds": 1,
+   "rounds": 2,
    "attempts": [
     {
      "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u21df \u00ab\u00bb\u233d\u235e",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:22: '\u00ab' is reserved and cannot follow \u21df\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:22: '\u00ab' is reserved and cannot follow \u21df\n  1\u2502 \u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u21df \u00ab\u00bb\u233d\u235e\n                          \u2191 1:22\n\nfirst stdout divergence at line 1:\n  expected: xirtam\n  actual:   "
     },
     {
-     "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u2355\u235e \u00ab\u00bb\u233d\u235e",
+     "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u235e",
+     "outcome": "wrong-output",
+     "failure": "exit code: 0\nstdout:\nxirtam\n\u27e83 2 1\u27e9\n\nfirst stdout divergence at line 4:\n  expected: \n  actual:   (no such line)"
+    },
+    {
+     "source": "\u00abmatrix\u00bb\u233d\u235e \u27e81 2 3\u27e9\u233d\u235e \u00ab\u00bb\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\nxirtam\n\u27e83 2 1\u27e9\n\n"
     }
@@ -1200,7 +1210,7 @@
     {
      "source": "\u27e83 1.5 2\u27e9\u234b\u21c2 \u00abcba\u00bb\u234b\u235e \u27e8\u00abb\u00bb \u00aba\u00bb\u27e9\u234b\u235e",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:13: '\u00ab' is reserved and cannot follow \u21c2\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:13: '\u00ab' is reserved and cannot follow \u21c2\n  1\u2502 \u27e83 1.5 2\u27e9\u234b\u21c2 \u00abcba\u00bb\u234b\u235e \u27e8\u00abb\u00bb \u00aba\u00bb\u27e9\u234b\u235e\n                 \u2191 1:13\n\nfirst stdout divergence at line 1:\n  expected: \u27e81.5 2 3\u27e9\n  actual:   "
     },
     {
      "source": "\u27e83 1.5 2\u27e9\u234b\u235e \u00abcba\u00bb\u234b\u235e \u27e8\u00abb\u00bb \u00aba\u00bb\u27e9\u234b\u235e",
@@ -1220,7 +1230,7 @@
     {
      "source": "5\u2359\u235e\u235e 2.5\u2359\u21c5\u232b\u235e \u00abx\u00bb\u2359\u21c5\u232b\u235e \u27e8\u2359\u21c5\u232b\u235e [\u2202]\u2359\u21c5\u232b\u235e \u2205\u2359\u21c5\u232b\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\nint\n5\nfloat\nstr\nmark\nquot\n\u2205\n"
+     "failure": "exit code: 0\nstdout:\nint\n5\nfloat\nstr\nmark\nquot\n\u2205\n\nfirst stdout divergence at line 5:\n  expected: list\n  actual:   mark"
     },
     {
      "source": "5\u2359\u235e\u235e 2.5\u2359\u21c5\u232b\u235e \u00abx\u00bb\u2359\u21c5\u232b\u235e \u27e8\u27e9\u2359\u21c5\u232b\u235e [\u2202]\u2359\u21c5\u232b\u235e \u2205\u2359\u21c5\u232b\u235e",
@@ -1240,7 +1250,7 @@
     {
      "source": "5\u2378\u21c8a\n[1+]\u21c9ab\n[10\u00d7]\u21c9bc\n\u229ac\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 3 (row 4) at 4:1: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 3 (row 4) at 4:1: stack underflow \u2014 needed a value\n  4\u2502 \u229ac\u235e\n     \u2191 4:1\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: \u27e810 20 30 40 50\u27e9\n  actual:   "
     },
     {
      "source": "5\u2378\u21c8a\n[1+]\u21c9ab\n[10\u00d7]\u21c9bc\n\u21dfc\u235e",
@@ -1260,7 +1270,7 @@
     {
      "source": "\u27e8\u27e9\u21c8a\n[\u2202\u00d7]\u21c9ab\n\u21dfa#\u235e",
      "outcome": "deadlock",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel a at 3:1\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel a at 3:1\n  3\u2502 \u21dfa#\u235e\n     \u2191 3:1\n\nfirst stdout divergence at line 1:\n  expected: 0\n  actual:   "
     },
     {
      "source": "\u27e8\u27e9\u21c8a\n[\u2202\u00d7]\u21c9ab\n\u21dfb#\u235e",
@@ -1280,7 +1290,7 @@
     {
      "source": "9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2]\u00d7\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: \u00d7 expects numbers, got quot\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel \u03b2 at 3:1\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 2) at 2:4: \u00d7 expects numbers, got quot\n  2\u2502 [2]\u00d7\u21c9\u03b1\u03b2\n        \u2191 2:4\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 2 (row 3) waiting on channel \u03b2 at 3:1\n  3\u2502 \u21df\u03b2[\u235e]\u2200\n     \u2191 3:1\n\nfirst stdout divergence at line 1:\n  expected: 2\n  actual:   "
     },
     {
      "source": "9\u2378[1+\u2202\u00d7]\u2235\u21c8\u03b1\n[2\u00d7]\u21c9\u03b1\u03b2\n\u21df\u03b2[\u235e]\u2200",
@@ -1300,15 +1310,15 @@
     {
      "source": "[1]\u2202\u229a\u235e [1][1]=\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n[\u22ef]\n0\n"
+     "failure": "exit code: 0\nstdout:\n[\u22ef]\n0\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   [\u22ef]"
     },
     {
-     "source": "[1]\u2202\u229a!\u235e [1][1]\u2260\u235e",
+     "source": "[1]\u2202!\u229a\u235e [1][1]=\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n1\n1\n"
+     "failure": "exit code: 0\nstdout:\n[\u22ef]\n0\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   [\u22ef]"
     },
     {
-     "source": "[1]\u2202\u229a!\u235e [1][1]=\u235e",
+     "source": "[1]!\u235e [1]0=\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n1\n0\n"
     }
@@ -1319,28 +1329,18 @@
    "case": "rain-boot",
    "op": "swap-op",
    "first_outcome": "wrong-output",
-   "healed": false,
-   "rounds": null,
+   "healed": true,
+   "rounds": 1,
    "attempts": [
     {
      "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\n\u00b2\n\u21ca\n6\n\u00b2\n\u2262",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n(empty)"
+     "failure": "exit code: 0\nstdout:\n(empty)\nfirst stdout divergence at line 1:\n  expected: 36\n  actual:   "
     },
     {
-     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\n\u00b2\n\u21ca\n6\n\u00b2\n!\n\u235e",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 11:1: ! expects a [quotation], got int\n"
-    },
-    {
-     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\u00b2\n\u21ca\n6\n\u00b2\n!\n\u235e",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 10:1: ! expects a [quotation], got int\n"
-    },
-    {
-     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254f\n\u21ca\n6\nf\n!\n\u235e",
-     "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (col 1) at 10:1: ! expects a [quotation], got int\n"
+     "source": "\u21d3\n[\n\u2202\n\u00d7\n]\n\u2254\n\u00b2\n\u21ca\n6\n\u00b2\n\u235e",
+     "outcome": "pass",
+     "failure": "exit code: 0\nstdout:\n36\n"
     }
    ]
   },
@@ -1355,10 +1355,10 @@
     {
      "source": "\n1\n\u235e\n\u203b\n9",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 3) at 3:1: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (row 3) at 3:1: stack underflow \u2014 needed a value\n  3\u2502 \u235e\n     \u2191 3:1\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 1\n  actual:   "
     },
     {
-     "source": "1\n\u22ee \u235e\n\u203b\n9",
+     "source": "1\u235e\u203b9",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n1\n"
     }
@@ -1375,7 +1375,7 @@
     {
      "source": "\u21d3\n\u00ab\nH\ni\n\u00bb\n\u21df",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 6:1: \u21df needs a sigil after it\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 6:1: \u21df needs a sigil after it\n  6\u2502 \u21df\n     \u2191 6:1\n\nfirst stdout divergence at line 1:\n  expected: Hi\n  actual:   "
     },
     {
      "source": "\u21d3\n\u00ab\nH\ni\n\u00bb\n\u235e",
@@ -1395,7 +1395,7 @@
     {
      "source": "\u21d3\n1  \u00ab\n\u235e  A\n   \u00bb\n   \u2263",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n1\n"
+     "failure": "exit code: 0\nstdout:\n1\n\nfirst stdout divergence at line 2:\n  expected: A\n  actual:   "
     },
     {
      "source": "\u21d3\n1  \u00ab\n\u235e  A\n   \u00bb\n   \u235e\n   \u2263",
@@ -1415,7 +1415,7 @@
     {
      "source": "[\u27e81 2\u27e9\u21af][\u21d2]\u2365",
      "outcome": "weave",
-     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:11: ']' is reserved and cannot follow \u21d2\n"
+     "failure": "exit code: 2\nstdout:\n(empty)\nstderr:\n\u2717 weave error at 1:11: ']' is reserved and cannot follow \u21d2\n  1\u2502 [\u27e81 2\u27e9\u21af][\u21d2]\u2365\n               \u2191 1:11\n\nfirst stdout divergence at line 1:\n  expected: \u27e81 2\u27e9\n  actual:   "
     },
     {
      "source": "[\u27e81 2\u27e9\u21af][\u235e]\u2365",
@@ -1435,7 +1435,7 @@
     {
      "source": "5\u2378[\u2202\u00d7]\u2235 0\u2378[\u2202\u00d7]\u2235\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u27e8\u27e9\n"
+     "failure": "exit code: 0\nstdout:\n\u27e8\u27e9\n\nfirst stdout divergence at line 1:\n  expected: \u27e80 1 4 9 16\u27e9\n  actual:   \u27e8\u27e9"
     },
     {
      "source": "5\u2378[\u2202\u00d7]\u2235\u235e 0\u2378[\u2202\u00d7]\u2235\u235e",
@@ -1455,7 +1455,7 @@
     {
      "source": "0 5[1+]\u2363 0 0[1+]\u2363\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n0\n"
+     "failure": "exit code: 0\nstdout:\n0\n\nfirst stdout divergence at line 1:\n  expected: 5\n  actual:   0"
     },
     {
      "source": "0 5[1+]\u2363\u235e 0 0[1+]\u2363\u235e",
@@ -1475,7 +1475,7 @@
     {
      "source": "\u00ababc\u00bb#\u235e \u27e81 2\u27e9\u27e8\u27e9\u29fa\u235e \u00abab\u00bb\u00abcd\u00bb\u29fa\u235e \u27e87 8 9\u27e91@\u235e \u00abxyz\u00bb2@\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n3\n\u27e81 2\u27e9\nabcd\n8\nz\n"
+     "failure": "exit code: 0\nstdout:\n3\n\u27e81 2\u27e9\nabcd\n8\nz\n\nfirst stdout divergence at line 2:\n  expected: \u27e81 2 3\u27e9\n  actual:   \u27e81 2\u27e9"
     },
     {
      "source": "\u00ababc\u00bb#\u235e \u27e81 2\u27e9\u27e83\u27e9\u29fa\u235e \u00abab\u00bb\u00abcd\u00bb\u29fa\u235e \u27e87 8 9\u27e91@\u235e \u00abxyz\u00bb2@\u235e",
@@ -1495,7 +1495,7 @@
     {
      "source": "\u00abmatrix\u00bb1 4\u2282\u235e \u00abab\u00bb0 99\u2282\u235e \u27e81 2 3 4\u27e91 3\u2282\u03c4",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\natr\nab\n"
+     "failure": "exit code: 0\nstdout:\natr\nab\n\nfirst stdout divergence at line 3:\n  expected: \u27e82 3\u27e9\n  actual:   "
     },
     {
      "source": "\u00abmatrix\u00bb1 4\u2282\u235e \u00abab\u00bb0 99\u2282\u235e \u27e81 2 3 4\u27e91 3\u2282\u235e",
@@ -1515,7 +1515,7 @@
     {
      "source": "[42\u2208r]\u26a1\u22c8\u21a7r\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 1:4: stack underflow \u2014 needed a list or string\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel r at 1:9\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 1 (\u26a1 of strand 0) at 1:4: stack underflow \u2014 needed a list or string\n  1\u2502 [42\u2208r]\u26a1\u22c8\u21a7r\u235e\n        \u2191 1:4\n  stack: (empty)\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 0 (row 1) waiting on channel r at 1:9\n  1\u2502 [42\u2208r]\u26a1\u22c8\u21a7r\u235e\n             \u2191 1:9\n\nfirst stdout divergence at line 1:\n  expected: 42\n  actual:   "
     },
     {
      "source": "[42\u21a5r]\u26a1\u22c8\u21a7r\u235e",
@@ -1535,10 +1535,10 @@
     {
      "source": "7\u21d2x [x\u21a5r]\u26a1\u22c8 9\u21d2x \u21a7r\u22a5 x\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at 31:2: stack underflow \u2014 needed a value\n"
+     "failure": "exit code: 1\nstdout:\n(empty)\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 31:2: stack underflow \u2014 needed a value\n  std.ml 31\u2502 [\u229a#\u2282]\u2254\u22a5                  \u203b drop                  s n\u22a5 \u2192 all b\u2026\n              \u2191 std.ml 31:2\n  stack: (empty)\n\nfirst stdout divergence at line 1:\n  expected: 7\n  actual:   "
     },
     {
-     "source": "7\u21d2x [x\u21a5r]\u26a1\u22c8 9\u21d2x \u21a7r\u235e x\u235e",
+     "source": "7\u21d2x [x\u235e]\u26a1\u22c8 9\u21d2x x\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n7\n9\n"
     }
@@ -1555,7 +1555,7 @@
     {
      "source": "\u00aba,b,c\u00bb\u00ab,\u00bb\u2286\u235e \u00abab\u00bb\u00ab\u00bb\u2294\u235e \u27e81 2 3\u27e9\u00ab-\u00bb\u2287\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba\u00bb \u00abb\u00bb \u00abc\u00bb\u27e9\nab\n1-2-3\n"
+     "failure": "exit code: 0\nstdout:\n\u27e8\u00aba\u00bb \u00abb\u00bb \u00abc\u00bb\u27e9\nab\n1-2-3\n\nfirst stdout divergence at line 2:\n  expected: \u27e8\u00aba\u00bb \u00abb\u00bb\u27e9\n  actual:   ab"
     },
     {
      "source": "\u00aba,b,c\u00bb\u00ab,\u00bb\u2286\u235e \u00abab\u00bb\u00ab\u00bb\u2286\u235e \u27e81 2 3\u27e9\u00ab-\u00bb\u2287\u235e",
@@ -1575,7 +1575,7 @@
     {
      "source": "1\u27e8 2 3 4\u27e9\u2211\u235e \u27e82 3 4\u27e9\u220f\u235e \u27e81 2 3 4\u27e9\u00b5\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n9\n24\n2.5\n"
+     "failure": "exit code: 0\nstdout:\n9\n24\n2.5\n\nfirst stdout divergence at line 1:\n  expected: 10\n  actual:   9"
     },
     {
      "source": "\u27e81 2 3 4\u27e9\u2211\u235e \u27e82 3 4\u27e9\u220f\u235e \u27e81 2 3 4\u27e9\u00b5\u235e",
@@ -1595,7 +1595,7 @@
     {
      "source": "\u03c0\u235e \u03c4\u235e \u212f\u235e \u221e\u235e \u221e\u00d7\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:14: stack underflow \u2014 needed a number\n"
+     "failure": "exit code: 1\nstdout:\n3.141592653589793\n6.283185307179586\n2.718281828459045\ninf\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 1:14: stack underflow \u2014 needed a number\n  1\u2502 \u03c0\u235e \u03c4\u235e \u212f\u235e \u221e\u235e \u221e\u00d7\u235e\n                  \u2191 1:14\n  stack: (empty)\n\nfirst stdout divergence at line 5:\n  expected: \u00afinf\n  actual:   "
     },
     {
      "source": "\u03c0\u235e \u03c4\u235e \u212f\u235e \u221e\u235e \u221e\u00b1\u235e",
@@ -1615,10 +1615,10 @@
     {
      "source": "\u03c0\u2254c\n\u21ca\nc \u03c4<\u235e\n[\u27e84 2\u27e9\u234b\u21a5r]\u26a1\u22c8\u21a7\u03c4\u235e",
      "outcome": "deadlock",
-     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel \u03c4 at 4:13\n"
+     "failure": "exit code: 1\nstdout:\n1\n\nstderr:\n\u2717 deadlock \u2014 every remaining strand is blocked:\n  strand 1 (row 4) waiting on channel \u03c4 at 4:13\n  4\u2502 [\u27e84 2\u27e9\u234b\u21a5r]\u26a1\u22c8\u21a7\u03c4\u235e\n                 \u2191 4:13\n\nfirst stdout divergence at line 2:\n  expected: \u27e82 4\u27e9\n  actual:   "
     },
     {
-     "source": "\u03c0\u2254c\n\u21ca\n1 \u235e \u21a7r \u21a5\u03c4\n[\u27e84 2\u27e9\u234b\u21a5r]\u26a1\u22c8\u21a7\u03c4\u235e",
+     "source": "\u03c0\u2254c\n\u21ca\nc \u03c4<\u235e\n[\u27e84 2\u27e9\u234b\u21a5\u03c4]\u26a1\u22c8\u21a7\u03c4\u235e",
      "outcome": "pass",
      "failure": "exit code: 0\nstdout:\n1\n\u27e82 4\u27e9\n"
     }
@@ -1635,7 +1635,7 @@
     {
      "source": "\u27e87 8 9\u27e9\u2283\u235e \u27e87 8 9\u27e9\u2337\u235e \u27e87 8 9\u27e9\u236b \u27e87 8 9\u27e92\u22a4\u235e \u27e87 8 9\u27e92\u22a5\u235e \u27e83 1 2\u27e9\u2352\u235e",
      "outcome": "wrong-output",
-     "failure": "exit code: 0\nstdout:\n7\n9\n\u27e87 8\u27e9\n\u27e89\u27e9\n\u27e83 2 1\u27e9\n"
+     "failure": "exit code: 0\nstdout:\n7\n9\n\u27e87 8\u27e9\n\u27e89\u27e9\n\u27e83 2 1\u27e9\n\nfirst stdout divergence at line 3:\n  expected: \u27e88 9\u27e9\n  actual:   \u27e87 8\u27e9"
     },
     {
      "source": "\u27e87 8 9\u27e9\u2283\u235e \u27e87 8 9\u27e9\u2337\u235e \u27e87 8 9\u27e9\u236b\u235e \u27e87 8 9\u27e92\u22a4\u235e \u27e87 8 9\u27e92\u22a5\u235e \u27e83 1 2\u27e9\u2352\u235e",
@@ -1655,7 +1655,7 @@
     {
      "source": "\u00af7\u2223\u235e 3 9\u2293\u235e 3 9\u2294\u235e \u203c6\u235e 462 1071\u27cc\u235e",
      "outcome": "glitch",
-     "failure": "exit code: 1\nstdout:\n7\n3\n9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at 20:2: stack underflow \u2014 needed a number\n"
+     "failure": "exit code: 1\nstdout:\n7\n3\n9\n\nstderr:\n\u2717 glitch in strand 0 (row 1) at std.ml 20:2: stack underflow \u2014 needed a number\n  std.ml 20\u2502 [\u2378[1+]\u2235\u220f]\u2254\u203c              \u203b factorial             n\u203c \u2192 n!\n              \u2191 std.ml 20:2\n  stack: (empty)\n\nfirst stdout divergence at line 4:\n  expected: 720\n  actual:   "
     },
     {
      "source": "\u00af7\u2223\u235e 3 9\u2293\u235e 3 9\u2294\u235e 6\u203c\u235e 462 1071\u27cc\u235e",

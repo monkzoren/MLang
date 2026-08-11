@@ -196,6 +196,26 @@ is truncated to its depth at entry, the glitch value is pushed, and
 its strand; the runtime records the report (strand id, label, `row:col`,
 value), other strands continue, and the process exits 1.
 
+### 4.6 Fault reports
+
+Every fault report is written for a machine reader that cannot count
+columns. The first line of each report keeps the fixed shape shown above
+(`✗ glitch …`, `✗ deadlock …`, `✗ weave error …`). It is followed by a
+**source excerpt**: the offending physical line, windowed to at most 61
+glyphs around the fault (`…` marks a trimmed side), prefixed `  row│ `,
+with a caret line beneath marking the exact glyph and repeating the
+coordinates. A glitch report then adds the strand's **stack as the fault
+left it** (`  stack: …`, deepest first, capped to the topmost eight
+values, `(empty)` when bare); deadlock reports add an excerpt for every
+waiting strand, and weave errors carry the same excerpt treatment.
+
+Positions in woven library code report with the library's own file name
+and coordinates (`std.ml 26:7`, `ui.ml 3:12`) and excerpt the library's
+source, never a coincidental program line. `mlang build` welds the
+program's source lines into the binary, so a standalone executable's
+reports carry the same excerpts. All of this output is part of the
+language's deterministic, conformance-pinned behavior.
+
 ## 5. Operations
 
 Stack effects are written `inputs → outputs`, top of stack rightmost.

@@ -1,55 +1,37 @@
-※ RPN Calculator — a Construct application (see construct.ml for the tour).
+※ An RPN calculator on the live platform.
 ※
-※ A PySide-style program: the view quotation V rebuilds the widget tree
-※ each frame from two strand-locals — s (the stack, a list) and e (the
-※ digits typed so far). Every button carries its slot; the ▶ event loop
-※ runs the slot whose key arrives as a stdin line. A glitch in a slot
-※ (÷ by zero below!) becomes a ✗ status message and the app carries on —
-※ the calc.ml let-it-crash pattern.
+※ Two strand-locals hold the whole machine: s, the value stack, and e,
+※ the digits being typed. Every button carries the slot that edits them,
+※ and ⏵ redraws the tree after each one. P commits a pending entry to
+※ the stack; B takes an operator quotation, commits, then folds the top
+※ two values through it. A bad slot — ÷0, one operand, «..»⍎ — glitches
+※ into a ✗ status line and the calculator keeps running.
 ※
-※ Keys: 0-9 digits · + - * / ^ % operators · = push · c clear · q quit
-※ An operator first pushes the pending entry, then folds the top two.
-※ Try:  printf '3⏎=⏎4⏎+⏎0⏎/⏎c⏎9⏎=⏎3⏎/⏎q⏎' | mlang run examples/calc.ml
+※ Keys:  0-9 .   type a number      + - * / ^ %   operate
+※        p       push it            d             drop the top
+※        w       swap the top two   c             clear
+※        q       quit               ⇥/↑↓←→        move focus
+※ ↵ or space fires the focused button, and a mouse click fires whatever
+※ drew the (key) under the pointer.
 ※
-※ E: commit the typed entry onto the stack     (e → s)
-[e«»≠[s e⍎⟨⇅⟩⧺⇒s«»⇒e][]?]≔E
-※ A: pop a b, run the operator quotation, push the result
-[⇒o E s#2≥[s∂#2-@s∂#1-@o⟨⇅⟩s s#2-⊤⇅⧺⇒s][«need two values»✎]?]≔A
-
-[
-  ⟨«Stack»Ⓛ
-    sⒾ
-    Ⓢ
-    «Entry: »e⧺Ⓛ
-    Ⓢ
-    ⟨«0»«0»[e«0»⧺⇒e]Ⓑ
-     «1»«1»[e«1»⧺⇒e]Ⓑ
-     «2»«2»[e«2»⧺⇒e]Ⓑ
-     «3»«3»[e«3»⧺⇒e]Ⓑ
-     «4»«4»[e«4»⧺⇒e]Ⓑ
-    ⟩Ⓗ
-    ⟨«5»«5»[e«5»⧺⇒e]Ⓑ
-     «6»«6»[e«6»⧺⇒e]Ⓑ
-     «7»«7»[e«7»⧺⇒e]Ⓑ
-     «8»«8»[e«8»⧺⇒e]Ⓑ
-     «9»«9»[e«9»⧺⇒e]Ⓑ
-    ⟩Ⓗ
-    Ⓢ
-    ⟨«+»«+»[[+]A]Ⓑ
-     «−»«-»[[-]A]Ⓑ
-     «×»«*»[[×]A]Ⓑ
-     «÷»«/»[[÷]A]Ⓑ
-     «^»«^»[[^]A]Ⓑ
-     «%»«%»[[%]A]Ⓑ
-    ⟩Ⓗ
-    Ⓢ
-    ⟨«=»«=»[E]Ⓑ
-     «C»«c»[⟨⟩⇒s«»⇒e]Ⓑ
-     «Q»«q»[◼]Ⓑ
-    ⟩Ⓗ
-   ⟩Ⓥ«RPN Calculator»Ⓦ
-]≔V
-
+※   mlang run examples/calc.ml
+[e#0>[s e⍎⟨⇅⟩⧺⇒s«»⇒e][]?]≔P                                     ※ commit the entry
+[⇒O P s#2<[«✗ needs two values»✎][s∂#2-@⇒x s∂#1-@⇒y s 0 s#2-⊂ x y O⟨⇅⟩⧺⇒s]?]≔B
+[⟨«Stack»Ⓛ
+  s#0=[⟨«— empty —»⟩][s]?Ⓘ
+  Ⓢ
+  «Entry: »e#0=[«—»][e]?⧺Ⓛ
+  Ⓢ
+  ⟨«7»«7»[e«7»⧺⇒e]Ⓑ «8»«8»[e«8»⧺⇒e]Ⓑ «9»«9»[e«9»⧺⇒e]Ⓑ «÷»«/»[[÷]B]Ⓑ⟩Ⓗ
+  ⟨«4»«4»[e«4»⧺⇒e]Ⓑ «5»«5»[e«5»⧺⇒e]Ⓑ «6»«6»[e«6»⧺⇒e]Ⓑ «×»«*»[[×]B]Ⓑ⟩Ⓗ
+  ⟨«1»«1»[e«1»⧺⇒e]Ⓑ «2»«2»[e«2»⧺⇒e]Ⓑ «3»«3»[e«3»⧺⇒e]Ⓑ «−»«-»[[-]B]Ⓑ⟩Ⓗ
+  ⟨«0»«0»[e«0»⧺⇒e]Ⓑ «.»«.»[e«.»⧺⇒e]Ⓑ «^»«^»[[^]B]Ⓑ «+»«+»[[+]B]Ⓑ⟩Ⓗ
+  Ⓢ
+  ⟨«Push»«p»[P]Ⓑ
+   «Drop»«d»[s#0>[s 0 s#1-⊂⇒s][]?]Ⓑ
+   «Swap»«w»[s#2<[][s∂#2-@⇒x s∂#1-@⇒y s 0 s#2-⊂ y⟨⇅⟩⧺ x⟨⇅⟩⧺⇒s]?]Ⓑ
+   «Mod»«%»[[%]B]Ⓑ⟩Ⓗ
+  ⟨«Clear»«c»[⟨⟩⇒s«»⇒e]Ⓑ «Quit»«q»[◼]Ⓑ⟩Ⓗ
+ ⟩Ⓥ«Calculator»Ⓦ]≔V
 ⇊
-
-⟨⟩⇒s «»⇒e [V]▶ «Done.»⍞
+⟨⟩⇒s «»⇒e [V]⏵ «Calculator closed.»⍞
