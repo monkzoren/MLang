@@ -67,30 +67,28 @@ of a wait graph.
 | Self-repair — claude-haiku-4-5-20251001, ≤3 rounds | MLang | Python |
 |---|---|---|
 | seeded one-edit bugs | 80 | 80 |
-| **healed (byte-exact output)** | **98%** | **100%** |
-| healed in one round | 90% | 100% |
+| **healed (byte-exact output)** | **99%** | **100%** |
+| healed in one round | 89% | 100% |
 | median rounds to green | 1 | 1 |
 
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
-| caught before running | 8/8 | 54/54 |
+| caught before running | 7/8 | 54/54 |
 | runtime fault, precise report | 36/36 | 23/23 |
 | proven deadlock | 3/3 | — |
-| silent wrong output | 31/33 | 2/2 |
-| hang | — | 1/1 |
+| silent wrong output | 33/33 | 2/2 |
+| hang | — | 3/3 |
 
 A small current model repairs one-edit bugs in a language it has ***never
-seen in training*** at essentially the same rate as Python (98% vs 100%),
+seen in training*** at essentially the same rate as Python (99% vs 100%),
 from an op-reference primer plus the runtime's failure report alone —
-every loud failure healed: all 36 glitches with coordinates, all 8
-weave errors, and all three proven-deadlock mutants, in one round from
-the wait graph. The only mutants that resisted repair were two silent
-wrong-output bugs in rain-form (transposed-grid) programs. The
-honest reading is that this experiment bounds the floor, not the
-ceiling: the corpus programs are small, and the interesting difference
-is *what kind of failure* each language hands the model (see the next
-table). Scale it up or swap in any model with one flag —
-`bench/README.md` has the protocol and every caveat.
+every glitch, every proven deadlock, and every silent wrong-output
+mutant healed; the one miss is a single weave-error mutant. The honest
+reading is that this experiment bounds the floor, not the ceiling: the
+corpus programs are small, and the interesting difference is *what kind
+of failure* each language hands the model (see the next table). Scale
+it up or swap in any model with one flag — `bench/README.md` has the
+protocol and every caveat.
 
 A mutant counts as healed only when stdout, stderr, and exit code match
 the golden byte for byte. The same mutation engine, with no LLM, measures
@@ -160,38 +158,41 @@ runs on both — same model, same rounds, same byte-exact bar:
 | Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
 |---|---|---|
 | seeded one-edit bugs | 40 | 40 |
-| **healed (byte-exact output)** | **65%** | **100%** |
-| healed in one round | 45% | 100% |
+| **healed (byte-exact output)** | **82%** | **100%** |
+| healed in one round | 55% | 100% |
 | median rounds to green | 1 | 1 |
 
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
 | caught before running | 1/2 | 35/35 |
-| runtime fault, precise report | 15/22 | 2/2 |
+| runtime fault, precise report | 19/22 | 2/2 |
 | proven deadlock | 5/6 | — |
-| silent wrong output | 5/10 | 1/1 |
+| silent wrong output | 8/10 | 1/1 |
 | hang | — | 2/2 |
 
-**At application scale the tables turn, and we publish that.** The
-small model healed every Python mutant — because Python's redundancy
-converts 35 of its 40 one-token bugs into syntax errors, and a syntax
-error in a language the model has read for years is a one-round fix
-(both hangs healed too: this program's hang bugs happened to sit near
-obvious code, though the robustness table above shows the input an
-agent gets in that bucket is a frozen process). MLang's density
-converts the same edits into *semantic* failures in a glyph language
-the model has never seen, and there haiku heals 65%: the wait-graph
-story holds up — 5 of 6 proven deadlocks healed, three in one round —
-but silent wrong-output bugs healed only 5 of 10, and one weave error
-in the dense 40-line grid defeated three rounds of bracket-chasing.
-The honest summary: **MLang's runtime hands the model strictly better
-failure evidence at scale (nothing ever hangs, deadlocks arrive as
-proofs), but a small model's repair skill in a never-seen dense
-notation is currently the binding constraint — Python's familiarity
-plus shallow failure modes beat MLang's better evidence plus deeper
-bugs.** Whether stronger models or an MLang-native tokenizer flip
-that is exactly what this harness measures; run it with any model via
-`bench/heal.py --cases example:oracle.ml,oracle`.
+**At application scale Python wins, and we publish that** — the small
+model healed every Python mutant, because Python's redundancy converts
+35 of its 40 one-token bugs into syntax errors, and a syntax error in a
+language the model has read for years is a one-round fix. What the
+MLang column shows is something rarer: **the number moving because the
+language listened to the benchmark.** The first run of this experiment
+healed only 65% — the failure transcripts showed the model repeatedly
+editing the *wrong glyph*, because a bare `at 29:22` in a 150-glyph
+line is uncountable for an LLM, and a `] without matching [` names
+neither bracket. So the runtime's fault reports were rebuilt for a
+reader that cannot count columns — every report now quotes the
+offending line with a caret under the exact glyph, shows the stack as
+the fault left it, and names library sources honestly (`std.ml 26:7`);
+the harness also began appending a first-divergence hint to both arms
+(SPEC §4.6, and the demo at the top of this page shows the format).
+Re-running the identical benchmark: **65% → 82%**, with glitch repairs
+up from 15/22 to 19/22 and silent wrong-output from 5/10 to 8/10.
+Python's familiarity plus shallow failure modes still beat MLang's
+better evidence plus deeper bugs — a small model's skill in a
+never-seen dense notation remains the binding constraint — but half
+the gap was diagnostics, not destiny, and the harness measures exactly
+what a stronger model or an MLang-native tokenizer would close next.
+Run it with any model: `bench/heal.py --cases example:oracle.ml,oracle`.
 
 ## Programs are grids
 
@@ -534,10 +535,12 @@ SPEC.md           the full language specification
   essentially zero MLang — the MLang arm leans entirely on an
   op-reference primer in the prompt, and the application-scale run shows
   what that costs: with a small model, repair parity holds on small
-  programs but flips to Python's favor (100% vs 65%) on the Oracle,
-  where MLang's bugs run deeper than its better failure reports can
-  compensate for. `bench/README.md` spells out the protocol and every
-  caveat.
+  programs but flips to Python's favor (100% vs 82%) on the Oracle —
+  MLang's one-token bugs run semantically deeper than Python's, which
+  mostly die shallow at the parser. Excerpt-and-caret fault reports
+  closed half of an initially wider gap (65% → 82%); the rest is the
+  model's unfamiliarity with the notation. `bench/README.md` spells out
+  the protocol and every caveat.
 
 ## Name
 

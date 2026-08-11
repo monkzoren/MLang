@@ -1,31 +1,31 @@
 | Self-repair — claude-haiku-4-5-20251001, ≤3 rounds | MLang | Python |
 |---|---|---|
 | seeded one-edit bugs | 80 | 80 |
-| **healed (byte-exact output)** | **98%** | **100%** |
-| healed in one round | 90% | 100% |
+| **healed (byte-exact output)** | **99%** | **100%** |
+| healed in one round | 89% | 100% |
 | median rounds to green | 1 | 1 |
 
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
-| caught before running | 8/8 | 54/54 |
-| runtime fault, precise report | 36/36 | 23/23 |
+| caught before running | 7/8 | 54/54 |
+| runtime fault, precise report | 36/36 | 21/21 |
 | proven deadlock | 3/3 | — |
-| silent wrong output | 31/33 | 2/2 |
-| hang | — | 1/1 |
+| silent wrong output | 33/33 | 2/2 |
+| hang | — | 3/3 |
 
 | Self-repair — claude-haiku-4-5-20251001, ≤3 rounds | MLang | Python |
 |---|---|---|
 | seeded one-edit bugs | 40 | 40 |
-| **healed (byte-exact output)** | **65%** | **100%** |
-| healed in one round | 45% | 100% |
+| **healed (byte-exact output)** | **82%** | **100%** |
+| healed in one round | 55% | 100% |
 | median rounds to green | 1 | 1 |
 
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
 | caught before running | 1/2 | 35/35 |
-| runtime fault, precise report | 15/22 | 2/2 |
+| runtime fault, precise report | 19/22 | 2/2 |
 | proven deadlock | 5/6 | — |
-| silent wrong output | 5/10 | 1/1 |
+| silent wrong output | 8/10 | 1/1 |
 | hang | — | 2/2 |
 
 | One-token mutation becomes | MLang | Python |
