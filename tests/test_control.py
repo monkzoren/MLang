@@ -80,7 +80,7 @@ class TestBindings(unittest.TestCase):
         self.assertEqual(out_of("[∂×]≔² 9²⍞"), "81\n")
 
     def test_define_constant(self):
-        self.assertEqual(out_of("3.14159≔π π⍞"), "3.14159\n")
+        self.assertEqual(out_of("3.14159≔κ κ⍞"), "3.14159\n")
 
     def test_redefinition_glitches(self):
         code, _, err = run("1≔x 2≔x")

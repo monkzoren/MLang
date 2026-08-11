@@ -55,7 +55,7 @@ CASES = [
     ("index-oob", "⟨1⟩5@", ""),
     ("parse-garbage", "«nope»⍎", ""),
     # ── bindings ──
-    ("define-call", "[∂×]≔² 9²⍞ 3.14≔π π⍞", ""),
+    ("define-call", "[∂×]≔² 9²⍞ 3.14≔κ κ⍞", ""),
     ("locals", "1⇒x x 1+⇒x x⍞", ""),
     ("redefine-glitch", "1≔x 2≔x", ""),
     ("reserved-sigil", "1≔+", ""),
@@ -98,6 +98,22 @@ CASES = [
     ("drain-cross-strand", "3⍸⇈q\n⇟q⍞", ""),
     ("pump-type-error", "5⇉ab", ""),
     ("pour-type-error", "5⇈a", ""),
+    # ── primitives: ⍙ ⌽ ⍋ ∈ ⍷ ──
+    ("prim-type", "5⍙⍞⍞ 2.5⍙⇅⌫⍞ «x»⍙⇅⌫⍞ ⟨⟩⍙⇅⌫⍞ [∂]⍙⇅⌫⍞ ∅⍙⇅⌫⍞", ""),
+    ("prim-reverse", "«matrix»⌽⍞ ⟨1 2 3⟩⌽⍞ «»⌽⍞", ""),
+    ("prim-sort", "⟨3 1.5 2⟩⍋⍞ «cba»⍋⍞ ⟨«b» «a»⟩⍋⍞", ""),
+    ("prim-sort-mixed", "⟨1 «a»⟩⍋", ""),
+    ("prim-contains-find", "«wake up»«ake»∈⍞ ⟨1 ⟨2⟩⟩⟨2⟩∈⍞ «abcd»«cd»⍷⍞ ⟨7 8⟩9⍷⍞", ""),
+    ("prim-search-type-error", "«ab»5∈", ""),
+    # ── standard library ──
+    ("std-constants", "π⍞ τ⍞ ℯ⍞ ∞⍞ ∞±⍞", ""),
+    ("std-numbers", "¯7∣⍞ 3 9⊓⍞ 3 9⊔⍞ 6‼⍞ 462 1071⟌⍞", ""),
+    ("std-aggregates", "⟨1 2 3 4⟩∑⍞ ⟨2 3 4⟩∏⍞ ⟨1 2 3 4⟩µ⍞", ""),
+    ("std-list-helpers", "⟨7 8 9⟩⊃⍞ ⟨7 8 9⟩⌷⍞ ⟨7 8 9⟩⍫⍞ ⟨7 8 9⟩2⊤⍞ ⟨7 8 9⟩2⊥⍞ ⟨3 1 2⟩⍒⍞", ""),
+    ("std-zip", "⟨1 2 3⟩⟨«a» «b»⟩⍚⍞", ""),
+    ("std-text", "«Neo!»⇑⍞ «NEO»⇩⍞ « the  matrix »⍭⍞ «a⏎b⏎c»⍖#⍞", ""),
+    ("std-redefine-glitches", "1≔π", ""),
+    ("std-in-boot-and-strands", "π≔c\n⇊\nc τ<⍞\n[⟨4 2⟩⍋↥r]⚡⋈↧r⍞", ""),
     # ── boot & forms ──
     ("boot-defs", "[∂×]≔²\n⇊\n7²↥a\n↧a 1+⍞", ""),
     ("boot-glitch-stops", "1 0÷\n⇊\n«never»⍞", ""),
@@ -131,6 +147,7 @@ EXAMPLE_FILES = [
     "glitch.ml",
     "mandelbrot.ml",
     "calc.ml",
+    "std-tour.ml",
 ]
 
 EXAMPLE_STDIN = {

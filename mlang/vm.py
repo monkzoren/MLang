@@ -25,6 +25,24 @@ from .values import MARK, NIL, Quot, fmt, truthy, type_name
 
 SLICE = 8  # instructions per strand per scheduler turn (fixed → deterministic)
 
+_STD_CODE = None
+
+
+def std_code():
+    """The standard library (mlang/std.ml), lexed once per process."""
+    global _STD_CODE
+    if _STD_CODE is None:
+        import os
+
+        path = os.path.join(os.path.dirname(__file__), "std.ml")
+        with open(path, encoding="utf-8") as f:
+            prog = parse_source(f.read())
+        code = []
+        for _label, cells in prog.strands:
+            code.extend(lex_strand(cells, prog.axis))
+        _STD_CODE = code
+    return _STD_CODE
+
 RUN, BLOCKED, DONE, DEAD = "run", "blocked", "done", "dead"
 
 
@@ -519,6 +537,61 @@ def _build_builtins():
     B["⊆"], B["⊇"], B["⍕"], B["⍎"] = split, join, to_str, parse_num
     B["⌗"], B["⍘"] = codepoint, char
 
+    # inspection & rearrangement
+    def type_(vm, s, a, p):
+        if not s.stack:
+            glitch("stack underflow — needed a value", p)
+        s.push(type_name(s.stack[-1]))
+    def reverse(vm, s, a, p):
+        v = s.pop(p, "a list or string")
+        if isinstance(v, str):
+            s.push(v[::-1])
+        elif isinstance(v, tuple):
+            s.push(v[::-1])
+        else:
+            glitch(f"⌽ expects a list or string, got {type_name(v)}", p)
+    def sort_(vm, s, a, p):
+        v = s.pop(p, "a list or string")
+        if isinstance(v, str):
+            s.push("".join(sorted(v)))
+            return
+        if not isinstance(v, tuple):
+            glitch(f"⍋ expects a list or string, got {type_name(v)}", p)
+        num = lambda x: isinstance(x, (int, float)) and not isinstance(x, bool)
+        if all(num(x) for x in v):
+            s.push(tuple(sorted(v)))
+        elif all(isinstance(x, str) for x in v):
+            s.push(tuple(sorted(v)))
+        else:
+            glitch("⍋ needs all numbers or all strings", p)
+    def contains(vm, s, a, p):
+        v = s.pop(p)
+        seq = s.pop(p, "a list or string")
+        if isinstance(seq, str):
+            if not isinstance(v, str):
+                glitch(f"∈ searching a string needs a string, got {type_name(v)}", p)
+            s.push(1 if v in seq else 0)
+        elif isinstance(seq, tuple):
+            s.push(1 if any(x == v for x in seq) else 0)
+        else:
+            glitch(f"∈ expects a list or string, got {type_name(seq)}", p)
+    def find(vm, s, a, p):
+        v = s.pop(p)
+        seq = s.pop(p, "a list or string")
+        if isinstance(seq, str):
+            if not isinstance(v, str):
+                glitch(f"⍷ searching a string needs a string, got {type_name(v)}", p)
+            s.push(seq.find(v))
+        elif isinstance(seq, tuple):
+            for i, x in enumerate(seq):
+                if x == v:
+                    s.push(i)
+                    return
+            s.push(-1)
+        else:
+            glitch(f"⍷ expects a list or string, got {type_name(seq)}", p)
+    B["⍙"], B["⌽"], B["⍋"], B["∈"], B["⍷"] = type_, reverse, sort_, contains, find
+
     # bindings
     def define(vm, s, a, p):
         if a in vm.globals:
@@ -707,13 +780,16 @@ class VM:
         self.main_count = len(main)
         self.next_spawn_sid = len(main)
 
+        # The boot strand always runs: the standard library first, then the
+        # program's own boot section (if any).
+        boot_code = list(std_code())
         if prog.boot_cells:
-            boot_code = lex_strand(prog.boot_cells, prog.axis)
-            boot = Strand(-1, "boot", boot_code)
-            self._register(boot)
-            self.run_scheduler()
-            if boot.status == DEAD or self.failed:
-                return 1
+            boot_code.extend(lex_strand(prog.boot_cells, prog.axis))
+        boot = Strand(-1, "boot", boot_code)
+        self._register(boot)
+        self.run_scheduler()
+        if boot.status == DEAD or self.failed:
+            return 1
         for s in main:
             self._register(s)
         self.run_scheduler()

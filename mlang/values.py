@@ -51,7 +51,9 @@ def truthy(v):
 
 
 def _num_str(x):
-    if isinstance(x, float) and x == int(x) and abs(x) < 1e16:
+    if isinstance(x, float) and (x != x or x in (float("inf"), float("-inf"))):
+        s = repr(x)  # nan, inf, -inf
+    elif isinstance(x, float) and x == int(x) and abs(x) < 1e16:
         s = repr(x)
     else:
         s = repr(x) if isinstance(x, float) else str(x)

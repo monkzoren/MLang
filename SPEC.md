@@ -264,12 +264,43 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⌨` | `→ s \| ∅` | read a line of stdin; `∅` at EOF |
 | `⍟` | `→` | dump this strand's stack to stderr |
 
-## 6. Exit status
+## 6. The standard library
+
+The standard library is written in MLang (`mlang/std.ml`, printed by
+`mlang std`) and is woven into every program: its definitions execute at
+the start of the boot strand, before the program's own boot section. Every
+entry is an ordinary `≔` global, so std sigils behave exactly like user
+definitions — including that rebinding one glitches with «already
+defined». Names resolve late, at call time.
+
+| sigil | | sigil | |
+|---|---|---|---|
+| `π` `τ` `ℯ` | circle constants, Euler's number | `∞` | positive infinity |
+| `n∣` | absolute value | `a b⟌` | greatest common divisor |
+| `a b⊓` / `a b⊔` | minimum / maximum | `n‼` | factorial |
+| `L∑` / `L∏` | sum / product | `L µ` | mean (`⟨⟩µ` glitches) |
+| `s⊃` / `s⌷` | head / last | `s⍫` | tail |
+| `s n⊤` / `s n⊥` | take / drop first n | `s⍒` | sort descending |
+| `A B⍚` | zip to pair list | | |
+| `s⇑` / `s⇩` | upper/lowercase (ASCII) | `s⍭` | words (split, drop empties) |
+| `s⍖` | split into lines | | |
+
+Library internals use fullwidth letters (`ａ ｂ ｘ`) as strand-locals;
+programs should treat those as reserved.
+
+The engine provides five primitives the library builds on (part of the
+operation set, §5): `⍙` type-of, `⌽` reverse, `⍋` sort, `∈` contains,
+`⍷` find. Transcendental functions (log, exp, trig) are deliberately
+absent for now: MLang guarantees bit-identical runs across engines, and
+platform `libm` implementations are not correctly-rounded — they enter
+the library only alongside a correctly-rounded implementation.
+
+## 7. Exit status
 
 `0` — all strands completed. `1` — at least one uncaught glitch, or
 deadlock. `2` — load (weave) error; nothing executed.
 
-## 7. Design lineage
+## 8. Design lineage
 
 Concatenative core from Forth and Joy (quotations as the sole control-flow
 mechanism); glyph vocabulary in the spirit of APL; concurrency from CSP and

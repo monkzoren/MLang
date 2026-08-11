@@ -456,19 +456,18 @@ impl<'io> VM<'io> {
         self.main_count = woven.len();
         self.next_spawn_sid = woven.len() as i64;
 
-        let boot_code = match &prog.boot_cells {
-            Some(cells) => Some(Rc::new(lex_strand(cells.clone(), prog.axis)?)),
-            None => None,
-        };
-
-        if let Some(code) = boot_code {
-            let boot = Strand::new(-1, "boot".into(), code, HashMap::new());
-            self.register(boot);
-            self.run_scheduler();
-            let boot_dead = self.strands[self.by_sid[&-1]].status == Status::Dead;
-            if boot_dead || self.failed {
-                return Ok(1);
-            }
+        // The boot strand always runs: the standard library first, then the
+        // program's own boot section (if any).
+        let mut boot_code = std_code();
+        if let Some(cells) = &prog.boot_cells {
+            boot_code.extend(lex_strand(cells.clone(), prog.axis)?);
+        }
+        let boot = Strand::new(-1, "boot".into(), Rc::new(boot_code), HashMap::new());
+        self.register(boot);
+        self.run_scheduler();
+        let boot_dead = self.strands[self.by_sid[&-1]].status == Status::Dead;
+        if boot_dead || self.failed {
+            return Ok(1);
         }
         for (i, (label, code)) in woven.into_iter().enumerate() {
             self.register(Strand::new(i as i64, label, code, HashMap::new()));
@@ -476,6 +475,18 @@ impl<'io> VM<'io> {
         self.run_scheduler();
         Ok(if self.failed { 1 } else { 0 })
     }
+}
+
+pub const STD_SOURCE: &str = include_str!("../../mlang/std.ml");
+
+/// The standard library, lexed. Infallible: std.ml is verified by CI.
+fn std_code() -> Vec<Instr> {
+    let prog = crate::forms::parse_source(STD_SOURCE).expect("std.ml parses");
+    let mut code = Vec::new();
+    for (_, cells) in prog.strands {
+        code.extend(lex_strand(cells, prog.axis).expect("std.ml lexes"));
+    }
+    code
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────
@@ -1040,6 +1051,121 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 None => {
                     return glitch(
                         format!("⍘ code point {} out of range", fmt_i64(n)),
+                        pos,
+                    )
+                }
+            }
+        }
+        // ── inspection & rearrangement ──
+        '⍙' => {
+            let Some(top) = s.stack.last() else {
+                return glitch("stack underflow — needed a value", pos);
+            };
+            let name = type_name(top);
+            s.push(Value::str(name));
+        }
+        '⌽' => {
+            let v = s.pop(pos, "a list or string")?;
+            match &v {
+                Value::Str(x) => s.push(Value::str(x.chars().rev().collect::<String>())),
+                Value::List(l) => {
+                    s.push(Value::List(Rc::new(l.iter().rev().cloned().collect())))
+                }
+                _ => {
+                    return glitch(
+                        format!("⌽ expects a list or string, got {}", type_name(&v)),
+                        pos,
+                    )
+                }
+            }
+        }
+        '⍋' => {
+            let v = s.pop(pos, "a list or string")?;
+            match &v {
+                Value::Str(x) => {
+                    let mut chars: Vec<char> = x.chars().collect();
+                    chars.sort();
+                    s.push(Value::str(chars.into_iter().collect::<String>()));
+                }
+                Value::List(l) => {
+                    let nums = l.iter().all(|x| x.is_num());
+                    let strs = l.iter().all(|x| matches!(x, Value::Str(_)));
+                    if nums {
+                        let mut v2 = l.as_ref().clone();
+                        v2.sort_by(|a, b| num_cmp(a, b));
+                        s.push(Value::List(Rc::new(v2)));
+                    } else if strs {
+                        let mut v2 = l.as_ref().clone();
+                        v2.sort_by(|a, b| match (a, b) {
+                            (Value::Str(x), Value::Str(y)) => x.cmp(y),
+                            _ => unreachable!(),
+                        });
+                        s.push(Value::List(Rc::new(v2)));
+                    } else {
+                        return glitch("⍋ needs all numbers or all strings", pos);
+                    }
+                }
+                _ => {
+                    return glitch(
+                        format!("⍋ expects a list or string, got {}", type_name(&v)),
+                        pos,
+                    )
+                }
+            }
+        }
+        '∈' => {
+            let v = s.pop_any(pos)?;
+            let seq = s.pop(pos, "a list or string")?;
+            match &seq {
+                Value::Str(x) => {
+                    let Value::Str(needle) = &v else {
+                        return glitch(
+                            format!("∈ searching a string needs a string, got {}", type_name(&v)),
+                            pos,
+                        );
+                    };
+                    s.push(Value::int(if x.contains(needle.as_str()) { 1 } else { 0 }));
+                }
+                Value::List(l) => {
+                    let found = l.iter().any(|x| val_eq(x, &v));
+                    s.push(Value::int(if found { 1 } else { 0 }));
+                }
+                _ => {
+                    return glitch(
+                        format!("∈ expects a list or string, got {}", type_name(&seq)),
+                        pos,
+                    )
+                }
+            }
+        }
+        '⍷' => {
+            let v = s.pop_any(pos)?;
+            let seq = s.pop(pos, "a list or string")?;
+            match &seq {
+                Value::Str(x) => {
+                    let Value::Str(needle) = &v else {
+                        return glitch(
+                            format!("⍷ searching a string needs a string, got {}", type_name(&v)),
+                            pos,
+                        );
+                    };
+                    match x.find(needle.as_str()) {
+                        Some(byte_idx) => {
+                            let ci = x[..byte_idx].chars().count();
+                            s.push(Value::int(ci as i64));
+                        }
+                        None => s.push(Value::int(-1)),
+                    }
+                }
+                Value::List(l) => {
+                    match l.iter().position(|x| val_eq(x, &v)) {
+                        Some(i) => s.push(Value::int(i as i64)),
+                        None => s.push(Value::int(-1)),
+                    }
+                }
+                _ => {
+                    return glitch(
+                        format!("⍷ expects a list or string, got {}", type_name(&seq)),
                         pos,
                     )
                 }

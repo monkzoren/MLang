@@ -68,6 +68,7 @@ def main(argv=None):
     p_flat = sub.add_parser("flat", help="render rain source as flat lines")
     p_flat.add_argument("file")
     sub.add_parser("ops", help="print the sigil reference table")
+    sub.add_parser("std", help="print the standard library source (self-documenting)")
 
     ns = ap.parse_args(argv)
     try:
@@ -83,6 +84,13 @@ def main(argv=None):
             return 0
         if ns.cmd == "ops":
             print(_ops_table())
+            return 0
+        if ns.cmd == "std":
+            import os
+
+            path = os.path.join(os.path.dirname(__file__), "std.ml")
+            with open(path, encoding="utf-8") as f:
+                sys.stdout.write(f.read())
             return 0
     except LoadError as e:
         loc = f" at {e.pos[0]}:{e.pos[1]}" if e.pos else ""

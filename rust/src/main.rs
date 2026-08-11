@@ -58,12 +58,13 @@ usage:
   mlang rain <file|->    render flat source as the vertical rain grid
   mlang flat <file|->    render rain source as flat lines
   mlang ops              print the sigil reference table
+  mlang std              print the standard library source
 ";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let (cmd, arg) = match args.len() {
-        2 if args[1] == "ops" => (args[1].as_str(), ""),
+        2 if args[1] == "ops" || args[1] == "std" => (args[1].as_str(), ""),
         3 => (args[1].as_str(), args[2].as_str()),
         _ => {
             eprint!("{USAGE}");
@@ -102,6 +103,10 @@ fn main() -> ExitCode {
         }
         "ops" => {
             print!("{}", include_str!("ops.txt"));
+            ExitCode::SUCCESS
+        }
+        "std" => {
+            print!("{}", vm::STD_SOURCE);
             ExitCode::SUCCESS
         }
         _ => {

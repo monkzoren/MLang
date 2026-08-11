@@ -37,6 +37,11 @@ sigil  name          effect              description
 ⌿      filter        L [f] ⌿ → L′        keep items for which [f] leaves truthy
 ⍀      fold          L a [f] ⍀ → a′      fold: for each item run [f] as a x → a′
 ⍸      range         n ⍸ → ⟨0…n−1⟩       push the list 0,1,…,n−1
+⍙      type          v ⍙ → v s           push the value's type name («int» «float» «str» «list» «quot» «∅») without consuming it
+⌽      reverse       s ⌽ → s′            reverse a list or string
+⍋      sort          s ⍋ → s′            sort ascending (stable): a string, or a list of all numbers / all strings
+∈      contains      s v ∈ → 1|0         membership: substring of a string, or item of a list
+⍷      find          s v ⍷ → i|¯1        index of first occurrence (substring or item), ¯1 if absent
 #      length        s # → n             length of a string or list
 ⧺      concat        a b → ab            concatenate two strings or two lists
 @      index         s i @ → v           item at 0-based index; out of bounds glitches

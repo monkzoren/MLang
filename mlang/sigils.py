@@ -67,6 +67,12 @@ OPS = {
     "⌿": OpInfo("filter", "L [f] ⌿ → L′", "keep items for which [f] leaves truthy"),
     "⍀": OpInfo("fold", "L a [f] ⍀ → a′", "fold: for each item run [f] as a x → a′"),
     "⍸": OpInfo("range", "n ⍸ → ⟨0…n−1⟩", "push the list 0,1,…,n−1"),
+    # ── inspection & rearrangement ──
+    "⍙": OpInfo("type", "v ⍙ → v s", "push the value's type name («int» «float» «str» «list» «quot» «∅») without consuming it"),
+    "⌽": OpInfo("reverse", "s ⌽ → s′", "reverse a list or string"),
+    "⍋": OpInfo("sort", "s ⍋ → s′", "sort ascending (stable): a string, or a list of all numbers / all strings"),
+    "∈": OpInfo("contains", "s v ∈ → 1|0", "membership: substring of a string, or item of a list"),
+    "⍷": OpInfo("find", "s v ⍷ → i|¯1", "index of first occurrence (substring or item), ¯1 if absent"),
     # ── sequences (strings & lists) ──
     "#": OpInfo("length", "s # → n", "length of a string or list"),
     "⧺": OpInfo("concat", "a b → ab", "concatenate two strings or two lists"),

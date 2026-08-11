@@ -61,7 +61,7 @@ spec): the same commands via `python3 -m mlang …`, or `pip install .` for an
 `mlang` entry point.
 
 Both engines are verified byte-for-byte against a shared conformance corpus
-(104 cases: stdout, stderr, and exit codes, including glitch coordinates and
+(121 cases: stdout, stderr, and exit codes, including glitch coordinates and
 scheduler interleaving):
 
 ```sh
@@ -107,6 +107,22 @@ binary subtraction). Strings are `«…»` with `⏎` for newline. Lists are
 `⟨1 2 3⟩`. `∅` is nil — conventionally the end-of-stream sentinel on
 channels.
 
+A **standard library** — written in MLang itself (`mlang std` prints it) —
+is woven into every program before its boot section: constants (`π τ ℯ ∞`),
+numerics (`∣` abs, `⊓` min, `⊔` max, `‼` factorial, `⟌` gcd), aggregates
+(`∑` sum, `∏` product, `µ` mean), list tools (`⊃` head, `⌷` last, `⍫`
+tail, `⊤`/`⊥` take/drop, `⍒` sort-desc, `⍚` zip), and text tools (`⇑`/`⇩`
+case, `⍭` words, `⍖` lines), built on five engine primitives: `⍙` type-of,
+`⌽` reverse, `⍋` sort, `∈` contains, `⍷` find. `examples/std-tour.ml`
+walks through all of it:
+
+```
+⟨31 4 15 9 2 6⟩⍋⍞         ※ ⟨2 4 6 9 15 31⟩
+«the matrix has you»⍭⌽« »⊇⍞  ※ you has matrix the
+462 1071⟌⍞                ※ 21
+⟨«red» «blue»⟩⟨«pill» «shift»⟩⍚⍞  ※ ⟨⟨«red» «pill»⟩ ⟨«blue» «shift»⟩⟩
+```
+
 In **flat form** each line is a strand — write this. In **rain form**
 (first line `⇓`) each *column* is a strand — view this. `mlang rain` and
 `mlang flat` transpose between them; both run identically. A `⇊` divider
@@ -135,12 +151,12 @@ rust/             the native engine (Rust) — the primary implementation
   src/lex.rs      glyph stream → instructions
   src/forms.rs    rain/flat grid parsing and rendering
   src/vm.rs       strands, channels, glitches, deterministic scheduler
-mlang/            the reference implementation (pure Python, stdlib only) —
+mlang/            the reference implementation (pure Python) and std.ml —
                   the executable specification the native engine is held to
 conformance/      shared corpus: record.py snapshots the reference,
-                  run.py verifies any engine byte-for-byte (104 cases)
+                  run.py verifies any engine byte-for-byte (121 cases)
 examples/         runnable programs (hello, fizzbuzz, pipeline, spawn, …)
-tests/            85 tests: python3 -m unittest discover -s tests
+tests/            102 tests: python3 -m unittest discover -s tests
 SPEC.md           the full language specification
 ```
 

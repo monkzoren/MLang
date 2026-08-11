@@ -16,3 +16,6 @@ mlang = "mlang.cli:main"
 
 [tool.setuptools]
 packages = ["mlang"]
+
+[tool.setuptools.package-data]
+mlang = ["std.ml"]
