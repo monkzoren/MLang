@@ -109,10 +109,10 @@ so density genuinely costs silent failures, and the table says so. What
 density buys back is the *quality* of the loud failures: coordinates and
 proven wait graphs instead of a traceback or a frozen process — every
 blocked-channel bug above is a printed deadlock proof in MLang and a
-kill-it-yourself hang in Python, and in the self-repair benchmark all of
-MLang's deadlock mutants healed in one round from the wait graph alone.
-Numbers, protocol, and the unflattering buckets all live in
-[`bench/`](bench/README.md).
+kill-it-yourself hang in Python, and in the small-program self-repair
+benchmark all of MLang's deadlock mutants healed in one round from the
+wait graph alone. Numbers, protocol, and the unflattering buckets all
+live in [`bench/`](bench/README.md).
 
 ### At application scale: the Oracle
 
@@ -147,10 +147,44 @@ then froze anyway, which is the worst possible input for an agent: a
 partial diagnosis attached to a process that never exits. The same class
 of bug in MLang becomes a *proven deadlock report* one time in seven,
 naming every blocked strand, the channel it waits on, and its grid
-coordinates — and nothing hangs, ever. And repair works from those
-reports:
+coordinates — and nothing hangs, ever. Then the same repair protocol
+runs on both — same model, same rounds, same byte-exact bar:
 
-<!-- BENCH:ORACLE-HEAL -->
+| Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
+|---|---|---|
+| seeded one-edit bugs | 40 | 40 |
+| **healed (byte-exact output)** | **65%** | **100%** |
+| healed in one round | 45% | 100% |
+| median rounds to green | 1 | 1 |
+
+| healed, by what the bug turned into | MLang | Python |
+|---|---|---|
+| caught before running | 1/2 | 35/35 |
+| runtime fault, precise report | 15/22 | 2/2 |
+| proven deadlock | 5/6 | — |
+| silent wrong output | 5/10 | 1/1 |
+| hang | — | 2/2 |
+
+**At application scale the tables turn, and we publish that.** The
+small model healed every Python mutant — because Python's redundancy
+converts 35 of its 40 one-token bugs into syntax errors, and a syntax
+error in a language the model has read for years is a one-round fix
+(both hangs healed too: this program's hang bugs happened to sit near
+obvious code, though the robustness table above shows the input an
+agent gets in that bucket is a frozen process). MLang's density
+converts the same edits into *semantic* failures in a glyph language
+the model has never seen, and there haiku heals 65%: the wait-graph
+story holds up — 5 of 6 proven deadlocks healed, three in one round —
+but silent wrong-output bugs healed only 5 of 10, and one weave error
+in the dense 40-line grid defeated three rounds of bracket-chasing.
+The honest summary: **MLang's runtime hands the model strictly better
+failure evidence at scale (nothing ever hangs, deadlocks arrive as
+proofs), but a small model's repair skill in a never-seen dense
+notation is currently the binding constraint — Python's familiarity
+plus shallow failure modes beat MLang's better evidence plus deeper
+bugs.** Whether stronger models or an MLang-native tokenizer flip
+that is exactly what this harness measures; run it with any model via
+`bench/heal.py --cases example:oracle.ml,oracle`.
 
 ## Programs are grids
 
@@ -477,11 +511,16 @@ SPEC.md           the full language specification
   reproducibility is worth more to a machine author than nondeterministic
   wall-clock wins. A parallel scheduler can be added without changing a
   single program's meaning where interleaving is unobservable.
-* **The benchmark's limits.** The self-repair corpus programs are small,
-  and the Python control arm is 28 hand-verified ports, not all 94
-  programs. Models have seen enormous amounts of Python and essentially
-  zero MLang — the MLang arm leans entirely on an op-reference primer in
-  the prompt. `bench/README.md` spells out the protocol and every caveat.
+* **The benchmark's limits.** The small-program corpus is small by
+  design, and the Python control arm is 29 hand-verified ports, not all
+  120 programs. Models have seen enormous amounts of Python and
+  essentially zero MLang — the MLang arm leans entirely on an
+  op-reference primer in the prompt, and the application-scale run shows
+  what that costs: with a small model, repair parity holds on small
+  programs but flips to Python's favor (100% vs 65%) on the Oracle,
+  where MLang's bugs run deeper than its better failure reports can
+  compensate for. `bench/README.md` spells out the protocol and every
+  caveat.
 
 ## Name
 
