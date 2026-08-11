@@ -23,7 +23,7 @@ naturally write with threads and queues):
 ```
 9⍸[1+∂×]∵⇈α                ※ machine 1: pour the squares of 1..9 into α
 [∂25=[«boom»↯][]?2×]⇉αβ    ※ machine 2: double each value α→β — dies at 25
-[∂⍞]⇉βγ                    ※ machine 3: print each value as it arrives
+[↧β∂∅≠][⍞]⟳⌫               ※ machine 3: print each value as it arrives
 ```
 
 ```
@@ -37,9 +37,9 @@ $ mlang run examples/deadlock.ml
                  ↑ 2:13
   stack: 25
 ✗ deadlock — every remaining strand is blocked:
-  strand 2 (row 3) waiting on channel β at 3:5
-  3│ [∂⍞]⇉βγ
-         ↑ 3:5
+  strand 2 (row 3) waiting on channel β at 3:2
+  3│ [↧β∂∅≠][⍞]⟳⌫
+      ↑ 3:2
 ```
 
 The glitch quotes the offending line, points a caret at the exact glyph,
@@ -155,44 +155,46 @@ naming every blocked strand, the channel it waits on, and its grid
 coordinates — and nothing hangs, ever. Then the same repair protocol
 runs on both — same model, same rounds, same byte-exact bar:
 
-| Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
+| Self-repair on the Oracle, ≤3 rounds, byte-exact | healed | in one round |
 |---|---|---|
-| seeded one-edit bugs | 40 | 40 |
-| **healed (byte-exact output)** | **82%** | **100%** |
-| healed in one round | 55% | 100% |
-| median rounds to green | 1 | 1 |
+| Python — claude-haiku-4-5 | 40/40 (100%) | 100% |
+| MLang — claude-haiku-4-5 | 33/40 (82%) | 55% |
+| **MLang — claude-opus-5** | **40/40 (100%)** | **98%** |
 
-| healed, by what the bug turned into | MLang | Python |
-|---|---|---|
-| caught before running | 1/2 | 35/35 |
-| runtime fault, precise report | 19/22 | 2/2 |
-| proven deadlock | 5/6 | — |
-| silent wrong output | 8/10 | 1/1 |
-| hang | — | 2/2 |
+**With a small model Python wins; with a frontier model MLang draws
+level — 40/40, and 39 of those in a single round.** Same forty
+deterministic mutants, same toolchain, same ≤3 rounds; only the model
+differs. Every class went perfect: 6/6 proven deadlocks, 22/22
+glitches, 10/10 silent wrong-output. So the application-scale gap was
+**a model-capability gap, not a missing-information gap** — MLang's
+runtime was already handing over enough to fix the bug; the small model
+just couldn't always use it. haiku's losses concentrate exactly where
+you would expect from a language it has never read: semantic bugs in a
+dense notation, where Python's redundancy instead converts 35 of its 40
+mutants into familiar one-round syntax errors.
 
-**At application scale Python wins, and we publish that** — the small
-model healed every Python mutant, because Python's redundancy converts
-35 of its 40 one-token bugs into syntax errors, and a syntax error in a
-language the model has read for years is a one-round fix. What the
-MLang column shows is something rarer: **the number moving because the
-language listened to the benchmark.** The first run of this experiment
-healed only 65% — the failure transcripts showed the model repeatedly
-editing the *wrong glyph*, because a bare `at 29:22` in a 150-glyph
-line is uncountable for an LLM, and a `] without matching [` names
-neither bracket. So the runtime's fault reports were rebuilt for a
-reader that cannot count columns — every report now quotes the
-offending line with a caret under the exact glyph, shows the stack as
-the fault left it, and names library sources honestly (`std.ml 26:7`);
-the harness also began appending a first-divergence hint to both arms
-(SPEC §4.6, and the demo at the top of this page shows the format).
-Re-running the identical benchmark: **65% → 82%**, with glitch repairs
-up from 15/22 to 19/22 and silent wrong-output from 5/10 to 8/10.
-Python's familiarity plus shallow failure modes still beat MLang's
-better evidence plus deeper bugs — a small model's skill in a
-never-seen dense notation remains the binding constraint — but half
-the gap was diagnostics, not destiny, and the harness measures exactly
-what a stronger model or an MLang-native tokenizer would close next.
-Run it with any model: `bench/heal.py --cases example:oracle.ml,oracle`.
+**How much of that is noise?** Two runs of the *identical*
+configuration disagree on 6 of 40 individual mutants and land 2 apart
+in aggregate — a **≈5-point noise floor** at this sample size, from
+model sampling alone. So the opus-vs-haiku gap (7 mutants) is real, and
+any claim smaller than about 3 mutants is not. That cuts against a
+claim this README made earlier: a round of diagnostic improvements
+(source excerpts and carets, a channel census naming orphaned channels,
+a call chain through `≔` definitions, capped stack dumps — SPEC §4.6)
+was measured at 65% → 82%, which is larger than the noise floor and
+probably real, but a *second* round of diagnostics aimed at the
+remaining failures produced no measurable aggregate change at all
+(82% → 78% → 82% across replicates). What that second round did do,
+reproducibly across both replicates, is fix the specific failures it
+was designed for: proven deadlocks went 5/6 → 6/6 and weave errors
+1/2 → 2/2, and all four mutants diagnosed in advance — a four-round
+bracket-chase, a renamed channel, a report flooded by one huge stack
+value, and a fault inside a definition with no caller link — flipped to
+healed. Diagnostics fix the failures you can name; they do not move an
+aggregate on their own.
+
+Run any of it with any model:
+`bench/heal.py --cases example:oracle.ml,oracle --model <id>`.
 
 ## The killer application
 
@@ -519,36 +521,50 @@ scripted session and pins every frame it draws. Weld it
 .txt onto the executable opens that file (`⌂`), on any platform —
 the runtime enables ANSI processing even in a legacy Windows console.
 
-MatrixPad has a big sibling. `examples/sublime.ml` is **SUBLIMINAL** —
-a Sublime Text clone in the same three strands, with the signature
-moves: syntax highlighting for MLang source, live as you type
-(comments, strings, numbers, brackets); **multiple cursors** — `^D`
-selects the word under the cursor, `^D` again adds its next occurrence
-(wrapping, skipping what's already selected), and typing replaces
-every selection at once; the **command palette** — `^P`, fuzzy-matched
+MatrixPad has a big sibling — and it does not live in the terminal.
+`examples/sublime.ml` is **SUBLIMINAL**, a Sublime Text clone that
+opens as a real desktop window, drawn pixel by pixel in MLang. Five
+ops are the whole graphics story: `⌸` opens a 960×600 canvas, `▦`
+fills rectangles, `⌶` draws text from a font baked into the runtime,
+`⎙` presents the frame, and `⌹` lists a directory — and out of them
+the program builds the Mariana-colored chrome: a **FOLDERS sidebar**
+of the working directory where clicking a file opens it (or jumps to
+its tab if it's already open), **tabs** with `●` unsaved dots and `✕`
+close buttons, a syntax-highlighted code pane — comments, strings,
+numbers, brackets, and every MLang sigil in its own color, live as
+you type — a **real minimap**, every line's words in miniature with
+the viewport shaded and click-to-jump, and a status bar. The Sublime
+signature moves are all in: **multiple cursors** — `^D` selects the
+word under the cursor, `^D` again adds its next occurrence (wrapping,
+skipping what's already selected), and typing replaces every
+selection at once; the **command palette** — `^P`, fuzzy-matched
 (`dup` finds *duplicate line*), with Goto Anything folded in (`:42`
-jumps to line 42, `#boom` finds boom); **tabs** — `^N`/`^E`/`^W`,
-every command-line argument opens as one, click a tab to switch; and a
-**minimap**, the document in miniature down the right edge with the
-viewport shaded — click it to jump. Line numbers, auto-indent,
-auto-closing `[ ⟨ «` pairs that type-over, and line
-cut/copy/paste/join/sort/comment round it out:
+jumps to line 42, `#boom` finds boom); line numbers, current-line
+highlight, auto-indent, auto-closing `[ ⟨ «` pairs that type-over,
+and line cut/copy/paste/join/sort/comment.
 
 ```
- boot.ml ● ▏ oracle.ml ▏
-  1 9⍸[1+∂×]∵⇈α ※ pour the squares                  ▏▄▄▄▄▄▄
-  2 [∂25=[«boom»↯][]?2×]⇉αβ                         ▏▄▄▄▄▄▄
-  3 [∂⍞]⇉βγ█                                        ▏▄▄▄
-                                                    ▏
- ^S save  ^P cmd  ^D multi  ^F find  ^Q quit ▏Ln 3 Col 10  ▲ SUBLIMINAL
+mlang run examples/sublime.ml [file …]        # opens a window
+mlang build examples/sublime.ml -o subl       # weld a standalone editor
 ```
 
 A multi-cursor selection is one integer (`row×2²⁰+column`), so the
 flat `⍋` sorts a selection set and an edit replays across it with
-per-line offsets — no new machinery, just lists and slices. The
-conformance corpus drives a full scripted tour — a multi-cursor
-replace, the palette, find, undo, a second tab, a save, a mouse click —
-and pins every highlighted frame, byte for byte.
+per-line offsets — no new machinery, just lists and slices.
+
+The window is the interesting part. The canvas has two backends that
+draw identical pixels (SPEC §5.2): on a desktop it is an OS window
+whose keyboard and mouse feed `⌥`; piped, the frame stays in memory
+and every `⎙` prints the frame's hash instead, so the conformance
+corpus drives a full scripted tour — typing, a multi-cursor replace,
+the palette, find, a second tab, clicks on the tab bar, sidebar,
+minimap, and text — and pins every pixel of all 59 frames, byte for
+byte, in CI with no display anywhere. Set `MLANG_FRAMES=dir` and the
+same run dumps each frame as an image; that is how the screenshots
+were made. Text is deterministic because the glyphs are, too: an
+8×16-pixel grayscale strip (`compiler/src/font.bin`) baked from
+DejaVu Sans Mono, covering ASCII, every sigil in the repo's sources,
+and the box-drawing set.
 
 ## The Construct — the UI library
 
@@ -684,14 +700,13 @@ SPEC.md           the full language specification
   design, and the Python control arm is 29 hand-verified ports, not all
   120 programs. Models have seen enormous amounts of Python and
   essentially zero MLang — the MLang arm leans entirely on an
-  op-reference primer in the prompt, and the application-scale run shows
-  what that costs: with a small model, repair parity holds on small
-  programs but flips to Python's favor (100% vs 82%) on the Oracle —
-  MLang's one-token bugs run semantically deeper than Python's, which
-  mostly die shallow at the parser. Excerpt-and-caret fault reports
-  closed half of an initially wider gap (65% → 82%); the rest is the
-  model's unfamiliarity with the notation. `bench/README.md` spells out
-  the protocol and every caveat.
+  op-reference primer in the prompt. With a small model that costs real
+  points at application scale (82% vs Python's 100% on the Oracle); with
+  a frontier model it costs nothing measurable (100%, 39 of 40 in one
+  round). Read the small-model number as the floor and the frontier
+  number as the ceiling, and note that both sit above a ≈5-point
+  run-to-run noise floor that any single-run comparison here has to
+  clear. `bench/README.md` spells out the protocol and every caveat.
 
 ## Name
 

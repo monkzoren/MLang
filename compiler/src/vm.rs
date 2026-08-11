@@ -104,6 +104,18 @@ pub struct Strand {
     pub status: Status,
     pub block: Option<(BlockOn, Pos)>,
     pub glitch: Option<(Value, Pos)>,
+    /// The call chain as it stood when the fatal glitch was raised —
+    /// captured there because `catch` unwinds the frames while hunting for
+    /// a handler, and an uncaught glitch therefore reports from an empty
+    /// frame stack.
+    pub glitch_chain: Vec<(char, Pos)>,
+    /// Active named-definition calls: (sigil, call site, frame depth just
+    /// after the call's frame was pushed). Entries whose depth exceeds the
+    /// live frame count are stale and pruned before each push — which is
+    /// sound because a completed call always returns through a shallower
+    /// depth before any new call is made. Drives the fault report's call
+    /// chain, so a glitch inside a definition names its caller.
+    calls: Vec<(char, Pos, usize)>,
 }
 
 impl Strand {
@@ -117,6 +129,8 @@ impl Strand {
             status: Status::Run,
             block: None,
             glitch: None,
+            glitch_chain: Vec::new(),
+            calls: Vec::new(),
         }
     }
 
@@ -130,11 +144,18 @@ impl Strand {
             status: Status::Run,
             block: None,
             glitch: None,
+            glitch_chain: Vec::new(),
+            calls: Vec::new(),
         }
     }
 
     fn push(&mut self, v: Value) {
         self.stack.push(v);
+    }
+
+    /// The strand's stack, for fault reports.
+    pub fn stack_view(&self) -> &[Value] {
+        &self.stack
     }
 
     fn local_get(&self, c: char) -> Option<&Value> {
@@ -155,12 +176,24 @@ impl Strand {
         }
     }
 
+    /// Pop for an operation that can name itself: the report says which
+    /// glyph went hungry and how deep the stack actually was.
+    fn pop_for(&mut self, pos: Pos, op: &str, what: &str) -> R<Value> {
+        match self.stack.pop() {
+            Some(v) => Ok(v),
+            None => glitch(
+                format!("stack underflow — {op} needed {what} but the stack was empty"),
+                pos,
+            ),
+        }
+    }
+
     fn pop_any(&mut self, pos: Pos) -> R<Value> {
         self.pop(pos, "a value")
     }
 
     fn pop_num(&mut self, pos: Pos, op: &str) -> R<Value> {
-        let v = self.pop(pos, "a number")?;
+        let v = self.pop_for(pos, op, "a number")?;
         if !v.is_num() {
             return glitch(format!("{op} expects numbers, got {}", type_name(&v)), pos);
         }
@@ -178,7 +211,7 @@ impl Strand {
     }
 
     fn pop_quot(&mut self, pos: Pos, op: &str) -> R<Arc<Vec<Instr>>> {
-        let v = self.pop(pos, "a quotation")?;
+        let v = self.pop_for(pos, op, "a [quotation]")?;
         match v {
             Value::Quot(q) => Ok(q),
             _ => glitch(
@@ -201,6 +234,16 @@ impl Strand {
                 pos,
             ),
         }
+    }
+
+    /// The named calls still on the frame stack, innermost last. Stale
+    /// entries (whose frame has already returned) are dropped.
+    fn live_calls(&self) -> Vec<(char, Pos)> {
+        self.calls
+            .iter()
+            .filter(|&&(_, _, depth)| depth <= self.frames.len())
+            .map(|&(c, pos, _)| (c, pos))
+            .collect()
     }
 
     fn catch(&mut self, value: Value) -> bool {
@@ -394,6 +437,35 @@ pub struct VM<'io> {
     /// The program's physical source lines, for report excerpts. Empty
     /// when the source is unavailable (payloads from older toolchains).
     src_lines: Vec<String>,
+    /// Per-channel count of (send sites, receive sites) across the whole
+    /// program, computed once at start. A channel with sites on only one
+    /// side cannot ever complete a handoff — the fingerprint of a mistyped
+    /// or renamed channel name, and the most common cause of deadlock.
+    chan_sites: HashMap<char, (usize, usize)>,
+    /// The canvas the GUI ops (⌸ ▦ ⌶ ⎙) draw into, once ⌸ opens it.
+    pub gui: Option<crate::gui::Gui>,
+    /// Recorded runs (conformance, benches) set this so ⌸ never opens a
+    /// real window even when the process has a terminal and a display.
+    pub force_headless: bool,
+}
+
+/// Count send and receive sites per channel, descending into quotations.
+/// `↥ ⇈` send; `↧ ⇂ ⇟` receive; `⇉XY` receives from X and sends to Y.
+pub fn channel_sites(code: &[Instr], sites: &mut HashMap<char, (usize, usize)>) {
+    for i in code {
+        match &i.op {
+            Op::B('↥', c, _) | Op::B('⇈', c, _) => sites.entry(*c).or_default().0 += 1,
+            Op::B('↧', c, _) | Op::B('⇂', c, _) | Op::B('⇟', c, _) => {
+                sites.entry(*c).or_default().1 += 1
+            }
+            Op::B('⇉', src, dst) => {
+                sites.entry(*src).or_default().1 += 1;
+                sites.entry(*dst).or_default().0 += 1;
+            }
+            Op::Push(Value::Quot(q)) => channel_sites(q, sites),
+            _ => {}
+        }
+    }
 }
 
 /// Library code carries its positions in high row bands so a report can
@@ -412,6 +484,84 @@ fn pos_origin(pos: Pos) -> (&'static str, u32, u32) {
         r if r >= STD_ROWS => ("std.ml ", r - STD_ROWS, pos.1),
         r => ("", r, pos.1),
     }
+}
+
+/// The body of a glitch report: source excerpt, call chain, and the stack
+/// as the fault left it. Shared by both engines so their reports are
+/// identical in anatomy.
+pub fn fault_detail(
+    source: &[String],
+    pos: Pos,
+    chain: &[(char, Pos)],
+    stack: &[Value],
+) -> String {
+    let mut out = String::new();
+    if let Some(x) = excerpt(source, pos) {
+        out.push_str(&x);
+        out.push('\n');
+    }
+    // Innermost call first: a fault inside a definition (or a std-library
+    // word) names the definition and where it was called.
+    for &(name, site) in chain.iter().rev().take(4) {
+        out.push_str(&format!("  in {name}, called at {}\n", coords(site)));
+    }
+    if chain.len() > 4 {
+        let extra = chain.len() - 4;
+        out.push_str(&format!(
+            "  … and {extra} more call{}\n",
+            if extra == 1 { "" } else { "s" }
+        ));
+    }
+    let d = stack.len();
+    let shown: Vec<String> = stack[d.saturating_sub(8)..]
+        .iter()
+        .map(|v| cap_value(&fmt(v, true), 48))
+        .collect();
+    out.push_str(&format!(
+        "  stack: {}{}\n",
+        if d > 8 { "… " } else { "" },
+        if shown.is_empty() { "(empty)".into() } else { shown.join(" ") }
+    ));
+    out
+}
+
+/// Name channels the program can never complete a handoff on. A channel
+/// written but never read (or read but never written) is almost always a
+/// mistyped or renamed name — the most common way a working grid
+/// deadlocks — so the report says so outright instead of leaving the wait
+/// graph to imply it. Channels somebody is currently stuck on come first.
+pub fn channel_census(sites: &HashMap<char, (usize, usize)>, waited: &[char]) -> String {
+    let mut orphans: Vec<(char, usize, usize)> = sites
+        .iter()
+        .filter(|(_, (send, recv))| *send == 0 || *recv == 0)
+        .map(|(&c, &(send, recv))| (c, send, recv))
+        .collect();
+    orphans.sort_by_key(|(c, _, _)| (!waited.contains(c), *c));
+    let mut out = String::new();
+    for (c, send, recv) in orphans.iter().take(4) {
+        let (n, side, other) = if *send == 0 {
+            (recv, "received", "never sent to")
+        } else {
+            (send, "sent to", "never received")
+        };
+        out.push_str(&format!(
+            "  ⚠ channel {c} is {side} at {n} site{} and {other} \
+             — check for a misspelled channel name\n",
+            if *n == 1 { "" } else { "s" }
+        ));
+    }
+    out
+}
+
+/// Shorten one rendered value for a report line, keeping both ends so a
+/// long list still shows its shape: `⟨1 2 3 …+24 more⟩`-ish.
+fn cap_value(s: &str, max: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= max {
+        return s.to_string();
+    }
+    let head: String = chars[..max.saturating_sub(12)].iter().collect();
+    format!("{head}…({} chars)", chars.len())
 }
 
 fn coords(pos: Pos) -> String {
@@ -482,6 +632,9 @@ impl<'io> VM<'io> {
             open_requests: HashSet::new(),
             clock: clock_env(),
             src_lines: Vec::new(),
+            chan_sites: HashMap::new(),
+            gui: None,
+            force_headless: false,
         }
     }
 
@@ -699,22 +852,8 @@ impl<'io> VM<'io> {
             coords(*pos),
             fmt(v, false)
         );
-        if let Some(x) = excerpt(&self.src_lines, *pos) {
-            let _ = writeln!(self.err, "{x}");
-        }
-        // The stack exactly as the fault left it — the ⍟ rendering,
-        // deepest value first, capped to the topmost eight.
-        let d = s.stack.len();
-        let shown: Vec<String> = s.stack[d.saturating_sub(8)..]
-            .iter()
-            .map(|v| fmt(v, true))
-            .collect();
-        let _ = writeln!(
-            self.err,
-            "  stack: {}{}",
-            if d > 8 { "… " } else { "" },
-            if shown.is_empty() { "(empty)".into() } else { shown.join(" ") }
-        );
+        let detail = fault_detail(&self.src_lines, *pos, &s.glitch_chain, s.stack_view());
+        let _ = write!(self.err, "{detail}");
     }
 
     fn report_deadlock(&mut self, blocked: &[usize]) {
@@ -740,6 +879,14 @@ impl<'io> VM<'io> {
                 let _ = writeln!(self.err, "{x}");
             }
         }
+        let waited: Vec<char> = blocked
+            .iter()
+            .filter_map(|&i| match self.strands[i].block {
+                Some((BlockOn::Chan(c), _)) => Some(c),
+                _ => None,
+            })
+            .collect();
+        let _ = write!(self.err, "{}", channel_census(&self.chan_sites, &waited));
     }
 
     fn try_unblock(&mut self, i: usize) {
@@ -849,6 +996,10 @@ impl<'io> VM<'io> {
         self.main_count = prog.strands.len();
         self.next_spawn_sid = prog.strands.len() as i64;
         self.src_lines = prog.source.clone();
+        channel_sites(&prog.boot, &mut self.chan_sites);
+        for (_, code) in &prog.strands {
+            channel_sites(code, &mut self.chan_sites);
+        }
 
         // The boot strand always runs: the standard library first, then the
         // program's own boot section (both already woven in at compile time).
@@ -961,17 +1112,28 @@ fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>
     }
 }
 
-/// Does this program execute ⌥ anywhere? Decides whether the runner
-/// should switch a real terminal into raw/mouse-reporting mode.
-pub fn uses_interactive(prog: &CompiledProgram) -> bool {
-    fn has_event_op(code: &[Instr]) -> bool {
+/// Does this program execute `op` anywhere (including inside quotations)?
+fn program_uses(prog: &CompiledProgram, op: char) -> bool {
+    fn has_op(code: &[Instr], op: char) -> bool {
         code.iter().any(|i| match &i.op {
-            Op::B('⌥', _, _) => true,
-            Op::Push(Value::Quot(q)) => has_event_op(q),
+            Op::B(c, _, _) if *c == op => true,
+            Op::Push(Value::Quot(q)) => has_op(q, op),
             _ => false,
         })
     }
-    has_event_op(&prog.boot) || prog.strands.iter().any(|(_, c)| has_event_op(c))
+    has_op(&prog.boot, op) || prog.strands.iter().any(|(_, c)| has_op(c, op))
+}
+
+/// Does this program execute ⌥ anywhere? Decides whether the runner
+/// should switch a real terminal into raw/mouse-reporting mode.
+pub fn uses_interactive(prog: &CompiledProgram) -> bool {
+    program_uses(prog, '⌥')
+}
+
+/// Does this program open a canvas (⌸)? A canvas program's input comes
+/// from its window, so the runner leaves the terminal alone.
+pub fn uses_gui(prog: &CompiledProgram) -> bool {
+    program_uses(prog, '⌸')
 }
 
 /// Shift every position row (including inside nested quotations) into a
@@ -1070,9 +1232,11 @@ pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
                             *slot = ip;
                         }
                         executed += 1;
+                        let chain = s.live_calls();
                         if !s.catch(v.clone()) {
                             s.status = Status::Dead;
                             s.glitch = Some((v, pos));
+                            s.glitch_chain = chain;
                             break 'outer;
                         }
                         continue 'outer;
@@ -1093,9 +1257,11 @@ pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
                 }
                 Err(Sig::Glitch(v, pos)) => {
                     executed += 1;
+                    let chain = s.live_calls();
                     if !s.catch(v.clone()) {
                         s.status = Status::Dead;
                         s.glitch = Some((v, pos));
+                        s.glitch_chain = chain;
                         break;
                     }
                 }
@@ -1291,7 +1457,11 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
                 return glitch(format!("undefined sigil '{c}'"), pos);
             };
             if let Value::Quot(q) = v {
+                // Record the call so a fault inside the definition can
+                // name it and its call site.
+                s.calls.retain(|&(_, _, depth)| depth <= s.frames.len());
                 s.frames.push(cf(q));
+                s.calls.push((*c, pos, s.frames.len()));
             } else {
                 s.push(v);
             }
@@ -1895,6 +2065,87 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let v = s.pop(pos, "a value to raise")?;
             return Err(Sig::Glitch(v, pos));
         }
+        // ── the canvas ──
+        '⌸' => {
+            if vm.bus.is_some() {
+                return glitch("⌸ needs the deterministic scheduler — drop --parallel", pos);
+            }
+            if vm.gui.is_some() {
+                return glitch("⌸ — a canvas is already open", pos);
+            }
+            let t = s.pop(pos, "a window title")?;
+            let Value::Str(title) = &t else {
+                return glitch(
+                    format!("⌸ expects a title string, got {}", type_name(&t)),
+                    pos,
+                );
+            };
+            let h = s.pop_i64(pos, "⌸")?;
+            let w = s.pop_i64(pos, "⌸")?;
+            if !(1..=4096).contains(&w) || !(1..=4096).contains(&h) {
+                return glitch("⌸ size must be 1…4096 pixels on each side", pos);
+            }
+            let gui = crate::gui::Gui::open(w as usize, h as usize, title, vm.force_headless);
+            if !gui.is_windowed() {
+                let _ = writeln!(vm.out, "⌸ {w}×{h} «{title}»");
+            }
+            vm.gui = Some(gui);
+        }
+        '▦' => {
+            let color = s.pop_i64(pos, "▦")?;
+            let rh = s.pop_i64(pos, "▦")?;
+            let rw = s.pop_i64(pos, "▦")?;
+            let y = s.pop_i64(pos, "▦")?;
+            let x = s.pop_i64(pos, "▦")?;
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("▦ — no canvas; open one with ⌸ first", pos);
+            };
+            gui.rect(x, y, rw, rh, (color & 0xff_ffff) as u32);
+        }
+        '⌶' => {
+            let color = s.pop_i64(pos, "⌶")?;
+            let y = s.pop_i64(pos, "⌶")?;
+            let x = s.pop_i64(pos, "⌶")?;
+            let v = s.pop_any(pos)?;
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("⌶ — no canvas; open one with ⌸ first", pos);
+            };
+            gui.text(&fmt(&v, false), x, y, (color & 0xff_ffff) as u32);
+        }
+        '⎙' => {
+            let Some(gui) = vm.gui.as_mut() else {
+                return glitch("⎙ — no canvas; open one with ⌸ first", pos);
+            };
+            if let Err(e) = gui.present(&mut *vm.out) {
+                return glitch(format!("⎙ {e}"), pos);
+            }
+        }
+        '⌹' => {
+            let v = s.pop(pos, "a directory path")?;
+            let Value::Str(path) = &v else {
+                return glitch(
+                    format!("⌹ expects a path string, got {}", type_name(&v)),
+                    pos,
+                );
+            };
+            let Ok(rd) = std::fs::read_dir(path.as_str()) else {
+                return glitch(format!("⌹ cannot read «{path}»"), pos);
+            };
+            // Sorted, directories marked with a trailing /: the listing is
+            // deterministic for a fixed tree, like every other observable.
+            let mut names: Vec<String> = Vec::new();
+            for entry in rd.flatten() {
+                let mut name = entry.file_name().to_string_lossy().into_owned();
+                if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                    name.push('/');
+                }
+                names.push(name);
+            }
+            names.sort();
+            s.push(Value::List(Arc::new(
+                names.into_iter().map(Value::str).collect(),
+            )));
+        }
         // ── i/o ──
         '⍞' => {
             let v = s.pop_any(pos)?;
@@ -2075,7 +2326,14 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
             // Prompts written with ⊸ must appear before blocking, like ⌨.
             let _ = vm.out.flush();
-            let event = vm.read_event();
+            // A windowed canvas owns the input: events come from its
+            // keyboard and mouse. Headless (and windowless) programs keep
+            // reading the stdin byte stream, which is what recorded
+            // goldens replay.
+            let event = match vm.gui.as_mut() {
+                Some(gui) if gui.is_windowed() => gui.wait_event(),
+                _ => vm.read_event(),
+            };
             s.push(event);
         }
         '⌂' => {

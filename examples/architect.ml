@@ -174,8 +174,8 @@ c#2≥[Y c 0 1⊂∈[c 1 c#⊂∂[⍎⇅⌫1][⌫⌫0]⍥][0]?][0]?
 [1-ε+⇒ζ⌫Y c 0 1⊂⍷δ+⇒ν ζ0≥ζN<∧ν0≥∧νM<∧[a Yν@⧺ζ1+⍕⧺⇒a][a«#REF»⧺⇒a]?]
 [a⇅⧺⇒a]?j⇒i][
 a c⧺⇒a i 1+⇒i]?]?]⟳ a]≔Ξ
-※ ⌸: normalize a list of cell rows to exactly N rows of M cells.
-[[[∂#M<][«»⟨⇅⟩⧺]⟳M⊤]∵[∂#N<][M⍸[⌫«»]∵⟨⇅⟩⧺]⟳N⊤]≔⌸
+※ ⊞: normalize a list of cell rows to exactly N rows of M cells.
+[[[∂#M<][«»⟨⇅⟩⧺]⟳M⊤]∵[∂#N<][M⍸[⌫«»]∵⟨⇅⟩⧺]⟳N⊤]≔⊞
 ※ Σ: snapshot ⟨grid styles⟩ for undo (last 50); a new edit clears redo.
 [θ⟨⟨b η⟩⟩⧺∂#50>[∂#50-⊥][]?⇒θ⟨⟩⇒λ]≔Σ
 ※ Ρ: a change happened — bump the version and answer every held poll.
@@ -236,9 +236,9 @@ r 1@«POST»=[
 ⟨«usd trend» «=SPARK(D3:D6)» «» «» «» «» «» «»⟩⟩≔Ψ
 ※ B: open the sheet named on the command line, or wake into the demo.
 [⟨⟩⇒k⟨⟩⇒w«»⇒s⟨⟩⇒θ⟨⟩⇒λ1⇒μ⟨⟩⇒ξ⟨⟩⇒η⌂#0>[⌂⊃⇒n
-[n⍇«⏎»⊆[9⍘⊆]∵⌸⇒b«opened »n⧺⇒s]
-[⌫Ψ⌸⇒b«new sheet »n⧺⇒s]⍥]
-[Ψ⌸⇒b«»⇒n«the demo ledger — click a cell and type»⇒s
+[n⍇«⏎»⊆[9⍘⊆]∵⊞⇒b«opened »n⧺⇒s]
+[⌫Ψ⊞⇒b«new sheet »n⧺⇒s]⍥]
+[Ψ⊞⇒b«»⇒n«the demo ledger — click a cell and type»⇒s
 ⟨⟨«0,0» «b»⟩ ⟨«1,0» «b»⟩ ⟨«1,1» «b»⟩ ⟨«1,2» «b»⟩ ⟨«1,3» «b»⟩ ⟨«2,3» «$»⟩ ⟨«3,3» «$»⟩ ⟨«4,3» «$»⟩ ⟨«5,3» «$»⟩ ⟨«7,3» «$»⟩⟩⇒η]?]≔B
 ※ Ω: the page itself — the whole front end, served at /.
 «<!doctype html>⏎

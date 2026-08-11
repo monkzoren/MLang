@@ -61,7 +61,10 @@ struct TerminalSession {
 impl TerminalSession {
     fn start(prog: &vm::CompiledProgram) -> Self {
         use std::io::IsTerminal;
+        // A canvas program's window owns the input — leave the terminal
+        // in its normal mode instead of switching to the raw alt-screen.
         let wanted = vm::uses_interactive(prog)
+            && !vm::uses_gui(prog)
             && std::io::stdin().is_terminal()
             && std::io::stdout().is_terminal();
         let mut session = TerminalSession {

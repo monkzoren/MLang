@@ -2,6 +2,7 @@
 //! payload format used to weld compiled programs into native binaries.
 
 pub mod forms;
+pub mod gui;
 pub mod http;
 pub mod lex;
 pub mod par;
@@ -22,6 +23,7 @@ pub fn run_text(text: &str, stdin_text: &str) -> (i32, String, String) {
             let mut stdin = Cursor::new(stdin_text.as_bytes().to_vec());
             let mut machine = vm::VM::new(&mut stdin, &mut out, &mut err);
             machine.clock = Some(922_838_400_000); // the Matrix premiere
+            machine.force_headless = true; // recorded runs never open a window
             machine.run_compiled(&prog)
         }
         Err(e) => {
