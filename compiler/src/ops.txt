@@ -67,6 +67,13 @@ sigil  name          effect              description
                                          a mouse press as ⟨«⌖» x y⟩; ∅ at end of input (lowest priority, like ⌨)
 ⍇      read-file     path ⍇ → s          read a whole file as a string; glitches if unreadable
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
+⍆      fetch         url ⍆ → s           HTTP(S) GET, body as a string; a hard 10s deadline — it delivers
+                                         or glitches («⍆ cannot fetch …» / «⍆ … answered 404»), never hangs
+⎆      accept        → ⟨id m path body⟩  the next HTTP request this program is serving, ∅ at end of input
+                                         (lowest priority, like ⌨). Replay mode (default): ▷ frames on stdin;
+                                         live mode (mlang serve / MLANG_PORT): a real listener
+⍅      respond       ⟨id st type body⟩ ⍅ →   answer request id with status st; replay writes a ◁ frame,
+                                         live writes the real HTTP response; unknown id glitches
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)

@@ -380,6 +380,13 @@ pub struct VM<'io> {
     /// Bytes pushed back by the ⌥ event parser (an ESC that turned out
     /// not to open a CSI sequence hands its follower back).
     pushback: VecDeque<u8>,
+    /// Live web mode (mlang serve / MLANG_PORT): the listener ⎆ accepts
+    /// from and ⍅ answers through. None = replay mode, where ⎆ reads
+    /// request frames from stdin and ⍅ writes response frames to stdout.
+    pub http: Option<Arc<crate::http::HttpBridge>>,
+    /// Replay-mode request ids (⎆ counts up from 1) still awaiting a ⍅.
+    next_request_id: i64,
+    open_requests: HashSet<i64>,
 }
 
 fn coords(pos: Pos) -> String {
@@ -410,7 +417,25 @@ impl<'io> VM<'io> {
             args: Vec::new(),
             bus: None,
             pushback: VecDeque::new(),
+            http: None,
+            next_request_id: 1,
+            open_requests: HashSet::new(),
         }
+    }
+
+    /// Replay-mode ⎆: read one request frame from this VM's own stdin.
+    fn read_request_frame(&mut self) -> Result<Option<(String, String, String)>, String> {
+        let stdin = &mut *self.stdin;
+        let mut next = move || {
+            let buf = stdin.fill_buf().ok()?;
+            if buf.is_empty() {
+                return None;
+            }
+            let b = buf[0];
+            stdin.consume(1);
+            Some(b)
+        };
+        crate::http::read_framed(&mut next)
     }
 
     // ── ⌥ input events ─────────────────────────────────────────────────
@@ -823,13 +848,14 @@ pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
 
 pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
 pub const UI_SOURCE: &str = include_str!("../../std/ui.ml");
+pub const JSON_SOURCE: &str = include_str!("../../std/json.ml");
 
 /// Bundled libraries, in weave order. A library is woven into the boot
 /// strand — after std, before the program's own boot section — exactly
 /// when the program references a sigil the library defines without
 /// defining that sigil itself (§6.1). Weaving is decided at compile time,
 /// so welded binaries carry only the libraries they use.
-const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE)];
+const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE), ("json", JSON_SOURCE)];
 
 /// Collect referenced names and defined sigils (≔ and ⇒ targets),
 /// recursing into quotations.
@@ -1811,6 +1837,104 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 return glitch(format!("⍈ cannot write «{path}»"), pos);
             }
         }
+        '⍆' => {
+            let v = s.pop(pos, "a url")?;
+            let Value::Str(url) = &v else {
+                return glitch(
+                    format!("⍆ expects a url string, got {}", type_name(&v)),
+                    pos,
+                );
+            };
+            // The network is part of a run's input, like files and argv:
+            // identical responses produce identical runs. A fetch carries a
+            // hard deadline — it either delivers or glitches, never hangs —
+            // and glitch messages name only the url and the HTTP status,
+            // never an operating-system error string.
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                return glitch(format!("⍆ cannot fetch «{url}»"), pos);
+            }
+            match fetch_url(url) {
+                Ok(body) => s.push(Value::str(body)),
+                Err(Some(status)) => {
+                    return glitch(format!("⍆ «{url}» answered {status}"), pos)
+                }
+                Err(None) => return glitch(format!("⍆ cannot fetch «{url}»"), pos),
+            }
+        }
+        '⎆' => {
+            // Accepting a request shares ⌨'s lowest scheduling priority:
+            // the whole grid goes quiet — every pending response written —
+            // before the server waits on the outside world.
+            if vm.others_active(s.sid) {
+                return Err(Sig::Block(BlockOn::Stdin, pos));
+            }
+            let _ = vm.out.flush();
+            let accepted = if let Some(bridge) = &vm.http {
+                let bridge = bridge.clone();
+                Some(bridge.accept())
+            } else if let Some(bus) = &vm.bus {
+                let bus = bus.clone();
+                match bus.read_request() {
+                    Ok(r) => r,
+                    Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
+                }
+            } else {
+                match vm.read_request_frame() {
+                    Ok(Some((method, path, body))) => {
+                        let id = vm.next_request_id;
+                        vm.next_request_id += 1;
+                        vm.open_requests.insert(id);
+                        Some((id, method, path, body))
+                    }
+                    Ok(None) => None,
+                    Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
+                }
+            };
+            match accepted {
+                Some((id, method, path, body)) => s.push(Value::List(Arc::new(vec![
+                    Value::int(id),
+                    Value::str(method),
+                    Value::str(path),
+                    Value::str(body),
+                ]))),
+                None => s.push(Value::Nil),
+            }
+        }
+        '⍅' => {
+            let v = s.pop(pos, "a ⟨id status type body⟩ response")?;
+            let Value::List(items) = &v else {
+                return glitch(
+                    format!("⍅ expects ⟨id status type body⟩, got {}", type_name(&v)),
+                    pos,
+                );
+            };
+            let (Some(Value::Int(id)), Some(Value::Int(status)), Some(Value::Str(ctype)), Some(Value::Str(body))) =
+                (items.first(), items.get(1), items.get(2), items.get(3))
+            else {
+                return glitch("⍅ expects ⟨id status type body⟩", pos);
+            };
+            if items.len() != 4 {
+                return glitch("⍅ expects ⟨id status type body⟩", pos);
+            }
+            let (id, status) = (*id, *status);
+            if let Some(bridge) = &vm.http {
+                let bridge = bridge.clone();
+                if !bridge.respond(id, status, ctype, body) {
+                    return glitch(format!("⍅ no pending request {}", fmt_i64(id)), pos);
+                }
+            } else {
+                let known = if let Some(bus) = &vm.bus {
+                    bus.close_request(id)
+                } else {
+                    vm.open_requests.remove(&id)
+                };
+                if !known {
+                    return glitch(format!("⍅ no pending request {}", fmt_i64(id)), pos);
+                }
+                let frame = crate::http::write_framed(id, status, ctype, body);
+                let _ = vm.out.write_all(frame.as_bytes());
+            }
+        }
         '⌨' => {
             // Stdin has the lowest scheduling priority: the read happens
             // only once no other strand can make progress, so a pipeline
@@ -1874,6 +1998,47 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         _ => unreachable!("op {ch} has no implementation"),
     }
     Ok(())
+}
+
+/// One HTTP(S) GET for ⍆. Ok(body) on 2xx; Err(Some(status)) when the
+/// server answered with an error status; Err(None) for everything else —
+/// transport failure, timeout, oversize, or a body that is not UTF-8.
+/// The 10-second deadline is absolute: a fetch can never hang a strand
+/// forever. Proxies come from the standard HTTPS_PROXY / HTTP_PROXY
+/// environment variables; trust roots from the platform store (and
+/// SSL_CERT_FILE), so corporate middleboxes work without configuration.
+fn fetch_url(url: &str) -> Result<String, Option<u16>> {
+    const DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+    const MAX_BODY: u64 = 16 * 1024 * 1024;
+    let mut builder = ureq::AgentBuilder::new().timeout(DEADLINE);
+    if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"]
+        .iter()
+        .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
+    {
+        if let Ok(p) = ureq::Proxy::new(&proxy) {
+            builder = builder.proxy(p);
+        }
+    }
+    let response = builder
+        .build()
+        .get(url)
+        .set("User-Agent", "mlang/0.1")
+        .call()
+        .map_err(|e| match e {
+            ureq::Error::Status(code, _) => Some(code),
+            ureq::Error::Transport(_) => None,
+        })?;
+    let mut body = Vec::new();
+    use std::io::Read;
+    response
+        .into_reader()
+        .take(MAX_BODY + 1)
+        .read_to_end(&mut body)
+        .map_err(|_| None)?;
+    if body.len() as u64 > MAX_BODY {
+        return Err(None);
+    }
+    String::from_utf8(body).map_err(|_| None)
 }
 
 use num_traits::FromPrimitive;

@@ -2,6 +2,7 @@
 //! payload format used to weld compiled programs into native binaries.
 
 pub mod forms;
+pub mod http;
 pub mod lex;
 pub mod par;
 pub mod payload;

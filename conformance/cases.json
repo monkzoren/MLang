@@ -689,6 +689,101 @@
    "name": "ui-live-toggle-wrap-glitch-deadclick",
    "source": "0⇒r [⟨«Rain»«r»r[r¬⇒r]Ⓒ «Boom»«b»[«oops»↯]Ⓑ⟩Ⓥ]⏵«r=»r⍕⧺⍞",
    "stdin": " \u001b[A x\u001b[<0;3;2M\u001b[<0;3;1M\u001b"
+  },
+  {
+   "name": "fetch-bad-scheme",
+   "source": "[«nope://x»⍆][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "fetch-type-error",
+   "source": "[42⍆][⍞]⍥ [⟨⟩⍆][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "serve-replay-pipeline",
+   "source": "1⇒g[g][⎆∂∅=[⌫0⇒g∅↥q][↥q]?]⟳\n[↧q∂∅≠][⇒r⟨r⊃ 200«text/plain»r 2@⇑r 3@⧺⟩⍅]⟳⌫",
+   "stdin": "▷ GET /upper\n▷ POST /body 5\nhello\n"
+  },
+  {
+   "name": "serve-eof-nil",
+   "source": "⎆⍞",
+   "stdin": ""
+  },
+  {
+   "name": "serve-blank-lines-skipped",
+   "source": "⎆⍞⎆⍞",
+   "stdin": "\n\n▷ GET /a\n\n"
+  },
+  {
+   "name": "serve-bad-frame",
+   "source": "[⎆][⍞]⍥",
+   "stdin": "what is this\n"
+  },
+  {
+   "name": "serve-unknown-id",
+   "source": "[⟨7 200«t»«x»⟩⍅][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "serve-double-respond",
+   "source": "⎆⇒r⟨r⊃ 200«t/p»«a»⟩⍅[⟨r⊃ 200«t/p»«b»⟩⍅][⍞]⍥",
+   "stdin": "▷ GET /once\n"
+  },
+  {
+   "name": "serve-respond-type-errors",
+   "source": "[«nope»⍅][⍞]⍥ [⟨1 2⟩⍅][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "json-parse-values",
+   "source": "«{\"a\": [1, -2.5e2, \"x\\nY\", true, false, null], \"b\":{}}»⒥⍞",
+   "stdin": ""
+  },
+  {
+   "name": "json-roundtrip",
+   "source": "«{\"a\":[1,2.5,\"x\"],\"n\":null}»⒥⒮⍞ ⟨⟨«k» «a\"b⏎c\\d»⟩ ⟨«t» 9⍘⟩⟩⒮⍞ ⟨1 «two» ∅⟩⒮⍞ ¯0.5⒮⍞",
+   "stdin": ""
+  },
+  {
+   "name": "json-unicode-escape",
+   "source": "«\"\\u0041\\u00e9\\u2135\"»⒥⍞ 7⍘«x»⧺⒮⍞",
+   "stdin": ""
+  },
+  {
+   "name": "json-bad-input",
+   "source": "[«{\"a\":1,}»⒥][⍞]⍥ [«[1 2]»⒥][⍞]⍥ [«tru»⒥][⍞]⍥ [«\"abc»⒥][⍞]⍥ [«12x»⒥][⍞]⍥ [«»⒥][⍞]⍥ [«\"\\q\"»⒥][⍞]⍥ [«[1,»⒥][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "json-serialize-quot-glitch",
+   "source": "[[∂×]⒮][⍞]⍥",
+   "stdin": ""
+  },
+  {
+   "name": "json-get-dig",
+   "source": "«{\"rates\":{\"USD\":1.25}}»⒥∂«rates»⒢«USD»⒢⍞ ∂⟨«rates» «USD»⟩⒫⍞ ∂⟨«rates» «EUR»⟩⒫⍞ ⟨«zz» 0⟩⒫⍞ «[5,6]»⒥∂⟨1⟩⒫⍞ ⟨9⟩⒫⍞",
+   "stdin": ""
+  },
+  {
+   "name": "json-own-def-wins",
+   "source": "[«mine»]≔⒥ ⒥⍞",
+   "stdin": ""
+  },
+  {
+   "name": "json-weave-reserves-sigils",
+   "source": "«1»⒥⌫ 5≔⒮",
+   "stdin": ""
+  },
+  {
+   "name": "json-channel-sigil-no-weave",
+   "source": "1↥⒥ ↧⒥⍞ 2≔⒮ ⒮⍞",
+   "stdin": ""
+  },
+  {
+   "name": "std-pad-and-fixed",
+   "source": "«hi»5◧⍞ «hi»5◨«|»⧺⍞ «toolong»3◧⍞ 3.14159 2⍢⍞ ¯2.345 2⍢⍞ 1234.5 0⍢⍞ 42 3⍢⍞ ¯0.001 2⍢⍞ 0.005 2⍢⍞",
+   "stdin": ""
   }
  ],
  "examples": [
@@ -755,7 +850,7 @@
   {
    "name": "calc.ml",
    "file": "examples/calc.ml",
-   "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"
+   "stdin": "3\n=\n4\n+\n0\n/\nx\nc\n9\n=\n3\n/\nq\n"
   },
   {
    "name": "oracle.ml",

@@ -72,10 +72,19 @@ pub struct Bus {
     fail: AtomicBool,
     main_count: usize,
     args: Vec<String>,
+    /// Replay-mode web state (⎆/⍅ without a live listener): the request
+    /// counter and the ids still awaiting a response, shared by all strands.
+    replay_web: Mutex<(i64, HashSet<i64>)>,
+    /// Live web mode: the listener, shared by every strand's VM.
+    pub http: Option<std::sync::Arc<crate::http::HttpBridge>>,
 }
 
 impl Bus {
-    fn new(main_count: usize, args: Vec<String>) -> Bus {
+    fn new(
+        main_count: usize,
+        args: Vec<String>,
+        http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+    ) -> Bus {
         Bus {
             state: Mutex::new(State {
                 chans: HashMap::new(),
@@ -92,7 +101,42 @@ impl Bus {
             fail: AtomicBool::new(false),
             main_count,
             args,
+            replay_web: Mutex::new((1, HashSet::new())),
+            http,
         }
+    }
+
+    // ── the web bridge (replay mode) ───────────────────────────────────
+
+    /// Read one ▷ request frame from the shared stdin, holding its lock
+    /// for the whole frame so concurrent accepts cannot interleave bytes.
+    pub fn read_request(&self) -> Result<Option<crate::http::Request>, String> {
+        let mut stdin = self.stdin.lock().unwrap();
+        { let _ = self.stdout.lock().unwrap().flush(); }
+        let mut next = move || {
+            let buf = stdin.fill_buf().ok()?;
+            if buf.is_empty() {
+                return None;
+            }
+            let b = buf[0];
+            stdin.consume(1);
+            Some(b)
+        };
+        match crate::http::read_framed(&mut next)? {
+            None => Ok(None),
+            Some((method, path, body)) => {
+                let mut web = self.replay_web.lock().unwrap();
+                let id = web.0;
+                web.0 += 1;
+                web.1.insert(id);
+                Ok(Some((id, method, path, body)))
+            }
+        }
+    }
+
+    /// Retire a replay request id; false when it was never open.
+    pub fn close_request(&self, id: i64) -> bool {
+        self.replay_web.lock().unwrap().1.remove(&id)
     }
 
     // ── channels ───────────────────────────────────────────────────────
@@ -334,6 +378,7 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
         vm.bus = Some(bus.clone());
         vm.main_count = bus.main_count;
         vm.args = bus.args.clone();
+        vm.http = bus.http.clone();
         let mut s = Strand::new(sid, label, code, locals);
         loop {
             run_burst(&mut vm, &mut s, usize::MAX);
@@ -365,8 +410,12 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
 /// standard library woven in) runs first and must fully finish — including
 /// anything it spawned — before the main strands start, same as the
 /// sequential engine.
-pub fn run_parallel(prog: &CompiledProgram, args: Vec<String>) -> i32 {
-    let bus = Arc::new(Bus::new(prog.strands.len(), args));
+pub fn run_parallel(
+    prog: &CompiledProgram,
+    args: Vec<String>,
+    http: Option<Arc<crate::http::HttpBridge>>,
+) -> i32 {
+    let bus = Arc::new(Bus::new(prog.strands.len(), args, http));
     bus.add_live(1);
     drive(
         bus.clone(),
