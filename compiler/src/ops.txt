@@ -91,7 +91,9 @@ layout:    ⇓ first line = rain form (columns are strands, read downward)
            ⇊ divider = boot section above, strands below
            ⋮ line prefix = continue previous strand (flat form)
            ※ comment to end of line (flat) / end of column (rain)
-libraries: std sigils (π ∑ ⊃ …) print with `mlang std`; the Construct —
-           the UI library (Ⓛ Ⓑ Ⓥ Ⓦ ⌺ ▶ scripted, ⏵ live …) — with
-           `mlang ui`, and is woven in automatically when its sigils
-           are referenced
+libraries: std sigils (π ∑ ⊃ ◧ ⍢ …) print with `mlang std`; the
+           Construct — the UI library (Ⓛ Ⓑ Ⓥ Ⓦ ⌺ ▶ scripted, ⏵ live
+           …) — with `mlang ui`; the Operator — the JSON library
+           (⒥ parse, ⒮ serialize, ⒢ get, ⒫ dig) — with `mlang json`.
+           Bundled libraries are woven in automatically when their
+           sigils are referenced

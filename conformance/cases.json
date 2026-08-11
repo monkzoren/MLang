@@ -876,6 +876,11 @@
    "name": "jack-in.ml",
    "file": "examples/jack-in.ml",
    "stdin": "nity\u001b[<0;5;5M\t\t \u0003"
+  },
+  {
+   "name": "architect.ml",
+   "file": "examples/architect.ml",
+   "stdin": "▷ GET /api/sheet\n▷ POST /api/cell 27\n{\"r\":11,\"c\":3,\"t\":\"=B12*2\"}\n▷ POST /api/cell 24\n{\"r\":0,\"c\":6,\"t\":\"=1/0\"}\n▷ POST /api/cell 15\nnot json at all\n▷ GET /favicon.ico\n▷ GET /\n"
   }
  ]
 }

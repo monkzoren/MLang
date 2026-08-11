@@ -186,6 +186,62 @@ bugs.** Whether stronger models or an MLang-native tokenizer flip
 that is exactly what this harness measures; run it with any model via
 `bench/heal.py --cases example:oracle.ml,oracle`.
 
+## The killer application
+
+The killer app was always the spreadsheet — VisiCalc is the program the
+term was coined for. MLang's motto was always *programs are grids*. So
+MLang's killer app is both at once:
+
+![THE ARCHITECT — a live spreadsheet in the browser, served entirely by MLang](docs/architect.png)
+
+**THE ARCHITECT** ([`examples/architect.ml`](examples/architect.ml)) is
+a live spreadsheet in your browser — and the entire application is one
+MLang file. The formula engine (tokenizer → shunting-yard → evaluator),
+the multi-pass recalculation that proves circular references instead of
+hanging, the HTTP routing, the JSON API, and the dark-glass frontend it
+serves are all MLang, running as six strands:
+
+```
+0    acceptor    ⎆ pulls each HTTP request and deals it onto κ
+1    the engine  owns the sheet: parses, recalculates, routes, answers on β
+2    responder   ⍅ writes every response back to the browser
+3-5  fetchers    a work-stealing pool: ↧φ url → ⍆ fetch → ⒥ parse → ↥ρ
+```
+
+```sh
+./mlang serve examples/architect.ml 4321     # → http://127.0.0.1:4321
+./mlang serve examples/architect.ml 4321 my.tsv        # open a real TSV
+./mlang build examples/architect.ml -o architect       # or weld it:
+MLANG_PORT=4321 ./architect                  # one binary, serving
+```
+
+Click a cell and type. `=B3*C3`, `=SUM(B3:B5)`, `=IF(D8>100,"yes","no")`
+— and then the part a 1979 spreadsheet could not do:
+**`=FX(EUR,USD)`** puts a live exchange rate in a cell, **`=BTC(USD)`**
+the live bitcoin price, **`=WX(-33.9,151.2)`** the temperature in
+Sydney, and **`=GET("url","path.to.field")`** any field of any JSON API
+on the internet. Press ↻ and the engine fans the sheet's URLs out to
+the fetcher pool over channels (run `serve --parallel` and the fetches
+truly overlap), folds the answers back into the cache, and
+recalculates; every response is parsed by the Operator — the JSON
+library written in MLang itself (`mlang json`).
+
+The language's promises hold at every layer. A formula error is a
+glitch caught per cell — `=1/0` shows `✗ ÷ by zero` in that one cell
+and nothing else. A circular reference is found by the recalculation
+fixpoint and marked `⚠` — the sheet cannot hang. A request that breaks
+mid-flight becomes a `500` and a status-bar `✗`, because the engine
+wraps each request in `⍥` — the server itself cannot die. A fetch
+either delivers or glitches within its 10-second deadline. Shutdown is
+a cascade of `∅` poison pills — nothing is ever left blocked, as the
+deadlock prover would loudly report. And the whole scripted session —
+requests in, page and JSON out — is pinned byte-for-byte in the
+conformance corpus, because `⎆`/`⍅` replay framed requests from stdin
+exactly the way `⌥` replays keystrokes (SPEC §5.2): the app is a
+deterministic function of its request stream.
+
+The sheet saves as honest TSV, so it pastes straight into Excel.
+
 ## Programs are grids
 
 You *write* MLang flat: **one line is one strand** — an independent
@@ -249,12 +305,14 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 
 ./mlang run examples/editor.ml         # or compile-and-run in one step
 ./mlang run --parallel examples/mandelbrot.ml   # strands on OS threads
+./mlang serve examples/architect.ml 4321  # serve a web app (⎆/⍅) live
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
 ./mlang ops                          # the sigil reference
 ./mlang std                          # the standard library source
 ./mlang ui                           # the Construct — the UI library source
+./mlang json                         # the Operator — the JSON library source
 ```
 
 Windows (PowerShell) — same commands via `.\mlang.cmd`, and name compiled
@@ -314,6 +372,8 @@ value, which is how control flow works.
 100⍸⇈α                             ※ pour ⟨0..99⟩ into channel α, then ∅
 [∂×]⇉αβ                            ※ pump: square each value from α into β
 ⇟β 0[+]⍀⍞                          ※ drain β to a list, fold with + : 328350
+«https://open.er-api.com/v6/latest/EUR»⍆⒥⟨«rates» «USD»⟩⒫⍞
+⋮                                  ※ fetch a JSON API, parse it, dig a field
 ```
 
 Numbers write negatives as `¯5` (¯ binds to the literal; `-` is always
