@@ -77,6 +77,8 @@ sigil  name          effect              description
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
+⌚      clock         → ms                the wall clock in Unix milliseconds; the MLANG_CLOCK
+                                         environment variable pins it for reproducible runs
 ⌹      readdir       path ⌹ → L          sorted directory listing; directory names end with /
 ⌸      canvas        w h title ⌸ →       open a w×h pixel canvas — a real window when the
                                          session has a display, else headless: ⌸ and each ⎙

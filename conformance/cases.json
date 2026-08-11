@@ -784,6 +784,11 @@
    "name": "std-pad-and-fixed",
    "source": "«hi»5◧⍞ «hi»5◨«|»⧺⍞ «toolong»3◧⍞ 3.14159 2⍢⍞ ¯2.345 2⍢⍞ 1234.5 0⍢⍞ 42 3⍢⍞ ¯0.001 2⍢⍞ 0.005 2⍢⍞",
    "stdin": ""
+  },
+  {
+   "name": "clock-pinned",
+   "source": "⌚⍞",
+   "stdin": ""
   }
  ],
  "examples": [
@@ -890,7 +895,7 @@
   {
    "name": "architect.ml",
    "file": "examples/architect.ml",
-   "stdin": "▷ GET /api/sheet\n▷ POST /api/cell 27\n{\"r\":11,\"c\":3,\"t\":\"=B12*2\"}\n▷ POST /api/cell 24\n{\"r\":0,\"c\":6,\"t\":\"=1/0\"}\n▷ POST /api/cell 15\nnot json at all\n▷ GET /favicon.ico\n▷ GET /\n"
+   "stdin": "▷ GET /api/sheet\n▷ GET /api/poll?v=1\n▷ POST /api/cell 27\n{\"r\":15,\"c\":0,\"t\":\"edited\"}\n▷ POST /api/fill 43\n{\"sr\":2,\"sc\":3,\"r0\":3,\"c0\":3,\"r1\":4,\"c1\":3}\n▷ POST /api/style 24\n{\"r\":15,\"c\":0,\"s\":\"bc$\"}\n▷ POST /api/undo 2\n{}\n▷ POST /api/redo 2\n{}\n▷ POST /api/batch 88\n{\"edits\":[{\"r\":20,\"c\":0,\"t\":\"from\"},{\"r\":20,\"c\":1,\"t\":\"excel\"},{\"r\":20,\"c\":2,\"t\":\"42\"}]}\n▷ GET /api/poll?v=99\n▷ GET /\n"
   }
  ]
 }
