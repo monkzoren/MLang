@@ -104,6 +104,11 @@
     "stderr": "",
     "stdout": "7\n48\n9223372036854775808\n1\n✗ ÷ by zero\n✗ ⍎ cannot parse «oops» as a number\n"
   },
+  "example:construct.ml": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neo▁▁▁▁▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓░░░░░░░░░░░░░░ 30%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Neo▁▁▁▁▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Trinity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Trinity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [ ] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\nTrinity is aboard\n┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Trinity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [×] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n┌─ Nebuchadnezzar — operator console ──────────┐\n│ Wake up, Neo…                                │\n│ ──────────────────────────────────────────── │\n│ Operator: Trinity▁▁▁▁▁ (n)                   │\n│ [ Jack in ](j)  [×] Red pill (r)             │\n│ ──────────────────────────────────────────── │\n│ Signal strength                              │\n│ ▓▓▓▓▓▓▓▓░░░░░░░░░░░░ 40%  [ + ](+)  [ − ](-) │\n│ ──────────────────────────────────────────── │\n│ Crew aboard                                  │\n│ • Morpheus                                   │\n│ • Trinity                                    │\n│ • Trinity                                    │\n│                                              │\n│ [ Exit ](q)                                  │\n└──────────────────────────────────────────────┘\n? x y\nConnection terminated.\n"
+  },
   "example:editor.ml": {
     "exit": 0,
     "stderr": "",
@@ -573,6 +578,71 @@
     "exit": 1,
     "stderr": "✗ glitch in strand 0 (row 1) at 1:5: + expects numbers, got str\n",
     "stdout": ""
+  },
+  "ui-channel-sigil-no-weave": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "7\n"
+  },
+  "ui-exec-blank-lines-and-eof": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "hi\nhi\nhi\ndone\n"
+  },
+  "ui-exec-counter": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "┌─ Counter ───┐\n│ count: 0    │\n│ [ +1 ](+)   │\n│ [ Quit ](q) │\n└─────────────┘\n┌─ Counter ───┐\n│ count: 1    │\n│ [ +1 ](+)   │\n│ [ Quit ](q) │\n└─────────────┘\n┌─ Counter ───┐\n│ count: 1    │\n│ [ +1 ](+)   │\n│ [ Quit ](q) │\n└─────────────┘\n? z\nbye\n"
+  },
+  "ui-exec-edit-toggle-glitch": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "Name: Neo▁▁▁▁▁▁▁▁▁ (n)\n[ ] Red pill (r)\n[ Crash ](boom)\nName: Trinity▁▁▁▁▁ (n)\n[ ] Red pill (r)\n[ Crash ](boom)\nName: Trinity▁▁▁▁▁ (n)\n[×] Red pill (r)\n[ Crash ](boom)\nName: Trinity▁▁▁▁▁ (n)\n[×] Red pill (r)\n[ Crash ](boom)\n✗ oops\nName: ▁▁▁▁▁▁▁▁▁▁▁▁ (n)\n[×] Red pill (r)\n[ Crash ](boom)\n"
+  },
+  "ui-hbox-heights-and-nesting": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "left    right      \ncolumn  [ tall ](t)\na  b  c\n"
+  },
+  "ui-label-draw": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "two\nlines\n\n"
+  },
+  "ui-not-a-widget": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⌺ not a widget: 42\n⌺ not a widget: ⟨⟩\n⌺ not a widget: ⟨«X» 1⟩\n"
+  },
+  "ui-weave-only-on-reference": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "mine\n"
+  },
+  "ui-weave-reserves-sigils": {
+    "exit": 1,
+    "stderr": "✗ glitch in strand 0 (row 1) at 1:9: sigil 'Ⓛ' is already defined\n",
+    "stdout": ""
+  },
+  "ui-widgets-render": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "[ Boost ](b)\nName: Neo▁▁▁▁▁▁▁▁▁ (n)\n[×] Red pill (r)\n[ ] Blue pill (u)\n▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░ 70%\n• a\n• 2\n• c\n"
+  },
+  "ui-window-nested": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "┌─ out ─────┐\n│ ┌─ in ──┐ │\n│ │ inner │ │\n│ └───────┘ │\n└───────────┘\n"
+  },
+  "ui-window-titled": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "┌─ Nebuchadnezzar ─────────┐\n│ Signal                   │\n│ ──────────────────────── │\n│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░ 70% │\n└──────────────────────────┘\n"
+  },
+  "ui-window-untitled-and-title-wide": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "┌────┐\n│ x  │\n└────┘\n┌─ a very long title ─┐\n│ a                   │\n└─────────────────────┘\n"
   },
   "unary-math": {
     "exit": 0,

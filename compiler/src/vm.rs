@@ -7,7 +7,7 @@ use crate::lex::{lex_strand, LoadError};
 use crate::values::{fmt, fmt_i64, truthy, type_name, val_eq, Instr, Op, Pos, Value};
 use num_bigint::BigInt;
 use num_traits::{Signed, ToPrimitive, Zero};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, Write};
 use std::rc::Rc;
 
@@ -499,10 +499,26 @@ pub fn compile(prog: &Program) -> Result<CompiledProgram, LoadError> {
             strands.push((label.clone(), code));
         }
     }
+    let program_boot = match &prog.boot_cells {
+        Some(cells) => lex_strand(cells.clone(), prog.axis)?,
+        None => Vec::new(),
+    };
     let mut boot = std_code();
-    if let Some(cells) = &prog.boot_cells {
-        boot.extend(lex_strand(cells.clone(), prog.axis)?);
+    let mut refs = HashSet::new();
+    let mut defs = HashSet::new();
+    scan_names(&program_boot, &mut refs, &mut defs);
+    for (_, code) in &strands {
+        scan_names(code, &mut refs, &mut defs);
     }
+    for (_, source) in LIBS {
+        let lib = lib_code(source);
+        let mut lib_defs = HashSet::new();
+        scan_names(&lib, &mut HashSet::new(), &mut lib_defs);
+        if refs.iter().any(|c| lib_defs.contains(c) && !defs.contains(c)) {
+            boot.extend(lib);
+        }
+    }
+    boot.extend(program_boot);
     Ok(CompiledProgram { boot, strands })
 }
 
@@ -512,15 +528,46 @@ pub fn compile_text(text: &str) -> Result<CompiledProgram, LoadError> {
 }
 
 pub const STD_SOURCE: &str = include_str!("../../std/std.ml");
+pub const UI_SOURCE: &str = include_str!("../../std/ui.ml");
+
+/// Bundled libraries, in weave order. A library is woven into the boot
+/// strand — after std, before the program's own boot section — exactly
+/// when the program references a sigil the library defines without
+/// defining that sigil itself (§6.1). Weaving is decided at compile time,
+/// so welded binaries carry only the libraries they use.
+const LIBS: &[(&str, &str)] = &[("ui", UI_SOURCE)];
+
+/// Collect referenced names and defined sigils (≔ and ⇒ targets),
+/// recursing into quotations.
+fn scan_names(code: &[Instr], refs: &mut HashSet<char>, defs: &mut HashSet<char>) {
+    for instr in code {
+        match &instr.op {
+            Op::Name(c) => {
+                refs.insert(*c);
+            }
+            Op::B('≔', c, _) | Op::B('⇒', c, _) => {
+                defs.insert(*c);
+            }
+            Op::Push(Value::Quot(q)) => scan_names(q, refs, defs),
+            _ => {}
+        }
+    }
+}
+
+/// Lex a library source into one instruction strip. Infallible: bundled
+/// libraries are verified by CI.
+fn lib_code(source: &str) -> Vec<Instr> {
+    let prog = crate::forms::parse_source(source).expect("library parses");
+    let mut code = Vec::new();
+    for (_, cells) in prog.strands {
+        code.extend(lex_strand(cells, prog.axis).expect("library lexes"));
+    }
+    code
+}
 
 /// The standard library, lexed. Infallible: std.ml is verified by CI.
 fn std_code() -> Vec<Instr> {
-    let prog = crate::forms::parse_source(STD_SOURCE).expect("std.ml parses");
-    let mut code = Vec::new();
-    for (_, cells) in prog.strands {
-        code.extend(lex_strand(cells, prog.axis).expect("std.ml lexes"));
-    }
-    code
+    lib_code(STD_SOURCE)
 }
 
 // ── frame stepping ─────────────────────────────────────────────────────

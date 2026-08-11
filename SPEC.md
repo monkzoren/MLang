@@ -303,6 +303,40 @@ absent for now: MLang guarantees bit-identical runs across engines, and
 platform `libm` implementations are not correctly-rounded — they enter
 the library only alongside a correctly-rounded implementation.
 
+### 6.1 Bundled libraries
+
+Beyond std, the toolchain bundles further libraries written in MLang.
+There is no import statement: a bundled library is woven into the boot
+strand — after the standard library, before the program's own boot
+section — **exactly when the program references at least one sigil the
+library defines without defining that sigil itself** (with `≔` or `⇒`,
+anywhere in the program, including inside quotations). Only name
+references count; using a library sigil as a channel or binding argument
+(`↥Ⓛ`, `⇒Ⓛ`) does not trigger the weave. The decision is made at
+compile time, so a welded binary carries exactly the libraries its
+program uses.
+
+Weaving a library reserves all of its sigils, exactly as std's are
+reserved: a program that pulls in a library and also tries to `≔` one of
+that library's sigils glitches with «already defined». A program that
+defines a library sigil itself and never references the library's others
+is left alone — its own definition wins and nothing is woven.
+
+One library is currently bundled: **the Construct** (`std/ui.ml`,
+printed by `mlang ui`) — a widget toolkit in the lineage of Qt/PySide.
+Public sigils: `Ⓛ` label, `Ⓑ` button, `Ⓔ` line edit, `Ⓒ` checkbox,
+`Ⓟ` progress bar, `Ⓘ` item list, `Ⓢ` separator, `Ⓥ`/`Ⓗ` vertical and
+horizontal layouts, `Ⓦ` window, `⌺` draw, `▶` event loop, `◼` quit,
+`✎` status bar. Widgets are immutable tagged lists; interactive widgets
+carry a **slot** (a quotation) that `▶` runs in the application's own
+strand when the widget's key arrives as the first word of a stdin line
+(line edits receive the rest of the line on the stack). A glitch in a
+slot is caught by the loop and shown as a `✗` status message. The
+Construct's internals use circled-lowercase sigils (`ⓐ ⓑ …`) and
+additional fullwidth-letter strand-locals; programs must treat both as
+reserved, and must not nest `▶` inside a slot. Its observable behavior
+is pinned by the conformance corpus like everything else.
+
 ## 7. Exit status
 
 `0` — all strands completed. `1` — at least one uncaught glitch, or

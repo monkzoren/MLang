@@ -97,6 +97,7 @@ usage:
   mlang flat <file|->             render rain source as flat lines
   mlang ops                       print the sigil reference table
   mlang std                       print the standard library source
+  mlang ui                        print the Construct, the UI library source
 ";
 
 fn main() -> ExitCode {
@@ -163,6 +164,10 @@ fn main() -> ExitCode {
         }
         ("std", 2) => {
             print!("{}", vm::STD_SOURCE);
+            ExitCode::SUCCESS
+        }
+        ("ui", 2) => {
+            print!("{}", vm::UI_SOURCE);
             ExitCode::SUCCESS
         }
         _ => {
