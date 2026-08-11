@@ -77,6 +77,11 @@ pub struct Bus {
     replay_web: Mutex<(i64, HashSet<i64>)>,
     /// Live web mode: the listener, shared by every strand's VM.
     pub http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+    /// The program's source lines and channel census, so parallel-mode
+    /// fault reports carry the same excerpts, call chains, and orphaned-
+    /// channel warnings as the sequential engine.
+    source: Vec<String>,
+    chan_sites: HashMap<char, (usize, usize)>,
 }
 
 impl Bus {
@@ -84,6 +89,8 @@ impl Bus {
         main_count: usize,
         args: Vec<String>,
         http: Option<std::sync::Arc<crate::http::HttpBridge>>,
+        source: Vec<String>,
+        chan_sites: HashMap<char, (usize, usize)>,
     ) -> Bus {
         Bus {
             state: Mutex::new(State {
@@ -100,6 +107,8 @@ impl Bus {
             stdin: Mutex::new(std::io::BufReader::new(std::io::stdin())),
             fail: AtomicBool::new(false),
             main_count,
+            source,
+            chan_sites,
             args,
             replay_web: Mutex::new((1, HashSet::new())),
             http,
@@ -318,7 +327,20 @@ impl Bus {
                 what,
                 coords(*pos)
             ));
+            if let Some(x) = crate::vm::excerpt(&self.source, *pos) {
+                report.push_str(&x);
+                report.push('\n');
+            }
         }
+        let waited: Vec<char> = st
+            .waiting
+            .values()
+            .filter_map(|(_, what, _)| match what {
+                WaitOn::Chan(c) => Some(*c),
+                _ => None,
+            })
+            .collect();
+        report.push_str(&crate::vm::channel_census(&self.chan_sites, &waited));
         let _ = self.stdout.lock().unwrap().flush();
         {
             let mut err = self.stderr.lock().unwrap();
@@ -398,6 +420,8 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
                 coords(pos),
                 fmt(&v, false)
             );
+            let _ = write!(vm.err, "{}", crate::vm::fault_detail(
+                &bus.source, pos, &s.glitch_chain, s.stack_view()));
             bus.set_failed();
         }
     }
@@ -415,7 +439,18 @@ pub fn run_parallel(
     args: Vec<String>,
     http: Option<Arc<crate::http::HttpBridge>>,
 ) -> i32 {
-    let bus = Arc::new(Bus::new(prog.strands.len(), args, http));
+    let mut chan_sites = HashMap::new();
+    crate::vm::channel_sites(&prog.boot, &mut chan_sites);
+    for (_, code) in &prog.strands {
+        crate::vm::channel_sites(code, &mut chan_sites);
+    }
+    let bus = Arc::new(Bus::new(
+        prog.strands.len(),
+        args,
+        http,
+        prog.source.clone(),
+        chan_sites,
+    ));
     bus.add_live(1);
     drive(
         bus.clone(),

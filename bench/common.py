@@ -13,7 +13,11 @@ import tempfile
 
 BENCH = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BENCH)
-MLANG_BIN = os.path.join(ROOT, "compiler", "target", "release", "mlang")
+# The toolchain under test. Override with MLANG_BIN to benchmark a
+# specific build (e.g. an older snapshot, to keep a long run from picking
+# up a rebuild mid-flight).
+MLANG_BIN = os.environ.get(
+    "MLANG_BIN", os.path.join(ROOT, "compiler", "target", "release", "mlang"))
 TIMEOUT = 5.0  # seconds; every conformance program finishes in milliseconds
 
 # Outcome buckets. The first three are "loud" failures — the machine author
