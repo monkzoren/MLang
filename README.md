@@ -330,6 +330,8 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 
 ./mlang run examples/editor.ml         # or compile-and-run in one step
 ./mlang run --parallel examples/mandelbrot.ml   # strands on OS threads
+./mlang hub examples/net-primes-hub.ml          # …or machines on TCP
+./mlang worker --connect host:7777 examples/net-primes-worker.ml
 ./mlang serve examples/architect.ml 4321  # serve a web app (⎆/⍅) live
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
@@ -368,6 +370,37 @@ source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
 second implementation must reproduce them exactly).
+
+## One pipeline, N machines (experimental)
+
+Strands share nothing but channels and a stream ends with an in-band
+`∅` — so a channel can cross a machine boundary without changing the
+language. `mlang hub` runs a program with its work channel bridged over
+TCP to any number of joined `mlang worker` machines and its results
+channel fed by them; the worker program is literally the pump stage you
+would write in a single-process pipeline, one line:
+
+```
+[∂0@⇒a 1@⇒b b a-⍸[a+]∵[p]⌿⇒r⟨r# r#0=[0][r⌷]?⟩]⇉αβ
+```
+
+Work is dealt demand-driven (a fast machine ends up with more of it),
+workers may join mid-run, and the failure model is the language's own,
+over a socket: a worker that glitches or dies mid-chunk has its
+unanswered items requeued on the survivors —
+
+```
+⇅ worker 1 lost — 2 items requeued
+⇅ worker 2 finished
+π(<100000) = 9592
+largest: 99991
+```
+
+— and because the example reduces order-independently, that output is
+byte-identical for any worker count and any network timing. The
+deterministic engine and the conformance corpus are untouched;
+[`docs/distributed.md`](docs/distributed.md) has the protocol, the
+guarantees kept, and the ones knowingly traded.
 
 ## The idea
 
@@ -647,16 +680,21 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   src/lex.rs      glyph stream → instructions
   src/forms.rs    rain/flat grid parsing and rendering
   src/vm.rs       compile, strands, channels, glitches, deterministic scheduler
+  src/par.rs      the opt-in parallel scheduler: strands on OS threads
+  src/net.rs      mlang hub / mlang worker — channels bridged over TCP
+  src/wire.rs     the line-per-value wire codec net.rs speaks
   src/payload.rs  bytecode serialization + native binary welding (mlang build)
   tests/          cargo test: unit, payload round-trip, standalone-binary
-                  execution, and the full conformance corpus
+                  execution, parallel + distributed runs, and the full
+                  conformance corpus
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
 conformance/      cases.json + expected.json: 156 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
-docs/             the deadlock demo: the animated SVG + the Python twin
+docs/             the deadlock demo (animated SVG + the Python twin) and
+                  distributed.md — the hub/worker design and its trade-offs
 examples/         runnable programs (mandelbrot, calc, editor, oracle, …)
 SPEC.md           the full language specification
 ```

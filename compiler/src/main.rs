@@ -243,6 +243,14 @@ usage:
                                   binary — without it, ⎆ replays request
                                   frames from stdin)
   mlang check <file|->            compile only; report weave errors
+  mlang hub [--listen A:P] [--workers N] <file|-> [args…]
+                                  run a program with its work channel (α)
+                                  distributed over TCP to joined workers and
+                                  its results channel (β) fed by them
+  mlang worker [--connect A:P] <file|-> [args…]
+                                  join a hub: work arrives on α, sends to β
+                                  return to the hub  (--work G / --results G
+                                  rename the bridged channels on both sides)
   mlang rain <file|->             render flat source as the vertical rain grid
   mlang flat <file|->             render rain source as flat lines
   mlang ops                       print the sigil reference table
@@ -250,6 +258,85 @@ usage:
   mlang ui                        print the Construct, the UI library source
   mlang json                      print the Operator, the JSON library source
 ";
+
+/// Parse and dispatch `mlang hub` / `mlang worker`. Flags come before the
+/// source file; everything after the file belongs to the program (⌂).
+fn net_cmd(hub: bool, rest: &[String]) -> ExitCode {
+    let mut listen = "0.0.0.0:7777".to_string();
+    let mut connect = "127.0.0.1:7777".to_string();
+    let mut min_workers = 1usize;
+    let mut opts = mlang::net::NetOpts::default();
+    let mut file: Option<String> = None;
+    let mut prog_args: Vec<String> = Vec::new();
+
+    let glyph = |flag: &str, s: &str| -> Result<char, String> {
+        let mut chars = s.chars();
+        match (chars.next(), chars.next()) {
+            (Some(c), None) => Ok(c),
+            _ => Err(format!("{flag} wants a single glyph, got {s:?}")),
+        }
+    };
+    let mut i = 0;
+    while i < rest.len() {
+        let arg = &rest[i];
+        if file.is_some() {
+            prog_args.push(arg.clone());
+            i += 1;
+            continue;
+        }
+        let mut flag_value = |flag: &str| -> Result<String, String> {
+            i += 1;
+            rest.get(i).cloned().ok_or(format!("{flag} wants a value"))
+        };
+        let outcome = match arg.as_str() {
+            "--listen" if hub => flag_value("--listen").map(|v| listen = v),
+            "--connect" if !hub => flag_value("--connect").map(|v| connect = v),
+            "--workers" if hub => flag_value("--workers").and_then(|v| {
+                v.parse()
+                    .map(|n| min_workers = n)
+                    .map_err(|_| format!("--workers wants a count, got {v:?}"))
+            }),
+            "--work" => flag_value("--work").and_then(|v| glyph("--work", &v).map(|g| opts.work = g)),
+            "--results" => {
+                flag_value("--results").and_then(|v| glyph("--results", &v).map(|g| opts.results = g))
+            }
+            _ => {
+                file = Some(arg.clone());
+                Ok(())
+            }
+        };
+        if let Err(e) = outcome {
+            eprintln!("✗ {e}");
+            return ExitCode::from(2);
+        }
+        i += 1;
+    }
+    if opts.work == opts.results {
+        eprintln!("✗ the work and results channels must be different glyphs");
+        return ExitCode::from(2);
+    }
+    let Some(file) = file else {
+        eprint!("{USAGE}");
+        return ExitCode::from(2);
+    };
+    let text = match read_source(&file) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("✗ {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let prog = match vm::compile_text(&text) {
+        Ok(p) => p,
+        Err(e) => return weave_error(&text, &e),
+    };
+    let code = if hub {
+        mlang::net::run_hub(&prog, prog_args, &listen, min_workers, opts)
+    } else {
+        mlang::net::run_worker(&prog, prog_args, &connect, opts)
+    };
+    ExitCode::from(code as u8)
+}
 
 fn main() -> ExitCode {
     // A welded binary runs its embedded program — it is not a compiler.
@@ -344,6 +431,8 @@ fn main() -> ExitCode {
                 }
             }
         }
+        ("hub", n) if n >= 3 => net_cmd(true, &args[2..]),
+        ("worker", n) if n >= 3 => net_cmd(false, &args[2..]),
         ("check", 3) => match read_source(&args[2]) {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {

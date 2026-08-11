@@ -5,11 +5,13 @@ pub mod forms;
 pub mod gui;
 pub mod http;
 pub mod lex;
+pub mod net;
 pub mod par;
 pub mod payload;
 pub mod term;
 pub mod values;
 pub mod vm;
+pub mod wire;
 
 use std::io::Cursor;
 

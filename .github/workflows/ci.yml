@@ -26,8 +26,8 @@ jobs:
             "$M" build "$f" -o "$out"
             "$out" > /dev/null
           done
-          "$M" build examples/calc.ml -o /tmp/calc
-          printf '3 4 +\n' | /tmp/calc | grep -qx 7
+          "$M" build examples/rpn.ml -o /tmp/rpn
+          printf '3 4 +\n' | /tmp/rpn | grep -qx 7
           "$M" build examples/construct.ml -o /tmp/console
           printf 'q\n' | /tmp/console | grep -q 'Nebuchadnezzar'
           "$M" build examples/jack-in.ml -o /tmp/jackin
