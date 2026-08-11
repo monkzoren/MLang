@@ -380,10 +380,40 @@ each row at its absolute screen position (green-on-black ANSI shading)
 the moment it lands. Under `--parallel` the arrival order is four real
 threads racing; the finished image is identical every time.
 
-`examples/calc.ml` is a fault-tolerant concurrent RPN
-calculator that evaluates every input line on a freshly spawned strand:
-a bad line reports `✗ …` and dies alone; the calculator keeps answering.
-And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
+`examples/calc.ml` is an RPN calculator on the live platform — the
+Construct's widgets driven by `⏵`. Two strand-locals hold the entire
+machine: `s`, the value stack, and `e`, the digits being typed. Every
+button carries the slot that edits them, and the tree is redrawn after
+each one. Press `8` or click `[ 8 ]` — both land in the entry, because
+a click resolves to whatever drew the `(key)` under the pointer. An
+operator commits the pending entry before it folds the top two values,
+so `12 p 4 +` and `12 p 4 p +` are the same 16. A slot that glitches —
+`÷` by zero, an operator with one operand — becomes a `✗` status line
+and the calculator keeps running.
+
+```
+┌─ Calculator ──────────────────────────────────────┐
+│ Stack                                             │
+│ • 16                                              │
+│ • 8                                               │
+│ ───────────────────────────────────────────────── │
+│ Entry: —                                          │
+│ ───────────────────────────────────────────────── │
+│ [ 7 ](7)  ⟦ 8 ⟧(8)  [ 9 ](9)  [ ÷ ](/)            │
+│ [ 4 ](4)  [ 5 ](5)  [ 6 ](6)  [ × ](*)            │
+│ [ 1 ](1)  [ 2 ](2)  [ 3 ](3)  [ − ](-)            │
+│ [ 0 ](0)  [ . ](.)  [ ^ ](^)  [ + ](+)            │
+│ ───────────────────────────────────────────────── │
+│ [ Push ](p)  [ Drop ](d)  [ Swap ](w)  [ Mod ](%) │
+│ [ Clear ](c)  [ Quit ](q)                         │
+└───────────────────────────────────────────────────┘
+```
+
+The same arithmetic without the widgets is `examples/rpn.ml`, a
+fault-tolerant concurrent RPN calculator that evaluates every input line
+on a freshly spawned strand: a bad line reports `✗ …` and dies alone,
+`⋈` keeps the answers in input order, and the calculator keeps
+answering. And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
 editor. The document fills the terminal, you type to insert, the cursor
 keys move you around: `↑ ↓ ← → Home End PgUp PgDn` — or a mouse click, which places the
 cursor where you point — Enter/Backspace/Delete edit, `^S` saves (asking for a name if there is none), `^O`

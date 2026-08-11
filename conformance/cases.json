@@ -755,6 +755,11 @@
   {
    "name": "calc.ml",
    "file": "examples/calc.ml",
+   "stdin": "12p4+\u001b[<0;15;7Mpw-+\t\u0003"
+  },
+  {
+   "name": "rpn.ml",
+   "file": "examples/rpn.ml",
    "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"
   },
   {
