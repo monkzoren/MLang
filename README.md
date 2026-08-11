@@ -92,14 +92,14 @@ that should scare you, the silent one:
 
 | One-token mutation becomes | MLang | Python |
 |---|---|---|
-| caught before running (load error) | 13.2% | 72.5% |
-| caught at runtime, precise report | 50.4% | 19.2% |
-| deadlock — proven and reported | 2.8% | 0.0% |
-| **silent wrong output** | 28.6% | 6.3% |
-| hang (killed at timeout) | 0.7% | 1.4% |
-| no behavior change (equivalent mutant) | 4.4% | 0.6% |
+| caught before running (load error) | 13.2% | 73.1% |
+| caught at runtime, precise report | 50.4% | 18.7% |
+| deadlock — proven and reported | 2.9% | 0.0% |
+| **silent wrong output** | 28.5% | 6.0% |
+| hang (killed at timeout) | 0.7% | 1.6% |
+| no behavior change (equivalent mutant) | 4.3% | 0.6% |
 
-1124 MLang mutants over 119 programs; 797 Python mutants over 28 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 7 of 11 Python hangs printed a thread traceback first — the process still never exited.
+1134 MLang mutants over 120 programs; 828 Python mutants over 29 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 9 of 13 Python hangs printed a thread traceback first — the process still never exited.
 
 The trade is visible and it cuts both ways. Python's redundant syntax
 stops 7 in 10 one-edit bugs at the parser; MLang's dense syntax lets 82%
@@ -109,10 +109,82 @@ so density genuinely costs silent failures, and the table says so. What
 density buys back is the *quality* of the loud failures: coordinates and
 proven wait graphs instead of a traceback or a frozen process — every
 blocked-channel bug above is a printed deadlock proof in MLang and a
-kill-it-yourself hang in Python, and in the self-repair benchmark all of
-MLang's deadlock mutants healed in one round from the wait graph alone.
-Numbers, protocol, and the unflattering buckets all live in
-[`bench/`](bench/README.md).
+kill-it-yourself hang in Python, and in the small-program self-repair
+benchmark all of MLang's deadlock mutants healed in one round from the
+wait graph alone. Numbers, protocol, and the unflattering buckets all
+live in [`bench/`](bench/README.md).
+
+### At application scale: the Oracle
+
+Small programs bound the floor. The stress test is
+[`examples/oracle.ml`](examples/oracle.ml) — **the Oracle**, a concurrent
+MapReduce analytics engine you can question: a reader deals document
+lines onto a channel, three mappers form a work-stealing pool and stream
+words to a counter, the counter folds them and then *becomes* the
+state-owning actor serving queries, each query is parsed on a freshly
+spawned strand inside `⍥` (a malformed command reports `✗ …` and dies
+alone), and a printer serializes answers — seven strands, five channels,
+a two-phase fan-out/fan-in protocol with per-mapper end-of-stream
+sign-offs. Its scripted session is conformance-pinned, and
+[`bench/python_ports/oracle.py`](bench/python_ports/oracle.py) is the
+same architecture in natural Python (threads + queues, a per-command
+worker thread with try/except). Seed one-token bugs into *those* and the
+languages stop looking alike:
+
+| One-token mutation becomes (Oracle only) | MLang | Python |
+|---|---|---|
+| caught before running (load error) | 10.7% | 77.8% |
+| caught at runtime, precise report | 49.4% | 6.0% |
+| deadlock — proven and reported | 14.4% | 0.0% |
+| **silent wrong output** | 16.0% | 4.7% |
+| **hang (killed at timeout)** | **0.0%** | **10.7%** |
+| no behavior change (equivalent mutant) | 9.5% | 0.9% |
+
+243 MLang mutants vs 234 Python mutants of the same application. In the
+concurrent Python program, a one-token bug **hangs the process one time
+in nine** — 23 of those 25 hangs printed a thread traceback first and
+then froze anyway, which is the worst possible input for an agent: a
+partial diagnosis attached to a process that never exits. The same class
+of bug in MLang becomes a *proven deadlock report* one time in seven,
+naming every blocked strand, the channel it waits on, and its grid
+coordinates — and nothing hangs, ever. Then the same repair protocol
+runs on both — same model, same rounds, same byte-exact bar:
+
+| Self-repair on the Oracle — claude-haiku-4-5, ≤3 rounds | MLang | Python |
+|---|---|---|
+| seeded one-edit bugs | 40 | 40 |
+| **healed (byte-exact output)** | **65%** | **100%** |
+| healed in one round | 45% | 100% |
+| median rounds to green | 1 | 1 |
+
+| healed, by what the bug turned into | MLang | Python |
+|---|---|---|
+| caught before running | 1/2 | 35/35 |
+| runtime fault, precise report | 15/22 | 2/2 |
+| proven deadlock | 5/6 | — |
+| silent wrong output | 5/10 | 1/1 |
+| hang | — | 2/2 |
+
+**At application scale the tables turn, and we publish that.** The
+small model healed every Python mutant — because Python's redundancy
+converts 35 of its 40 one-token bugs into syntax errors, and a syntax
+error in a language the model has read for years is a one-round fix
+(both hangs healed too: this program's hang bugs happened to sit near
+obvious code, though the robustness table above shows the input an
+agent gets in that bucket is a frozen process). MLang's density
+converts the same edits into *semantic* failures in a glyph language
+the model has never seen, and there haiku heals 65%: the wait-graph
+story holds up — 5 of 6 proven deadlocks healed, three in one round —
+but silent wrong-output bugs healed only 5 of 10, and one weave error
+in the dense 40-line grid defeated three rounds of bracket-chasing.
+The honest summary: **MLang's runtime hands the model strictly better
+failure evidence at scale (nothing ever hangs, deadlocks arrive as
+proofs), but a small model's repair skill in a never-seen dense
+notation is currently the binding constraint — Python's familiarity
+plus shallow failure modes beat MLang's better evidence plus deeper
+bugs.** Whether stronger models or an MLang-native tokenizer flip
+that is exactly what this harness measures; run it with any model via
+`bench/heal.py --cases example:oracle.ml,oracle`.
 
 ## Programs are grids
 
@@ -208,7 +280,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 154 cases covering every operation, concurrency, glitches, both
+corpus — 155 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -405,40 +477,17 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
-conformance/      cases.json + expected.json: 154 recorded goldens, the
+conformance/      cases.json + expected.json: 155 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
 docs/             the deadlock demo: the animated SVG + the Python twin
-examples/         runnable programs (mandelbrot, calc, editor, deadlock, …)
+examples/         runnable programs (mandelbrot, calc, editor, oracle, …)
 SPEC.md           the full language specification
 ```
 
 ## Honest notes
 
-<<<<<<< HEAD
-* **Glyphs vs. tokens.** Today's BPE tokenizers may spend more than one
-  token on a rare glyph. MLang optimizes *characters and context density* —
-  the number of atoms a model must emit correctly — and one-glyph-one-op
-  makes a dedicated tokenizer trivial (one token per sigil). Density also
-  buys correctness: there is no syntax to misindent and no identifier to
-  misspell twice.
-* **Determinism first, parallelism on demand.** By default the runtime
-  interleaves strands deterministically (round-robin, fixed slice):
-  identical input ⇒ identical bytes out, which is what makes
-  machine-written concurrent code debuggable by a machine, and is what
-  the conformance corpus pins. Because the language model (immutable
-  values, channel-only communication) admits true parallelism without
-  data races, the toolchain also ships it: `mlang run --parallel` (or
-  `MLANG_PAR=1` for welded binaries) puts every strand on its own OS
-  thread. Per-strand order, FIFO channels, glitch isolation, and
-  deadlock detection carry over; only cross-strand interleaving becomes
-  timing-dependent — and programs wired as single-producer
-  single-consumer pipelines with one printing strand (the Mandelbrot
-  explorer, `pipeline.ml`) produce byte-identical output either way,
-  just faster: the four-worker Mandelbrot renders ~3.4× quicker on four
-  cores.
-=======
 * **Glyphs vs. tokens.** MLang optimizes *characters* — the number of
   atoms a model must emit correctly — not today's BPE token counts, and
   on those it currently loses: rare Unicode glyphs cost 2–3 BPE tokens
@@ -457,20 +506,31 @@ SPEC.md           the full language specification
   density: there is no syntax to misindent and no identifier to misspell
   twice — see the mutation-robustness table above for what that buys,
   and what it costs.
-* **Determinism over raw parallelism.** The runtime interleaves strands
-  deterministically (round-robin, fixed slice) rather than using OS
-  threads. The language model (immutable values, channel-only
-  communication) is exactly the one that admits true parallel execution
-  without data races; the scheduler is an implementation choice, and
-  reproducibility is worth more to a machine author than nondeterministic
-  wall-clock wins. A parallel scheduler can be added without changing a
-  single program's meaning where interleaving is unobservable.
-* **The benchmark's limits.** The self-repair corpus programs are small,
-  and the Python control arm is 28 hand-verified ports, not all 94
-  programs. Models have seen enormous amounts of Python and essentially
-  zero MLang — the MLang arm leans entirely on an op-reference primer in
-  the prompt. `bench/README.md` spells out the protocol and every caveat.
->>>>>>> origin/main
+* **Determinism first, parallelism on demand.** By default the runtime
+  interleaves strands deterministically (round-robin, fixed slice):
+  identical input ⇒ identical bytes out, which is what makes
+  machine-written concurrent code debuggable by a machine, and is what
+  the conformance corpus pins. Because the language model (immutable
+  values, channel-only communication) admits true parallelism without
+  data races, the toolchain also ships it: `mlang run --parallel` (or
+  `MLANG_PAR=1` for welded binaries) puts every strand on its own OS
+  thread. Per-strand order, FIFO channels, glitch isolation, and
+  deadlock detection carry over; only cross-strand interleaving becomes
+  timing-dependent — and programs wired as single-producer
+  single-consumer pipelines with one printing strand (the Mandelbrot
+  explorer, `pipeline.ml`) produce byte-identical output either way,
+  just faster: the four-worker Mandelbrot renders ~3.4× quicker on four
+  cores.
+* **The benchmark's limits.** The small-program corpus is small by
+  design, and the Python control arm is 29 hand-verified ports, not all
+  120 programs. Models have seen enormous amounts of Python and
+  essentially zero MLang — the MLang arm leans entirely on an
+  op-reference primer in the prompt, and the application-scale run shows
+  what that costs: with a small model, repair parity holds on small
+  programs but flips to Python's favor (100% vs 65%) on the Oracle,
+  where MLang's bugs run deeper than its better failure reports can
+  compensate for. `bench/README.md` spells out the protocol and every
+  caveat.
 
 ## Name
 
