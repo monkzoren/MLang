@@ -62,12 +62,16 @@
     <text class="t line r2" y="44">8</text>
     <text class="t line r3" y="66">18</text>
     <text class="t line r4" y="88">32</text>
-    <text class="e line r5" y="118">✗ glitch in strand 1 (row 2) at 2:13: boom</text>
-    <text class="e line r6" y="146">✗ deadlock — every remaining strand is blocked:</text>
-    <text class="e line r6" y="168">  strand 2 (row 3) waiting on channel β at 3:5</text>
-    <text class="t line r7" y="198"><tspan class="p">$</tspan> <tspan class="d">← exit 1, instantly: the failure is the output</tspan></text>
-    <text class="d line r7" y="272">The runtime proves the deadlock and reports</text>
-    <text class="d line r7" y="290">who waits on whom, with grid coordinates —</text>
-    <text class="d line r7" y="308">then exits. Nothing to kill, nothing to guess.</text>
+    <text class="e line r5" y="114">✗ glitch in strand 1 (row 2) at 2:13: boom</text>
+    <text class="t line r5" y="132">  2│ [∂25=[«boom»↯][]?2×]⇉αβ</text>
+    <text class="t line r5" y="150">                 ↑ 2:13</text>
+    <text class="t line r5" y="168">  stack: 25</text>
+    <text class="e line r6" y="192">✗ deadlock — every remaining strand is blocked:</text>
+    <text class="e line r6" y="210">  strand 2 (row 3) waiting on channel β at 3:5</text>
+    <text class="t line r6" y="228">  3│ [∂⍞]⇉βγ</text>
+    <text class="t line r6" y="246">         ↑ 3:5</text>
+    <text class="t line r7" y="272"><tspan class="p">$</tspan> <tspan class="d">← exit 1, instantly: caret, stack, wait graph</tspan></text>
+    <text class="d line r7" y="296">The failure IS the output: the exact glyph, the</text>
+    <text class="d line r7" y="314">poison value, the proof. Nothing to kill or guess.</text>
   </g>
 </svg>

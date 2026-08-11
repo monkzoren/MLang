@@ -75,7 +75,16 @@ python3 bench/report.py
 Providers for `heal.py`: `claude-cli` (headless `claude -p`, uses your
 Claude Code login), `anthropic` (`ANTHROPIC_API_KEY`), `openai`
 (`OPENAI_API_KEY`), or `cmd:<shell-command>` (prompt on stdin, completion
-on stdout — plug in anything). Results are committed under `results/`;
+on stdout — plug in anything).
+
+Protocol note: the failure report shown to the model is whatever the
+language's runtime printed (MLang reports carry source excerpts with
+carets, the stack at the fault, and proven wait graphs — SPEC §4.6;
+Python gets its tracebacks), plus one harness-computed hint appended
+identically in both arms: the first line where stdout diverged from the
+golden. Improving MLang's reports moved the Oracle arm from 65% to 82%
+healed under the identical protocol — the benchmark is the language's
+feedback loop, not just its scoreboard. Results are committed under `results/`;
 `report.md` there is the rendered summary. `tokens.py` (needs
 `pip install tiktoken`) measures the char-vs-BPE-token table quoted in
 the top-level README's honest notes.

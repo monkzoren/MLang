@@ -22,7 +22,7 @@ use num_bigint::BigInt;
 use std::sync::Arc;
 
 pub const MAGIC: &[u8; 8] = b"MLANGBIN";
-const FORMAT_VERSION: u32 = 1;
+const FORMAT_VERSION: u32 = 2;
 
 // ── writer ─────────────────────────────────────────────────────────────
 struct W(Vec<u8>);
@@ -123,6 +123,12 @@ pub fn serialize(prog: &CompiledProgram) -> Vec<u8> {
         w.string(label);
         w.code(code);
     }
+    // v2: the program's source lines ride along, so a welded binary's
+    // glitch reports can excerpt the offending line.
+    w.u64(prog.source.len() as u64);
+    for line in &prog.source {
+        w.string(line);
+    }
     w.0
 }
 
@@ -219,7 +225,12 @@ pub fn deserialize(buf: &[u8]) -> PResult<CompiledProgram> {
         let code = r.code()?;
         strands.push((label, code));
     }
-    Ok(CompiledProgram { boot, strands })
+    let n = r.u64()? as usize;
+    let mut source = Vec::with_capacity(n);
+    for _ in 0..n {
+        source.push(r.string()?);
+    }
+    Ok(CompiledProgram { boot, strands, source })
 }
 
 // ── native binary embedding ────────────────────────────────────────────

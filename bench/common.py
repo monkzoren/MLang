@@ -143,8 +143,13 @@ def classify_python(result, expected):
     return "wrong-output"
 
 
-def failure_report(result):
-    """The failure exactly as the program announced it, for the repair prompt."""
+def failure_report(result, expected=None):
+    """The failure exactly as the program announced it, for the repair prompt.
+
+    When the golden is given, a first-divergence hint is appended for runs
+    whose stdout is wrong — the same hint in both arms, since it is
+    computed by the harness, not the language.
+    """
     if result["hang"]:
         return (f"The program did not terminate (killed after {TIMEOUT:.0f}s).\n"
                 f"stdout so far:\n{result['stdout'] or '(none)'}")
@@ -152,4 +157,16 @@ def failure_report(result):
     parts.append("stdout:\n" + (result["stdout"] if result["stdout"] else "(empty)"))
     if result["stderr"]:
         parts.append("stderr:\n" + result["stderr"])
+    if expected is not None and result["stdout"] != expected["stdout"]:
+        got = result["stdout"].split("\n")
+        want = expected["stdout"].split("\n")
+        for i in range(max(len(got), len(want))):
+            g = got[i] if i < len(got) else None
+            w = want[i] if i < len(want) else None
+            if g != w:
+                parts.append(
+                    f"first stdout divergence at line {i + 1}:\n"
+                    f"  expected: {w if w is not None else '(no such line)'}\n"
+                    f"  actual:   {g if g is not None else '(no such line)'}")
+                break
     return "\n".join(parts)
