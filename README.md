@@ -208,7 +208,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 154 cases covering every operation, concurrency, glitches, both
+corpus — 155 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -285,7 +285,22 @@ order, and reads commands from stdin — `a d w s` pan, `z x` zoom (the
 escape-time depth rises as you dive), `r` reset, `q` quit — a full
 interactive event loop in 5 strands and two boot definitions. Run it
 with `mlang run --parallel` and the four workers land on four cores:
-same bytes on screen, ~3.4× faster frames. `examples/calc.ml` is a fault-tolerant concurrent RPN
+same bytes on screen, ~3.4× faster frames.
+
+Its sibling `examples/mandelbrot-dive.ml` is **THE DIVE** — the same
+grid on autopilot, in full Matrix dress. No keys: each frame the
+navigator scores a 4×4 grid of cells by boundary richness and zooms 2×
+toward the most interesting one, so the camera hugs the writhing edge
+and never wastes a frame on blank sky or solid interior; every dive
+resets and flies a different line, and `⌂` argv sets how many
+(`mlang run --parallel examples/mandelbrot-dive.ml 6`). The painting
+shows the parallelism itself: workers drop finished rows —
+`⟨y colored plain⟩` — into one shared channel and the navigator paints
+each row at its absolute screen position (green-on-black ANSI shading)
+the moment it lands. Under `--parallel` the arrival order is four real
+threads racing; the finished image is identical every time.
+
+`examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 And `examples/editor.ml` is **MatrixPad** — a real, full-screen text
@@ -405,7 +420,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
-conformance/      cases.json + expected.json: 154 recorded goldens, the
+conformance/      cases.json + expected.json: 155 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
