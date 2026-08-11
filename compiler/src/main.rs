@@ -126,7 +126,7 @@ impl Drop for TerminalSession {
     }
 }
 
-fn run_compiled(prog: &vm::CompiledProgram) -> ExitCode {
+fn run_compiled(prog: &vm::CompiledProgram, prog_args: Vec<String>) -> ExitCode {
     let session = TerminalSession::start(prog);
     let stdin = std::io::stdin();
     let mut reader = BufReader::new(stdin.lock());
@@ -134,6 +134,7 @@ fn run_compiled(prog: &vm::CompiledProgram) -> ExitCode {
     let mut err = std::io::stderr();
     let code = {
         let mut machine = vm::VM::new(&mut reader, &mut out, &mut err);
+        machine.args = prog_args;
         machine.run_compiled(prog)
     };
     let _ = out.flush();
@@ -141,9 +142,9 @@ fn run_compiled(prog: &vm::CompiledProgram) -> ExitCode {
     ExitCode::from(code as u8)
 }
 
-fn run_source(text: &str) -> ExitCode {
+fn run_source(text: &str, prog_args: Vec<String>) -> ExitCode {
     match vm::compile_text(text) {
-        Ok(prog) => run_compiled(&prog),
+        Ok(prog) => run_compiled(&prog, prog_args),
         Err(e) => weave_error(&e),
     }
 }
@@ -187,8 +188,8 @@ const USAGE: &str = "mlang — the Matrix language toolchain
 
 usage:
   mlang build <file|-> -o <out>   compile to a standalone native executable
-  mlang run <file|->              compile and run immediately
-  mlang eval <code>               run flat-form source given as an argument
+  mlang run <file|-> [args…]      compile and run immediately (args reach ⌂)
+  mlang eval <code> [args…]       run flat-form source given as an argument
   mlang check <file|->            compile only; report weave errors
   mlang rain <file|->             render flat source as the vertical rain grid
   mlang flat <file|->             render rain source as flat lines
@@ -199,9 +200,11 @@ usage:
 
 fn main() -> ExitCode {
     // A welded binary runs its embedded program — it is not a compiler.
+    // Its command-line arguments belong to that program (⌂), which is what
+    // lets a welded editor open a file dropped onto the executable.
     if let Some(extracted) = payload::self_payload() {
         return match extracted {
-            Ok(prog) => run_compiled(&prog),
+            Ok(prog) => run_compiled(&prog, std::env::args().skip(1).collect()),
             Err(e) => {
                 eprintln!("✗ corrupt program payload: {e}");
                 ExitCode::from(2)
@@ -213,14 +216,14 @@ fn main() -> ExitCode {
     let cmd = args.get(1).map(String::as_str).unwrap_or("");
     match (cmd, args.len()) {
         ("build", 5) if args[3] == "-o" => build(&args[2], &args[4]),
-        ("run", 3) => match read_source(&args[2]) {
-            Ok(text) => run_source(&text),
+        ("run", n) if n >= 3 => match read_source(&args[2]) {
+            Ok(text) => run_source(&text, args[3..].to_vec()),
             Err(e) => {
                 eprintln!("✗ {e}");
                 ExitCode::from(2)
             }
         },
-        ("eval", 3) => run_source(&args[2]),
+        ("eval", n) if n >= 3 => run_source(&args[2], args[3..].to_vec()),
         ("check", 3) => match read_source(&args[2]) {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {

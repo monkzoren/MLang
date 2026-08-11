@@ -61,12 +61,14 @@ sigil  name          effect              description
 ↯      raise         v ↯ →               raise v as a glitch
 ⍞      println       v ⍞ →               print v and a newline
 ⊸      print         v ⊸ →               print v without a newline
-⌨      readline      → s|∅               read a line from stdin (∅ at end of input; flushes pending ⊸ output first)
+⌨      readline      → s|∅               read a line from stdin, stripping the \n or \r\n ending (∅ at end of input; waits until all other strands are quiet, flushing pending ⊸ output first)
 ⌥      event         → e                 read one input event: keys as the glyph they are («a» «↵» «⇥» «⌫» «⌦» arrows,
-                                         Ctrl-C is «␃»), a mouse press as ⟨«⌖» x y⟩, ∅ at end of input (SPEC §5.1)
+                                         Ctrl-C is «␃»), a mouse press as ⟨«⌖» x y⟩, ∅ at end of input; same
+                                         lowest scheduling priority as ⌨ (SPEC §5.1)
 ⍇      read-file     path ⍇ → s          read a whole file as a string; glitches if unreadable
 ⍈      write-file    s path ⍈ →          write string s to a file; glitches if unwritable
 ⍟      debug         →                   dump this strand's stack to stderr
+⌂      args          → L                 the program's command-line arguments, a list of strings
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)

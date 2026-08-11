@@ -83,11 +83,11 @@ output `.exe`:
 .\mlang.cmd run examples\editor.ml
 ```
 
-Windows notes: WSL is *not* required — the toolchain and welded binaries
-are fully native on Windows. Use Windows Terminal (not legacy conhost)
-with a Unicode-capable font so the glyphs render. The `cargo test` suite,
-however, assumes a Unix-like filesystem (`/tmp` paths in the recorded
-file-I/O goldens; CI runs Ubuntu) — run it on Linux, macOS, or WSL.
+Windows notes: WSL is *not* required — the toolchain, the welded
+binaries, and the `cargo test` suite are fully native on Windows (the
+recorded file-I/O goldens use relative paths, and `⌨` strips `\r\n` line
+endings). Use Windows Terminal (not legacy conhost) with a
+Unicode-capable font so the glyphs render.
 
 `mlang build` compiles source to MLang bytecode and welds it into a copy
 of the toolchain's own runtime image — the same shape as a Go binary,
@@ -97,7 +97,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 149 cases covering every operation, concurrency, glitches, both
+corpus — 151 cases covering every operation, concurrency, glitches, both
 source forms, and all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
@@ -166,27 +166,32 @@ partial sum down `σ`; the reducer adds them (`examples/parallel-sum.ml`,
 prints 500500). At runtime, `⚡` spawns new strands to scale beyond the
 grid's static width.
 
-The showpiece is `examples/mandelbrot.ml`: the full Mandelbrot set,
-rendered as ASCII shading by four worker strands that shard the rows by
-strand id while a reducer reassembles them in order — escape-time
-iteration, palette lookup, and row assembly in 5 strands and two boot
-definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
+The showpiece is `examples/mandelbrot.ml`: an interactive Mandelbrot
+explorer. Four worker strands shard the 24 rows by strand id and render
+each frame in parallel; a navigator strand owns the viewport, streams
+render jobs to the workers over channels, reassembles their rows in
+order, and reads commands from stdin — `a d w s` pan, `z x` zoom (the
+escape-time depth rises as you dive), `r` reset, `q` quit — a full
+interactive event loop in 5 strands and two boot definitions. `examples/calc.ml` is a fault-tolerant concurrent RPN
 calculator that evaluates every input line on a freshly spawned strand:
 a bad line reports `✗ …` and dies alone; the calculator keeps answering.
 And `examples/editor.ml` is **MatrixPad** — a real application: a
 Notepad-style text editor in the `ed`/`edlin` lineage, wired like a real
 editor's event loop. Keyboard, editor core, and screen are three strands
 joined by channels; the document is an immutable list of lines, so every
-edit (append, insert, replace, delete) is slice-and-concat and a stray
-command can never corrupt it; `w file` and `o file` save and open real
-files with the `⍇`/`⍈` primitives; and dispatch runs inside `⍥`, so a bad
-command or an unreadable file answers `? …` while the editor and the
-document survive untouched. Compile it to a standalone binary and edit
-away:
+edit (append, insert, replace, move, delete) is slice-and-concat, and
+multi-level undo/redo (`u`/`U`) is literally a list of old buffers;
+`s/old/new` substitutes across the whole document and reports the count;
+`o file` and `w file` open and save real files with the `⍇`/`⍈`
+primitives; and dispatch runs inside `⍥`, so a bad command or an
+unreadable file answers `? …` while the editor and the document survive
+untouched. Weld it into a standalone binary and it opens any file passed
+as an argument (`⌂`) — on Windows, dropping a .txt onto `matrixpad.exe`
+opens it in the editor:
 
 ```
 $ mlang build examples/editor.ml -o matrixpad && ./matrixpad
-MatrixPad — a:append i N:insert d N:delete r N txt:replace f txt:find …
+MatrixPad — o file:open  w file:save  n:new  a:append  i N:insert  …
 a
 The Matrix has you.
 Follow the white rabbit.
@@ -195,11 +200,15 @@ i 2
 Wake up, Neo.
 .
 p
-1 │ The Matrix has you.
-2 │ Wake up, Neo.
-3 │ Follow the white rabbit.
+┌─ MatrixPad ───────────────────┐
+│ 1 │ The Matrix has you.       │
+│ 2 │ Wake up, Neo.             │
+│ 3 │ Follow the white rabbit.  │
+├───────────────────────────────┤
+│ 3 lines · 11 words · 56 chars │
+└───────────────────────────────┘
 w neo.txt
-wrote neo.txt
+saved neo.txt · 3 lines
 q
 ```
 
@@ -289,7 +298,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
                   execution, and the full conformance corpus
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
-conformance/      cases.json + expected.json: 149 recorded goldens, the
+conformance/      cases.json + expected.json: 151 recorded goldens, the
                   language's observable ground truth (RECORD=1 to re-record)
 examples/         runnable programs (mandelbrot, calc, editor, pipeline, …)
 SPEC.md           the full language specification

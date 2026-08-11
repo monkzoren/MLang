@@ -297,12 +297,12 @@
   },
   {
    "name": "file-io-roundtrip",
-   "source": "«neo⏎trinity»«/tmp/mlang-conf-io.txt»⍈ «/tmp/mlang-conf-io.txt»⍇⍖⍞",
+   "source": "«neo⏎trinity»«mlang-conf-io.tmp»⍈ «mlang-conf-io.tmp»⍇⍖⍞",
    "stdin": ""
   },
   {
    "name": "file-missing-glitch",
-   "source": "[«/definitely/not/here.ml»⍇][«✗ »⇅⧺⍞]⍥«alive»⍞",
+   "source": "[«no-such-dir/definitely-not-here.ml»⍇][«✗ »⇅⧺⍞]⍥«alive»⍞",
    "stdin": ""
   },
   {
@@ -536,6 +536,16 @@
    "stdin": "a\nb\n"
   },
   {
+   "name": "stdin-crlf",
+   "source": "⌨∂#⍞«z»=⍞⌨#⍞",
+   "stdin": "z\r\nab \r\n"
+  },
+  {
+   "name": "args-empty",
+   "source": "⌂⍞ ⌂#⍞",
+   "stdin": ""
+  },
+  {
    "name": "debug-stderr",
    "source": "1«s»⟨2 3⟩⍟",
    "stdin": ""
@@ -720,7 +730,7 @@
   {
    "name": "mandelbrot.ml",
    "file": "examples/mandelbrot.ml",
-   "stdin": ""
+   "stdin": "z\nw\nr\nq\n"
   },
   {
    "name": "calc.ml",
@@ -735,7 +745,7 @@
   {
    "name": "editor.ml",
    "file": "examples/editor.ml",
-   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\nd 1\nz\nd oops\nf THE\np\nw\nw /tmp/mlang-matrixpad.txt\nd 1\nd 1\np\no /tmp/mlang-matrixpad.txt\np\no /no/such\nq\n"
+   "stdin": "a\nWAKE UP, NEO...\nTHE MATRIX HAS YOU\nfollow the white rabbit\n.\np\nr 3 FOLLOW THE WHITE RABBIT\ni 3\nKNOCK, KNOCK, NEO.\n.\ns/NEO/N30\np\nu\nu\np\nU\nm 2 1\nd 3\nz\nd oops\nf MATRIX\np\nw\nw mlang-editor-conf.tmp\nn\np\no mlang-editor-conf.tmp\np\no mlang-no-such.tmp\nq\n"
   },
   {
    "name": "construct.ml",
