@@ -391,6 +391,37 @@ scripted session and pins every frame it draws. Weld it
 .txt onto the executable opens that file (`⌂`), on any platform —
 the runtime enables ANSI processing even in a legacy Windows console.
 
+MatrixPad has a big sibling. `examples/sublime.ml` is **SUBLIMINAL** —
+a Sublime Text clone in the same three strands, with the signature
+moves: syntax highlighting for MLang source, live as you type
+(comments, strings, numbers, brackets); **multiple cursors** — `^D`
+selects the word under the cursor, `^D` again adds its next occurrence
+(wrapping, skipping what's already selected), and typing replaces
+every selection at once; the **command palette** — `^P`, fuzzy-matched
+(`dup` finds *duplicate line*), with Goto Anything folded in (`:42`
+jumps to line 42, `#boom` finds boom); **tabs** — `^N`/`^E`/`^W`,
+every command-line argument opens as one, click a tab to switch; and a
+**minimap**, the document in miniature down the right edge with the
+viewport shaded — click it to jump. Line numbers, auto-indent,
+auto-closing `[ ⟨ «` pairs that type-over, and line
+cut/copy/paste/join/sort/comment round it out:
+
+```
+ boot.ml ● ▏ oracle.ml ▏
+  1 9⍸[1+∂×]∵⇈α ※ pour the squares                  ▏▄▄▄▄▄▄
+  2 [∂25=[«boom»↯][]?2×]⇉αβ                         ▏▄▄▄▄▄▄
+  3 [∂⍞]⇉βγ█                                        ▏▄▄▄
+                                                    ▏
+ ^S save  ^P cmd  ^D multi  ^F find  ^Q quit ▏Ln 3 Col 10  ▲ SUBLIMINAL
+```
+
+A multi-cursor selection is one integer (`row×2²⁰+column`), so the
+flat `⍋` sorts a selection set and an edit replays across it with
+per-line offsets — no new machinery, just lists and slices. The
+conformance corpus drives a full scripted tour — a multi-cursor
+replace, the palette, find, undo, a second tab, a save, a mouse click —
+and pins every highlighted frame, byte for byte.
+
 ## The Construct — the UI library
 
 > "This is the Construct. It's our loading program. We can load anything…"
