@@ -748,6 +748,11 @@
    "stdin": "z\nw\nr\nq\n"
   },
   {
+   "name": "mandelbrot-dive.ml",
+   "file": "examples/mandelbrot-dive.ml",
+   "stdin": ""
+  },
+  {
    "name": "calc.ml",
    "file": "examples/calc.ml",
    "stdin": "3 4 +\n10 2 - 6 ×\n2 63 ^\n7 2 %\n1 0 ÷\noops\n"

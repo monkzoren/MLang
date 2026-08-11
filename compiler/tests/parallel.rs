@@ -78,6 +78,82 @@ fn parallel_calc_keeps_answers_in_order() {
     }
 }
 
+/// Replay a cursor-addressed ANSI stream onto a 24×70 screen, returning
+/// one rendered snapshot per ESC[2J clear (plus the final state).
+fn render_screens(raw: &str) -> Vec<String> {
+    let mut screens = Vec::new();
+    let mut cells = std::collections::HashMap::new();
+    let (mut row, mut col) = (1usize, 1usize);
+    let chars: Vec<char> = raw.chars().collect();
+    let mut i = 0;
+    let render = |cells: &std::collections::HashMap<(usize, usize), char>| {
+        (1..=24)
+            .map(|r| {
+                (1..=70)
+                    .map(|c| cells.get(&(r, c)).copied().unwrap_or(' '))
+                    .collect::<String>()
+                    .trim_end()
+                    .to_string()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    while i < chars.len() {
+        if chars[i] == '\x1b' && chars.get(i + 1) == Some(&'[') {
+            let start = i + 2;
+            let mut j = start;
+            while j < chars.len() && !chars[j].is_ascii_alphabetic() {
+                j += 1;
+            }
+            let params: String = chars[start..j].iter().collect();
+            match chars.get(j) {
+                Some('H') => {
+                    let mut it = params.split(';').map(|p| p.parse().unwrap_or(1));
+                    row = it.next().unwrap_or(1);
+                    col = it.next().unwrap_or(1);
+                }
+                Some('J') if params == "2" => {
+                    screens.push(render(&cells));
+                    cells.clear();
+                }
+                _ => {}
+            }
+            i = j + 1;
+        } else if chars[i] == '\n' {
+            row += 1;
+            col = 1;
+            i += 1;
+        } else {
+            cells.insert((row, col), chars[i]);
+            col += 1;
+            i += 1;
+        }
+    }
+    screens.push(render(&cells));
+    screens
+}
+
+#[test]
+fn parallel_dive_converges_to_the_sequential_image() {
+    // THE DIVE paints rows as they arrive on one shared channel, so its
+    // parallel byte stream is racy by design — but every frame overwrites
+    // whole rows at absolute positions, so the rendered screens must be
+    // identical to the sequential run's.
+    let path = example("mandelbrot-dive.ml");
+    let seq = run(&["run", &path, "2"], "", &[]);
+    assert_eq!(seq.0, Some(0));
+    let seq_screens = render_screens(&seq.1);
+    for round in 0..2 {
+        let par = run(&["run", "--parallel", &path, "2"], "", &[]);
+        assert_eq!(par.0, Some(0), "round {round}: {}", par.2);
+        assert_eq!(
+            seq_screens,
+            render_screens(&par.1),
+            "dive (round {round}): parallel screens diverged"
+        );
+    }
+}
+
 #[test]
 fn parallel_detects_deadlock() {
     for _ in 0..5 {
