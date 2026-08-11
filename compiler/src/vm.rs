@@ -387,6 +387,10 @@ pub struct VM<'io> {
     /// Replay-mode request ids (⎆ counts up from 1) still awaiting a ⍅.
     next_request_id: i64,
     open_requests: HashSet<i64>,
+    /// A pinned clock for ⌚, in Unix milliseconds. None reads the real
+    /// clock; the conformance harness and MLANG_CLOCK pin it, because the
+    /// clock is part of a run's input.
+    pub clock: Option<i64>,
     /// The program's physical source lines, for report excerpts. Empty
     /// when the source is unavailable (payloads from older toolchains).
     src_lines: Vec<String>,
@@ -476,6 +480,7 @@ impl<'io> VM<'io> {
             http: None,
             next_request_id: 1,
             open_requests: HashSet::new(),
+            clock: clock_env(),
             src_lines: Vec::new(),
         }
     }
@@ -2081,6 +2086,15 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let (rows, cols) = crate::term::size();
             s.push(Value::List(Arc::new(vec![Value::int(rows), Value::int(cols)])));
         }
+        '⌚' => {
+            let ms = vm.clock.unwrap_or_else(|| {
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0)
+            });
+            s.push(Value::int(ms));
+        }
         '⍟' => {
             let items: Vec<String> = s.stack.iter().map(|v| fmt(v, true)).collect();
             let _ = writeln!(
@@ -2094,6 +2108,12 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         _ => unreachable!("op {ch} has no implementation"),
     }
     Ok(())
+}
+
+/// The MLANG_CLOCK environment variable pins ⌚ to a fixed millisecond
+/// timestamp — the clock, like files and argv, is part of a run's input.
+fn clock_env() -> Option<i64> {
+    std::env::var("MLANG_CLOCK").ok().and_then(|v| v.parse().ok())
 }
 
 /// One HTTP(S) GET for ⍆. Ok(body) on 2xx; Err(Some(status)) when the

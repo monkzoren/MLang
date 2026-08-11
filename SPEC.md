@@ -320,6 +320,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
 | `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
+| `⌚` | `→ ms` | the clock, in Unix milliseconds; `MLANG_CLOCK=…` pins it |
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
@@ -329,6 +330,11 @@ executable name — which is how a file dropped onto a built editor arrives
 as its argument. File-operation glitch messages name only the path, never
 an operating-system error string — they are part of the language's
 deterministic, conformance-pinned output.
+
+The clock is part of a run's input too: `⌚` answers the wall clock in
+Unix milliseconds, and the `MLANG_CLOCK` environment variable pins it
+to a fixed value for reproducible runs. The conformance corpus records
+every `⌚` at `922838400000` — the premiere of The Matrix.
 
 The network is part of a run's input the same way: identical responses
 produce identical runs. `⍆` carries a hard 10-second deadline — it

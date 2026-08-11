@@ -77,6 +77,8 @@ sigil  name          effect              description
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)
+⌚      clock         → ms                the wall clock in Unix milliseconds; the MLANG_CLOCK
+                                         environment variable pins it for reproducible runs
 ≔X     define        v ≔X →              bind v (often a quotation) to global sigil X; rebinding glitches
 ⇒X     store         v ⇒X →              pop v into strand-local sigil X (rebindable)
 ↥X     send          v ↥X →              send v down channel X (never blocks; unbounded FIFO)

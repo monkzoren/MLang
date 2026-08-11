@@ -200,14 +200,15 @@ The killer app was always the spreadsheet — VisiCalc is the program the
 term was coined for. MLang's motto was always *programs are grids*. So
 MLang's killer app is both at once:
 
-![THE ARCHITECT — a live spreadsheet in the browser, served entirely by MLang](docs/architect.png)
+![THE ARCHITECT — a live multiplayer spreadsheet in the browser, served entirely by MLang](docs/architect.png)
 
 **THE ARCHITECT** ([`examples/architect.ml`](examples/architect.ml)) is
-a live spreadsheet in your browser — and the entire application is one
-MLang file. The formula engine (tokenizer → shunting-yard → evaluator),
-the multi-pass recalculation that proves circular references instead of
-hanging, the HTTP routing, the JSON API, and the dark-glass frontend it
-serves are all MLang, running as six strands:
+a live **multiplayer** spreadsheet in your browser — and the entire
+application is one MLang file. The formula engine (tokenizer →
+shunting-yard → evaluator), the multi-pass recalculation that proves
+circular references instead of hanging, the HTTP routing, the JSON API,
+undo/redo, the relative-reference rewriter behind fill and paste, and
+the dark-glass frontend it serves are all MLang, running as six strands:
 
 ```
 0    acceptor    ⎆ pulls each HTTP request and deals it onto κ
@@ -223,8 +224,12 @@ serves are all MLang, running as six strands:
 MLANG_PORT=4321 ./architect                  # one binary, serving
 ```
 
-Click a cell and type. `=B3*C3`, `=SUM(B3:B5)`, `=IF(D8>100,"yes","no")`
-— and then the part a 1979 spreadsheet could not do:
+Click a cell and type. `=B3*C3`, `=SUM(B3:B5)`, `=IF(D8>100,"yes","no")`,
+`=SPARK(B3:B10)` sparklines, `=TODAY()` on the new `⌚` clock, text
+functions, bold/alignment/currency/percent formats, undo and redo, a
+drag-fill handle and copy/paste that shift cell references by their
+offset the way a spreadsheet should, and paste-a-block-from-Excel
+straight onto the grid. Then the part a 1979 spreadsheet could not do:
 **`=FX(EUR,USD)`** puts a live exchange rate in a cell, **`=BTC(USD)`**
 the live bitcoin price, **`=WX(-33.9,151.2)`** the temperature in
 Sydney, and **`=GET("url","path.to.field")`** any field of any JSON API
@@ -233,6 +238,16 @@ the fetcher pool over channels (run `serve --parallel` and the fetches
 truly overlap), folds the answers back into the cache, and
 recalculates; every response is parsed by the Operator — the JSON
 library written in MLang itself (`mlang json`).
+
+And open the page twice, because the sheet is **shared**: every window
+long-polls `GET /api/poll?v=N`, and the engine — the state-owning actor
+of the Oracle pattern — simply *doesn't answer* until the sheet
+changes. That is the `⎆`/`⍅` design paying off: responses are addressed
+by request id, so holding one back while serving others is a line of
+code, not a framework. An edit in any window releases every held poll
+and all clients converge, in version order; one window can undo
+another's edit. Excel needs a cloud for that. The Architect needs
+strand 1.
 
 The language's promises hold at every layer. A formula error is a
 glitch caught per cell — `=1/0` shows `✗ ÷ by zero` in that one cell

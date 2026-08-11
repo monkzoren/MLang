@@ -21,6 +21,7 @@ pub fn run_text(text: &str, stdin_text: &str) -> (i32, String, String) {
         Ok(prog) => {
             let mut stdin = Cursor::new(stdin_text.as_bytes().to_vec());
             let mut machine = vm::VM::new(&mut stdin, &mut out, &mut err);
+            machine.clock = Some(922_838_400_000); // the Matrix premiere
             machine.run_compiled(&prog)
         }
         Err(e) => {
