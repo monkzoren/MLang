@@ -60,23 +60,25 @@ of a wait graph.
 | Self-repair — claude-haiku-4-5-20251001, ≤3 rounds | MLang | Python |
 |---|---|---|
 | seeded one-edit bugs | 80 | 80 |
-| **healed (byte-exact output)** | **99%** | **100%** |
-| healed in one round | 91% | 100% |
+| **healed (byte-exact output)** | **98%** | **100%** |
+| healed in one round | 90% | 100% |
 | median rounds to green | 1 | 1 |
 
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
-| caught before running | 5/5 | 54/54 |
-| runtime fault, precise report | 37/37 | 23/23 |
+| caught before running | 8/8 | 54/54 |
+| runtime fault, precise report | 36/36 | 23/23 |
 | proven deadlock | 3/3 | — |
-| silent wrong output | 34/35 | 2/2 |
+| silent wrong output | 31/33 | 2/2 |
 | hang | — | 1/1 |
 
 A small current model repairs one-edit bugs in a language it has *never
-seen in training* at essentially the same rate as Python (99% vs 100%),
+seen in training* at essentially the same rate as Python (98% vs 100%),
 from an op-reference primer plus the runtime's failure report alone —
-including all three proven-deadlock mutants, healed in one round from
-the wait graph. The
+every loud failure healed: all 36 glitches with coordinates, all 8
+weave errors, and all three proven-deadlock mutants, in one round from
+the wait graph. The only mutants that resisted repair were two silent
+wrong-output bugs in rain-form (transposed-grid) programs. The
 honest reading is that this experiment bounds the floor, not the
 ceiling: the corpus programs are small, and the interesting difference
 is *what kind of failure* each language hands the model (see the next
