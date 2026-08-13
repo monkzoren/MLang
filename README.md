@@ -507,8 +507,13 @@ scripted session and pins every frame it draws. Weld it
 the runtime enables ANSI processing even in a legacy Windows console.
 
 MatrixPad has a big sibling — and it does not live in the terminal.
+
+![SUBLIMINAL editing its own source in a real desktop window](docs/subliminal.png)
+
 `examples/sublime.ml` is **SUBLIMINAL**, a Sublime Text clone that
-opens as a real desktop window, drawn pixel by pixel in MLang. Five
+opens as a real desktop window, drawn pixel by pixel in MLang —
+that screenshot is the editor editing its own source, and
+[**docs/subliminal.md**](docs/subliminal.md) is its full guide. Five
 ops are the whole graphics story: `⌸` opens a 960×600 canvas, `▦`
 fills rectangles, `⌶` draws text from a font baked into the runtime,
 `⎙` presents the frame, and `⌹` lists a directory — and out of them
