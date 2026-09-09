@@ -1198,10 +1198,12 @@ impl<'io> VM<'io> {
         self.sources = vec![prog.source.clone()];
         self.slots = (0..prog.strands.len() as i64).collect();
         self.boot_code = program_boot(&prog.boot);
-        for (_, source, band) in LIBS {
-            scan_names(&lib_code(source, *band), &mut HashSet::new(), &mut self.lib_sigils);
-        }
-        scan_names(&std_code(), &mut HashSet::new(), &mut self.lib_sigils);
+        // Reserved sigils are the ones a woven library actually defines:
+        // std always, a bundled library only when this program pulled it
+        // in. A program that owns a Construct sigil (§6.1) keeps owning
+        // it under the loom.
+        let woven: Vec<Instr> = prog.boot.iter().filter(|i| i.pos.0 >= STD_ROWS).cloned().collect();
+        scan_names(&woven, &mut HashSet::new(), &mut self.lib_sigils);
         channel_sites(&prog.boot, &mut self.chan_sites);
         for (_, code) in &prog.strands {
             channel_sites(code, &mut self.chan_sites);
@@ -1260,6 +1262,9 @@ impl<'io> VM<'io> {
             };
             let _ = writeln!(self.err, "⟡ the grid has stopped ({why}) — holding the port for a patch");
             let _ = self.err.flush();
+            // Requests a dead strand accepted and never answered get the
+            // reason now, not a timeout.
+            bridge.fail_pending(503, &format!("the grid has stopped ({why}) — mend it: mlang pull / mlang patch\n"));
             loop {
                 match bridge.accept() {
                     crate::http::Incoming::Request((id, _, _, _)) => {

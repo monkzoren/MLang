@@ -884,6 +884,11 @@
    "name": "loom-migration-in-a-program-is-a-weave-error",
    "source": "⟲ 0⇒m\n1⍞\n",
    "stdin": ""
+  },
+  {
+   "name": "loom-rebinds-a-library-sigil-the-program-owns",
+   "source": "«mine»≔ⓐ\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» ⓐ⟩⍅ 1]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 101\n«still mine»≔ⓐ\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» ⓐ⟩⍅ 1]?]⟳\n▷ GET /b\n"
   }
  ],
  "examples": [

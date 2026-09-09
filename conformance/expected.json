@@ -459,6 +459,11 @@
     "stderr": "",
     "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 33\n⟡ v1: 1 definition rebound (Q)\n◁ 2 200 text/plain 2\n81\n"
   },
+  "loom-rebinds-a-library-sigil-the-program-owns": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 4\nmine\n⟡ 200 35\n⟡ v1: 1 definition rebound (ⓐ)\n◁ 2 200 text/plain 10\nstill mine\n"
+  },
   "loom-reject-boot-code": {
     "exit": 0,
     "stderr": "",

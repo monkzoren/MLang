@@ -227,6 +227,18 @@ impl HttpBridge {
         }
     }
 
+    /// Answer every request still waiting for a ⍅ — the ones a strand
+    /// accepted and then died holding. Used when the grid stops: a
+    /// client deserves the fault, not a timeout.
+    pub fn fail_pending(&self, status: i64, body: &str) -> usize {
+        let streams: Vec<TcpStream> = self.pending.lock().unwrap().drain().map(|(_, s)| s).collect();
+        let n = streams.len();
+        for stream in streams {
+            let _ = write_http_response(&stream, status, "text/plain; charset=utf-8", body.as_bytes());
+        }
+        n
+    }
+
     /// Open the loom on this port: attach the version store the routes
     /// read. Without it every /.loom request is answered 404.
     pub fn attach_loom(&self, loom: Arc<crate::loom::Loom>) {
