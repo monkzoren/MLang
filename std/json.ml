@@ -23,8 +23,9 @@
 ※
 ※ Internals use the other parenthesized letters (⒜ ⒝ …) and the
 ※ fullwidth strand-locals ｊ ｐ — treat all of them as reserved, like
-※ std's. \u escapes cover the Basic Multilingual Plane (no surrogate
-※ pairs). Parse positions are 0-based indexes into the input string.
+※ std's. \u escapes cover the Basic Multilingual Plane, and a high+low
+※ surrogate escape pair decodes to the one code point it encodes.
+※ Parse positions are 0-based indexes into the input string.
 
 ※ ── shared plumbing ───────────────────────────────────────────────
 [⇅⟨⇅⟩⇅⧺]≔⒞               ※ cons                x L ⒞ → ⟨x …L⟩
@@ -45,18 +46,26 @@
 [∂[∂ｊ#<[ｊ⊚@«-+.eE0123456789»⇅∈][0]?][1+]⟳
 ⋮⇅⊚ｊ⥀⥀⊂[⍎][⌫«⒥ bad JSON at »⇅⍕⧺↯]⍥⇅]≔⒩
 
-※ one hex digit's value: c → n
-[⌗∂47>⊚58<∧[48-][∂96>⊚103<∧[87-][∂64>⊚71<∧[55-][«⒥ bad \u escape»↯]?]?]?]≔⒣
+※ four hex digits' value, ¯1 when malformed: «00e9»⒣ → 233
+[∂#4=⊚1[«0123456789abcdefABCDEF»⇅∈∧]⍀∧[0[⇅16×⇅⌗∂96>[87-][∂64>[55-][48-]?]?+]⍀][⌫¯1]?]≔⒣
 
-※ string: i (at the opening ") → s i′; the growing text rides in ｐ
+※ \u escape: i (at the backslash) → c i′. A high surrogate must be
+※ followed by a \u low surrogate; the pair joins into one code point.
+[∂2+∂4+ｊ⥀⥀⊂⒣∂0<[⌫«⒥ bad JSON at »⇅⍕⧺↯][]?∂55296<⊚57344≥∨[⍘⇅6+]
+⋮[∂56320≥[⌫«⒥ bad JSON at »⇅⍕⧺↯][]?⇅∂6+∂2+ｊ⥀⥀⊂«\u»≠[«⒥ bad JSON at »⇅⍕⧺↯][]?
+⋮∂8+∂4+ｊ⥀⥀⊂⒣∂56320≥⊚57344<∧¬[⌫«⒥ bad JSON at »⇅⍕⧺↯][]?⥀55296-1024×+9216+⍘⇅12+]?]≔⒰
+
+※ escape: i (at the backslash) → c i′
+[∂1+ｊ#≥[«⒥ bad JSON at »⇅⍕⧺↯][]?ｊ⊚1+@∂«u»=[⌫⒰]
+⋮[∂«n»=[⌫10⍘][∂«t»=[⌫9⍘][∂«r»=[⌫13⍘][∂«b»=[⌫8⍘][∂«f»=[⌫12⍘][∂«"»=[][∂«\»=[][∂«/»=[][«⒥ bad JSON at »⥀⍕⧺⇅⌫↯]?]?]?]?]?]?]?]?⇅2+]?]≔⒝
+
+※ string: i (at the opening ") → s i′; the growing text rides in ｐ.
+※ Each turn scans ahead to the next " or \ and takes the run before it
+※ in one slice, so an escape-free string costs a single pass.
 [∂ｊ#≥[«⒥ bad JSON at »⇅⍕⧺↯][]?ｊ⊚@«"»≠[«⒥ bad JSON at »⇅⍕⧺↯][]?«»⇒ｐ1+
-⋮[∂ｊ#<[ｊ⊚@«"»≠][0]?]
-⋮[ｊ⊚@∂«\»=
-⋮[⌫∂1+ｊ#≥[«⒥ bad JSON at »⇅⍕⧺↯][]?ｊ⊚1+@∂«u»=
-⋮[⌫∂6+ｊ#>[«⒥ bad JSON at »⇅⍕⧺↯][]?∂2+∂4+ｊ⥀⥀⊂0[⇅16×⇅⒣+]⍀⍘ｐ⇅⧺⇒ｐ6+]
-⋮[∂«n»=[⌫10⍘][∂«t»=[⌫9⍘][∂«r»=[⌫13⍘][∂«b»=[⌫8⍘][∂«f»=[⌫12⍘][∂«"»=[][∂«\»=[][∂«/»=[][«⒥ bad JSON at »⥀⍕⧺⇅⌫↯]?]?]?]?]?]?]?]?ｐ⇅⧺⇒ｐ2+]?]
-⋮[ｐ⇅⧺⇒ｐ1+]?]⟳
-⋮∂ｊ#≥[«⒥ bad JSON at »⇅⍕⧺↯][]?1+ｐ⇅]≔⒯
+⋮[ｊ⊚ｊ#⊂∂«"»⍷∂¯1=[«⒥ bad JSON at »ｊ#⍕⧺↯][]?⇅«\»⍷∂¯1=[⌫ｊ#][]?⊚⊚>]
+⋮[⇅⌫⊚+∂⥀⇅ｊ⥀⥀⊂ｐ⇅⧺⇒ｐ⒝⇅ｐ⇅⧺⇒ｐ]⟳
+⋮⌫⊚+∂⥀⇅ｊ⥀⥀⊂ｐ⇅⧺⇅1+]≔⒯
 
 ※ object entries: acc i (past one k:v boundary) → acc′ i′ (at the })
 [⒯⒲∂ｊ#≥[«⒥ bad JSON at »⇅⍕⧺↯][]?ｊ⊚@«:»≠[«⒥ bad JSON at »⇅⍕⧺↯][]?1+⒱
@@ -93,12 +102,15 @@
 ※ serialize a list: all-pair lists become objects, the rest arrays
 [∂#0>[∂1[⒤∧]⍀][0]?[[∂0@⒬«:»⧺⇅1@⒮⧺]∵«,»⊇«{»⇅⧺«}»⧺][[⒮]∵«,»⊇«[»⇅⧺«]»⧺]?]≔⒭
 
+※ numbers: JSON has no inf or nan, so those glitch rather than lie
 [⍙«∅»=[⌫«null»][⍙«str»=[⒬][⍙«list»=[⒭][⍙«quot»=[«⒮ cannot serialize a quotation»↯]
-⋮[∂0<[±⍕«-»⇅⧺][⍕]?]?]?]?]?]≔⒮
+⋮[∂⍕⟨«inf»«¯inf»«nan»⟩⇅∈[«⒮ cannot serialize »⇅⍕⧺↯][]?∂0<[±⍕«-»⇅⧺][⍕]?]?]?]?]?]≔⒮
 
 ※ ── navigation ────────────────────────────────────────────────────
-※ look up one key: obj «key»⒢ → v|∅
-[⇒ｐ[⍙«list»=[∂#2=[⊃ｐ=][⌫0]?][⌫0]?]⌿∂#0=[⌫∅][⊃1@]?]≔⒢
+※ look up one key: obj «key»⒢ → v|∅ (∅ when obj is not a list at all)
+[⇒ｐ⍙«list»=[[⍙«list»=[∂#2=[⊃ｐ=][⌫0]?][⌫0]?]⌿∂#0=[⌫∅][⊃1@]?][⌫∅]?]≔⒢
 
-※ dig a path of keys and indices: v ⟨steps…⟩⒫ → v|∅
-[[⊚∅=[⌫][⍙«str»=[⒢][⇅⍙«list»=[⇅∂0≥[⊚#⊚>[@][⌫⌫∅]?][⌫⌫∅]?][⌫⌫∅]?]?]?]∀]≔⒫
+※ dig a path of keys and indices: v ⟨steps…⟩⒫ → v|∅. A string step
+※ looks up a key, an int step indexes a list; any other pairing of
+※ step and value has nothing to offer and answers ∅.
+[[⊚∅=[⌫][⍙«str»=[⒢][⍙«int»=[⇅⍙«list»=[⇅∂0≥[⊚#⊚>[@][⌫⌫∅]?][⌫⌫∅]?][⌫⌫∅]?][⌫⌫∅]?]?]?]∀]≔⒫

@@ -35,7 +35,9 @@
 [∂1@⇒ｔ2@⇒ｚ ｚｉ=[«⟦ »ｔ⧺« ⟧(»⧺][«[ »ｔ⧺« ](»⧺]?ｚ⧺«)»⧺⟨⇅⟩]≔ⓑ            ※ button   [ caption ](key)
 [∂1@⇒ｙ∂2@⇒ｔ3@ｙｉ=[«▏»⧺][]?⇒ｚ ｔ«: »⧺ｚ⧺«▁»12ｚ#-0⊔ⓡ⧺« (»⧺ｙ⧺«)»⧺⟨⇅⟩]≔ⓔ ※ edit     label: value▁▁▁ (key)
 [∂1@⇒ｔ∂2@⇒ｚ3@[«×»][« »]?⇒ｙ ｚｉ=[«⟦»ｙ⧺«⟧ »⧺][«[»ｙ⧺«] »⧺]?ｔ⧺« (»⧺ｚ⧺«)»⧺⟨⇅⟩]≔ⓒ ※ checkbox [×] caption (key)
-[∂1@⇒ｙ2@⇒ｚ ｙ20×ｚ÷⌊0⊔20⊓⇒ｔ«▓»ｔⓡ«░»20ｔ-ⓡ⧺« »⧺ｙ100×ｚ÷⌊⍕⧺«%»⧺⟨⇅⟩]≔ⓖ  ※ progress ▓▓░░ n%
+※ progress ▓▓░░ n% — the percentage is clamped to 0…100 and a maximum
+※ of zero (or less) simply shows an empty bar, so drawing never glitches
+[∂1@⇒ｙ2@⇒ｚ ｚ0>[ｙ100×ｚ÷⌊0⊔100⊓][0]?⇒ｔ«▓»ｔ5÷⌊ⓡ«░»20ｔ5÷⌊-ⓡ⧺« »⧺ｔ⍕⧺«%»⧺⟨⇅⟩]≔ⓖ
 
 ※ hbox: blocks side by side. Pad every block to its own width and the
 ※ tallest height, then join the rows with a two-space gutter.
@@ -56,12 +58,21 @@
 ※ in layout order, which is also the ⏵ focus order.
 [∂⊃«B»=[∂3@⟨⇅⟩«B»⇅ⓐ⇅2@⇅ⓐ⟨⇅⟩][∂⊃«E»=[∂3@⟨⇅⟩⇅∂4@⥀ⓐ«E»⇅ⓐ⇅1@⇅ⓐ⟨⇅⟩][∂⊃«C»=[∂4@⟨⇅⟩«C»⇅ⓐ⇅2@⇅ⓐ⟨⇅⟩][∂⊃∂«V»=⇅«H»=∨[1@[ⓚ]∵⟨⟩[⧺]⍀][∂⊃«W»=[2@ⓚ][⌫⟨⟩]?]?]?]?]?]≔ⓚ
 
+※ run a slot with stack discipline: args… [slot] n ⓢ, n being the
+※ number of arguments the slot takes. Everything beneath them belongs
+※ to the application: whatever the slot leaves on top is dropped, and
+※ a slot that ate into the application's values is reported as a ✗
+※ status message. (ｄ holds the expected depth — a slot must not draw.)
+[≢2-⇅-⇒ｄ!≢ｄ-∂0>[[⌫]⍣][∂0<[±⍕«✗ slot consumed »⇅⧺« values»⧺✎][⌫]?]?]≔ⓢ
+
 ※ dispatch one input line against the current tree ｗ: run the slot of
-※ the widget whose key matches (line edits get the argument text).
-[ｌ⍭∂#0=[⌫][⊃⇒ｋ ｌｋ#1+⊥⇒ｕ ｗⓚ[⊃ｋ=]⌿⇒ｍ ｍ#0=[«? »ｌ⧺✎][ｍ⊃∂1@«E»=[2@ｕ⇅!][2@!]?]?]?]≔ⓓ
+※ the widget whose key matches (line edits get the argument text — the
+※ rest of the line after the key, without its leading spaces).
+[ｌ⍭∂#0=[⌫][⊃⇒ｋ ｌ∂ｋ⍷ｋ#+⊥⇒ｕ[ｕ#0>[ｕ0 1⊂« »=][0]?][ｕ1ｕ#⊂⇒ｕ]⟳
+⋮ｗⓚ[⊃ｋ=]⌿⇒ｍ ｍ#0=[«? »ｌ⧺✎][ｍ⊃∂1@«E»=[2@ｕ⇅1ⓢ][2@0ⓢ]?]?]?]≔ⓓ
 
 ※ ── the application object ────────────────────────────────────────
-[⇒ｓ]≔✎                   ※ status bar    «message»✎ — shown under the next frame
+[⍕⇒ｓ]≔✎                  ※ status bar    «message»✎ — shown under the next frame (any value; stringified)
 [0⇒ｑ]≔◼                  ※ quit          ◼ — ends the event loop
 ※ exec (scripted): [view]▶ — Qt's app.exec() on the offscreen
 ※ platform. Each turn: rebuild the tree from the view quotation, draw
@@ -74,34 +85,42 @@
 ※ [view]⏵ is ▶ on a real terminal: it reads ⌥ events instead of
 ※ lines. ⇥/↓/→ and ↑/← move focus through the keymap in layout
 ※ order, ↵ or space activates the focused widget, printable keys
-※ type straight into a focused line edit (its slot runs on every
-※ keystroke with the new text), ⌫ deletes, any other key fires the
-※ widget with that mnemonic, and a mouse click ⟨«⌖» x y⟩ lands on
-※ whatever drew the «(key)» under the pointer. ^C (Ctrl-C), ⎋ or end
-※ of input ends the loop, as does ◼ in a slot.
+※ (single characters from code point 32 up that name no key) type
+※ straight into a focused line edit (its slot runs on every keystroke
+※ with the new text), ⌫ deletes, any other key — control chords and
+※ navigation keys included — fires the widget with that mnemonic, and
+※ a mouse click ⟨«⌖» x y⟩ lands on whatever drew the «(key)» under
+※ the pointer. ^C (Ctrl-C), ⎋ or end of input ends the loop, as does
+※ ◼ in a slot.
 
-[∂1@«E»=[⌫][2@!]?]≔ⓤ      ※ activate an entry: run its slot (edits just take focus)
+[∂1@«E»=[⌫][2@0ⓢ]?]≔ⓤ    ※ activate an entry: run its slot (edits just take focus)
 
 ※ type one character into the focused edit: slot gets value⧺char
-[ｅｆ@∂1@«E»=[∂3@⥀⧺⇅2@!][⌫⌫]?]≔ⓣ
+[ｅｆ@∂1@«E»=[∂3@⥀⧺⇅2@1ⓢ][⌫⌫]?]≔ⓣ
 ※ backspace in the focused edit: slot gets the value minus one char
-[ｅｆ@∂1@«E»=[∂3@∂#1-0⊔ 0⇅⊂⇅2@!][⌫]?]≔ⓞ
+[ｅｆ@∂1@«E»=[∂3@∂#1-0⊔ 0⇅⊂⇅2@1ⓢ][⌫]?]≔ⓞ
 
-※ hit-test: line ci ⓧ → the key of the «(key)» drawn in the segment
-※ (between two-space gutters) around character index ci, or «».
-[⇒ｚ⇒ｙ ｙ0ｚ⊂⇒ｕ ｕ⌽«  »⍷∂¯1=[⌫0][ｕ#⇅-]?⇒ｔ
-⋮ｙｚｙ#⊂«  »⍷∂¯1=[⌫ｙ#][ｚ+]?⇒ｕ ｙｔｕ⊂⇒ｙ
-⋮ｙ⌽«(»⍷⇒ｚ ｙ⌽«)»⍷⇒ｔ ｚ¯1=ｔ¯1=∨[«»][ｙ#1-ｚ-⇒ｚ ｙ#1-ｔ-⇒ｔ ｚｔ<[ｙｚ1+ｔ⊂][«»]?]?]≔ⓧ
+※ hit-test: line ci ⓧ → the key of the widget drawn under character
+※ index ci, or «». A widget's segment runs from its first glyph to the
+※ «)» closing its «(key)» affordance; the frame's │, the two-space
+※ gutters between hbox blocks and the padding after a segment belong
+※ to no widget. So: ci must not sit on a │ or on a space next to a
+※ space, a ) or a │ (or at either end of the line); the text from ci
+※ to the next ) must hold no │ and no gutter; the key is what the
+※ last ( before that ) opens.
+[⇒ｚ⇒ｙ ｚ0<ｚｙ#≥∨[«»][ｙｚ@⇒ｔ ｔ«│»=ｔ« »=[ｚ0=ｚｙ#1-=∨[1][« )│»ｙｚ1-@∈« │»ｙｚ1+@∈∨]?][0]?∨[«»]
+⋮[ｙｚｙ#⊂«)»⍷⇒ｔ ｔ¯1=[«»][ｔｚ+⇒ｔ ｙｚｔ1+⊂⇒ｕ ｕ«│»∈ｕ«  »∈∨[«»]
+⋮[ｙ0ｔ⊂⌽«(»⍷⇒ｕ ｕ¯1=[«»][ｙｔｕ-ｔ⊂]?]?]?]?]?]≔ⓧ
 
 ※ dispatch one ⌥ event ｌ against entries ｅ, focus ｆ, frame ｄ
 [ｌ∅=ｌ«^C»=∨ｌ«⎋»=∨[0⇒ｑ][
 ⋮ｌ«⇥»=ｌ«↓»=∨ｌ«→»=∨[ｅ#0>[ｆ1+ｅ#%⇒ｆ][]?][
 ⋮ｌ«↑»=ｌ«←»=∨[ｅ#0>[ｆｅ#+1-ｅ#%⇒ｆ][]?][
-⋮ｌ⍙«list»=[ｌ2@1-⇒ｒ ｒ0≥ｒｄ#<∧[ｄｒ@ｌ1@1-ⓧ⇒ｋ ｋ«»≠[ｅ#⍸[ｅ⇅@⊃ｋ=]⌿⇒ｍ ｍ#0>[ｍ⊃⇒ｆ ｅｆ@∂1@«E»=[⌫][ⓤ]?][]?][]?][]?][
+⋮ｌ⍙⇅⌫«list»=[ｌ2@1-⇒ｒ ｒ0≥ｒｄ#<∧[ｄｒ@ｌ1@1-ⓧ⇒ｋ ｋ«»≠[ｅ#⍸[ｅ⇅@⊃ｋ=]⌿⇒ｍ ｍ#0>[ｍ⊃⇒ｆ ｅｆ@∂1@«E»=[⌫][ⓤ]?][]?][]?][]?][
 ⋮ｌ«↵»=[ｅ#0>[ｅｆ@ⓤ][]?][
 ⋮ｌ«⌫»=[ｅ#0>[ⓞ][]?][
 ⋮ｌ« »=[ｅ#0>[ｅｆ@1@«E»=[« »ⓣ][ｅｆ@ⓤ]?][]?][
-⋮ｅ#0>[ｅｆ@1@«E»=][0]?[ｌⓣ][ｅ#⍸[ｅ⇅@⊃ｌ=]⌿⇒ｍ ｍ#0=[«? »ｌ⧺✎][ｍ⊃∂ｅ⇅@∂1@«E»=[⌫⇒ｆ][ⓤ⌫]?]?]?
+⋮ｅ#0>[ｅｆ@1@«E»=ｌ#1=∧[ｌ⌗32≥«↵⇥⌫⌦↑↓←→⇱⇲⇞⇟⎀⎋»ｌ∈¬∧][0]?][0]?[ｌⓣ][ｅ#⍸[ｅ⇅@⊃ｌ=]⌿⇒ｍ ｍ#0=[«? »ｌ⧺✎][ｍ⊃∂ｅ⇅@∂1@«E»=[⌫⇒ｆ][ⓤ⌫]?]?]?
 ⋮]?]?]?]?]?]?]?]≔ⓨ
 
 ※ the live loop: home+clear, draw with focus, status, ⌥, dispatch.

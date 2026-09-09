@@ -41,6 +41,8 @@
 ※ ── layout & number formatting ────────────────────────────────────
 [⇒ｈ⇒ｃ«»ｈｃ#-0⊔[« »⧺]⍣ｃ⧺]≔◧   ※ pad left    s n◧ → «  s» (width n)
 [⇒ｈ⇒ｃｃ«»ｈｃ#-0⊔[« »⧺]⍣⧺]≔◨   ※ pad right   s n◨ → «s  » (width n)
-[⇒ｈ∂0<⇒ｇ∣10ｈ^×0.5+⌊∂0=[0⇒ｇ][]?⍕⇒ｃ«»ｈ1+ｃ#-0⊔[«0»⧺]⍣ｃ⧺⇒ｃ
+[⇒ｈ∂0<⇒ｇ∣10ｈ^×⍙«int»=[][0.5+⌊]?∂0=[0⇒ｇ][]?⍕⇒ｃ«»ｈ1+ｃ#-0⊔[«0»⧺]⍣ｃ⧺⇒ｃ
 ⋮ｃ0ｃ#ｈ-⊂ｈ0>[«.»⧺ｃｃ#ｈ-ｃ#⊂⧺][]?ｇ[«¯»⇅⧺][]?]≔⍢
 ※ fixed decimals   x n⍢ → «x.xx» (round half away from zero; ¯ for sign)
+※ An int scaled by 10ⁿ is still an exact int — only floats are rounded,
+※ so big ints keep every digit.
