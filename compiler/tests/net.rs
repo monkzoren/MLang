@@ -5,7 +5,8 @@
 //! byte-exact — including when a worker dies mid-run and its items are
 //! requeued on the survivors.
 
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 
 fn mlang() -> &'static str {
@@ -14,6 +15,16 @@ fn mlang() -> &'static str {
 
 fn example(name: &str) -> String {
     format!("{}/../examples/{name}", env!("CARGO_MANIFEST_DIR"))
+}
+
+/// A scratch program file unique to this test *and* this process, so
+/// parallel test runs (and stale files from earlier ones) cannot collide.
+fn scratch(test: &str, name: &str, source: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("mlang-net-test-{}-{test}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join(name);
+    std::fs::write(&path, source).unwrap();
+    path
 }
 
 struct HubHandle {
@@ -64,7 +75,7 @@ impl HubHandle {
     }
 
     /// Wait for the hub to exit; returns (exit code, stdout, remaining stderr).
-    fn finish(mut self) -> (Option<i32>, String, String) {
+    fn finish(self) -> (Option<i32>, String, String) {
         let mut rest = String::new();
         let drain = std::thread::spawn(move || {
             let mut s = String::new();
@@ -117,13 +128,7 @@ fn a_glitching_worker_is_requeued_onto_the_survivor() {
     // dies without forwarding ∅ — let-it-crash, over a socket. The hub
     // must requeue its unanswered items on worker 2 and still produce
     // the byte-exact result.
-    let dir = std::env::temp_dir().join("mlang-net-test");
-    std::fs::create_dir_all(&dir).unwrap();
-    let poison = dir.join("poison-worker.ml");
-    {
-        let mut f = std::fs::File::create(&poison).unwrap();
-        writeln!(f, "[«boom»↯]⇉αβ").unwrap();
-    }
+    let poison = scratch("glitch", "poison-worker.ml", "[«boom»↯]⇉αβ\n");
 
     let hub_prog = example("net-primes-hub.ml");
     let worker_prog = example("net-primes-worker.ml");
@@ -151,14 +156,7 @@ fn an_empty_stream_ends_every_worker_cleanly() {
     // Zero work items: the ∅ is the whole stream. The hub must forward
     // it to the joined worker (whose pump stops at once) and to its own
     // drain, and both processes must exit 0.
-    let dir = std::env::temp_dir().join("mlang-net-test");
-    std::fs::create_dir_all(&dir).unwrap();
-    let empty_hub = dir.join("empty-hub.ml");
-    {
-        let mut f = std::fs::File::create(&empty_hub).unwrap();
-        writeln!(f, "⟨⟩⇈α").unwrap();
-        writeln!(f, "⇟β#⍞").unwrap();
-    }
+    let empty_hub = scratch("empty", "empty-hub.ml", "⟨⟩⇈α\n⇟β#⍞\n");
     let worker_prog = example("net-primes-worker.ml");
 
     let mut hub = start_hub(&["--workers", "1", empty_hub.to_str().unwrap()]);
@@ -170,4 +168,84 @@ fn an_empty_stream_ends_every_worker_cleanly() {
     assert_eq!(code, Some(0), "hub failed; stderr: {stderr}");
     assert_eq!(stdout, "0\n");
     assert_eq!(w.wait().unwrap().code(), Some(0), "worker should take its ∅");
+}
+
+#[test]
+fn a_nil_result_is_a_value_not_the_end() {
+    // The pump's body answers every item with ∅. On the wire that is a
+    // value line, distinct from the `⇅ end` control line, so each ∅
+    // acknowledges its item: the hub receives all three, its program
+    // finishes, and both processes exit 0. (Before end-of-stream was
+    // explicit, the worker swallowed these as its ∅ forward and the hub
+    // waited forever.)
+    let hub_prog = scratch("nil", "nil-hub.ml", "⟨1 2 3⟩⇈α\n↧β⌫↧β⌫↧β⌫«done»⍞\n");
+    let worker_prog = scratch("nil", "nil-worker.ml", "[⌫∅]⇉αβ\n");
+
+    let mut hub = start_hub(&["--workers", "1", hub_prog.to_str().unwrap()]);
+    let addr = hub.addr.clone();
+    let mut w = start_worker(&addr, worker_prog.to_str().unwrap());
+    hub.await_line("worker 1 joined");
+
+    let (code, stdout, stderr) = hub.finish();
+    assert_eq!(code, Some(0), "hub failed; stderr: {stderr}");
+    assert_eq!(stdout, "done\n");
+    assert!(stderr.contains("worker 1 finished"), "hub stderr: {stderr}");
+    assert_eq!(w.wait().unwrap().code(), Some(0), "worker should take its end");
+}
+
+#[test]
+fn a_worker_killed_mid_item_is_requeued() {
+    // SIGKILL, not a glitch: the worker process vanishes with items in
+    // flight and no chance to say anything. The kernel closes its socket,
+    // the hub requeues what it owed, and the survivor produces the exact
+    // total. (100 items of real work, so worker 1 cannot have finished
+    // them all before the kill lands.)
+    let hub_prog = example("net-primes-hub.ml");
+    let worker_prog = example("net-primes-worker.ml");
+    let mut hub = start_hub(&["--workers", "1", &hub_prog, "100000", "1000"]);
+    let addr = hub.addr.clone();
+
+    let mut w1 = start_worker(&addr, &worker_prog);
+    hub.await_line("worker 1 joined");
+    w1.kill().unwrap();
+    let mut w2 = start_worker(&addr, &worker_prog);
+
+    let (code, stdout, stderr) = hub.finish();
+    assert_eq!(code, Some(0), "hub failed; stderr: {stderr}");
+    assert_eq!(stdout, "π(<100000) = 9592\nlargest: 99991\n");
+    assert!(stderr.contains("worker 1 lost"), "hub stderr: {stderr}");
+    assert!(stderr.contains("requeued"), "hub stderr: {stderr}");
+    assert!(w1.wait().unwrap().code().is_none(), "w1 should have died by signal");
+    assert_eq!(w2.wait().unwrap().code(), Some(0));
+}
+
+#[test]
+fn a_poison_item_is_dropped_after_three_failures() {
+    // Item 0 glitches every worker's pump. Each death is charged to the
+    // item at the head of that worker's queue — item 0 every time — and
+    // on the third the hub drops it with a diagnostic instead of
+    // requeueing it. The remaining items still reach the next worker,
+    // the end still propagates, and the hub terminates.
+    let hub_prog = scratch("poison", "poison-hub.ml", "⟨0 1 2⟩⇈α\n⇟β#⍞\n");
+    let worker_prog = scratch("poison", "poison-worker.ml", "[∂0=[«boom»↯][]?]⇉αβ\n");
+    let worker_path = worker_prog.to_str().unwrap();
+
+    let mut hub = start_hub(&["--workers", "1", hub_prog.to_str().unwrap()]);
+    let addr = hub.addr.clone();
+    let mut w1 = start_worker(&addr, worker_path);
+    hub.await_line("worker 1 lost");
+    let mut w2 = start_worker(&addr, worker_path);
+    hub.await_line("worker 2 lost");
+    let mut w3 = start_worker(&addr, worker_path);
+    let dropped = hub.await_line("item dropped");
+    assert_eq!(dropped, "⇅ item dropped after 3 worker failures: 0");
+    let mut w4 = start_worker(&addr, worker_path);
+
+    let (code, stdout, stderr) = hub.finish();
+    assert_eq!(code, Some(0), "hub failed; stderr: {stderr}");
+    assert_eq!(stdout, "2\n", "items 1 and 2 still answered; stderr: {stderr}");
+    for w in [&mut w1, &mut w2, &mut w3] {
+        assert_eq!(w.wait().unwrap().code(), Some(1), "the glitch is exit 1");
+    }
+    assert_eq!(w4.wait().unwrap().code(), Some(0));
 }

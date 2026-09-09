@@ -165,6 +165,34 @@ fn parallel_detects_deadlock() {
 }
 
 #[test]
+fn parallel_deadlock_after_a_producer_finishes() {
+    // Strand 0 sends one value and finishes; strand 1 wants two. When
+    // strand 1 parks on the second receive, strand 0 may still be live,
+    // so no verdict is possible yet — it must be re-checked when strand
+    // 0 finishes, and then reported. Repeated, because the race between
+    // the park and the finish goes both ways.
+    for _ in 0..5 {
+        let (code, _, err) = run(&["eval", "--parallel", "1↥z\n↧z↧z"], "", &[]);
+        assert_eq!(code, Some(1), "stderr was: {err}");
+        assert!(err.contains("✗ deadlock"), "stderr was: {err}");
+        assert!(err.contains("strand 1 (row 2) waiting on channel z"), "stderr was: {err}");
+    }
+}
+
+#[test]
+fn parallel_deadlock_on_spawn_then_self_join() {
+    // The spawned strand joins itself; its spawner joins it. Both waits
+    // are on strand 1, neither can ever complete.
+    for _ in 0..5 {
+        let (code, _, err) = run(&["eval", "--parallel", "[⍳⋈]⚡⋈"], "", &[]);
+        assert_eq!(code, Some(1), "stderr was: {err}");
+        assert!(err.contains("✗ deadlock"), "stderr was: {err}");
+        assert!(err.contains("strand 0 (row 1) waiting on strand 1"), "stderr was: {err}");
+        assert!(err.contains("strand 1 (⚡ of strand 0) waiting on strand 1"), "stderr was: {err}");
+    }
+}
+
+#[test]
 fn parallel_glitch_kills_only_its_strand() {
     // Strand 0 divides by zero and dies; strand 1 still answers. Exit 1.
     let (code, out, err) = run(&["eval", "--parallel", "1 0÷\n«alive»⍞"], "", &[]);
@@ -176,7 +204,7 @@ fn parallel_glitch_kills_only_its_strand() {
 #[test]
 fn welded_binary_honors_mlang_par() {
     let exe = mlang();
-    let dir = std::env::temp_dir().join("mlang-par-test");
+    let dir = std::env::temp_dir().join(format!("mlang-par-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let bin = dir.join("mandelbrot");
     let build = Command::new(exe)

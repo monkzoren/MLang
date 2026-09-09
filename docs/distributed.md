@@ -74,22 +74,49 @@ slot. A worker that computes twice as fast ends up with twice the items
 
 The stream protocol is the language's own: the hub program ends its
 pour with `∅` (`⇈` does that automatically). The hub holds that `∅`
-until every dispatched item has its result, then forwards it — to every
-worker, whose pumps stop, and onto its own results channel, so its
-drain finishes. Because a pump is one-in-one-out in order, result k on
-a connection acknowledges item k, which is what lets the hub know what
-a lost worker still owed.
+until every dispatched item has its result, then ends the stream — it
+tells every worker (`⇅ end` on the wire; their pumps stop) and puts the
+`∅` onto its own results channel, so its drain finishes. Because a pump
+is one-in-one-out in order, result k on a connection acknowledges item
+k, which is what lets the hub know what a lost worker still owed.
+
+End-of-stream is a *control line*, not a `∅` value: a pump whose body
+legitimately answers `∅` sends that `∅` as an ordinary value and it
+acknowledges its item like any other (and, exactly as it would locally,
+it is a `∅` on the hub's results channel — a drain there stops at it).
+
+One stream per run. Work the hub program sends after its `∅` is not
+silently lost — the hub prints `⇅ work sent after end-of-stream —
+ignored` and drops it; there is no second stream.
 
 **Failure is the language's failure model, over a socket.** If a
 worker's pump body glitches, the worker strand dies exactly as it would
 locally (let-it-crash), the process exits 1, and the closed socket
 tells the hub to requeue that worker's unanswered items on the
-survivors. Kill a worker machine mid-run and the job still completes:
+survivors. Kill a worker *process* mid-run (`kill -9`) and the same
+happens at once: the kernel closes its socket. The job still completes:
 
 ```
 ⇅ worker 1 lost — 2 items requeued
 ⇅ worker 2 finished
 ```
+
+A worker *machine* that vanishes — power, cable, a partition — sends no
+FIN and no RST, so its socket looks alive. An application heartbeat
+covers that case: the hub sends `⇅ ping` to any worker it has not heard
+from for 5 s, a worker answers `⇅ pong`, and a worker silent for 30 s
+(no result, no pong) is dropped with `⇅ worker N silent for 30s —
+dropped` and its items requeued exactly as for a hangup. So a lost
+machine costs the job up to 30 s plus a redo of at most 2 items, never
+a hang. The worker side gives up on a hub silent for 60 s. (Both sides
+also refuse a peer that does not complete the hello within 10 s.)
+
+**A poison item does not stall the run.** A worker death is charged to
+the item at the head of its queue — the one its in-order pump was on.
+An item that has killed three workers is not requeued a fourth time:
+the hub prints `⇅ item dropped after 3 worker failures: <item>` and
+carries on, so the stream still ends and the hub still terminates —
+with that item's result missing, which the diagnostic makes loud.
 
 If *every* worker is gone, pending work simply waits for the next one
 to join — the hub is a server.
@@ -100,7 +127,8 @@ Preserved, and covered by `compiler/tests/net.rs`:
 
 * **Per-sender FIFO and blocking receive.** TCP keeps each connection
   ordered; `↧`/`⇟` on an imported channel block exactly as locally.
-* **Glitch isolation and crash recovery** as above.
+* **Glitch isolation and crash recovery** as above, including a
+  SIGKILLed worker, a `∅` result, and the poison-item cap.
 * **Deadlock detection stays sound.** A wait on a network-fed channel
   is exempt from the deadlock verdict while the wire may still deliver
   (the remote side is not provably stuck); once the channel's `∅`
@@ -129,6 +157,27 @@ Traded, knowingly:
 
 One value per line, UTF-8, in the language's own literal syntax —
 `∅`, `¯5`, `2.5`, `«text»` (newlines inside strings travel as `⏎`),
-`⟨1 «a» ⟨2⟩⟩` — after a one-line hello on each side (`⇓ mlang-hub 1` /
-`⇓ mlang-worker 1`). A worker is ~40 lines of any language that can
-read lines from a socket; it need not be MLang at all.
+`⟨1 «a» ⟨2⟩⟩` — after a one-line hello on each side (`⇓ mlang-hub 2` /
+`⇓ mlang-worker 2`). Lines beginning `⇅ ` are control lines:
+
+| line     | direction    | meaning                                          |
+|----------|--------------|--------------------------------------------------|
+| `⇅ end`  | hub → worker | the stream is over; answer nothing more, hang up |
+| `⇅ ping` | hub → worker | are you there? (sent after 5 s of silence)       |
+| `⇅ pong` | worker → hub | yes (a result counts as a yes too)               |
+
+Every other line is a value: hub → worker, one work item; worker → hub,
+the result of the oldest unanswered item. A worker never sends `∅` to
+mean "done" — it simply closes the socket after `⇅ end` — so a `∅` from
+a worker is a result. Unknown control lines are ignored with a
+diagnostic.
+
+Framing is strict on both sides: a line is a value only once its `\n`
+has arrived (a final unterminated line means the peer died mid-write
+and is treated as a hangup, never parsed), and a line longer than 64 MiB
+or nested more than 1 000 lists deep is refused. Strings containing `»`
+or a literal `⏎` cannot be encoded and are a fatal error on the sending
+side rather than a corrupted value on the receiving one.
+
+A worker is ~40 lines of any language that can read lines from a
+socket; it need not be MLang at all — answer pings, stop at `⇅ end`.
