@@ -24,7 +24,7 @@ Two benchmarks share the mutation engine:
 
 The MLang arm mutates the exit-0 conformance programs directly. The
 Python control arm mutates `python_ports/` — hand-written natural Python
-translations of 28 of those programs (threads + queues for the channel
+translations of 29 of those programs (threads + queues for the channel
 cases), each with its own recorded golden (`record_ports.py` re-records).
 Both arms get the same four one-edit operator classes, with string
 literals and comments masked so every mutation lands in code:
@@ -75,7 +75,15 @@ python3 bench/report.py
 Providers for `heal.py`: `claude-cli` (headless `claude -p`, uses your
 Claude Code login), `anthropic` (`ANTHROPIC_API_KEY`), `openai`
 (`OPENAI_API_KEY`), or `cmd:<shell-command>` (prompt on stdin, completion
-on stdout — plug in anything).
+on stdout — plug in anything). The `claude-cli` provider passes
+`--tools ""` when the installed CLI advertises that flag (or denies the
+file and shell tools via `--disallowedTools` on an older CLI that only
+knows that one), so the model answers from the prompt alone and cannot
+read the pristine sources off disk; with a CLI that knows neither flag,
+run the benchmark from a directory that does not contain the repository,
+or use the `anthropic` provider. Result files are never overwritten silently: `heal.py` and
+`robustness.py` refuse to clobber an existing result unless `--force` is
+given.
 
 Protocol note: the failure report shown to the model is whatever the
 language's runtime printed (MLang reports carry source excerpts with
@@ -124,3 +132,33 @@ the top-level README's honest notes.
   Python side is bare idiomatic code. A hang hands the model whatever
   partial output appeared before the timeout; that asymmetry (wait graph
   vs. frozen partial traceback) is precisely the thing under test.
+
+## Threats to validity
+
+* **The operators are not the same edit.** MLang mutates single glyphs;
+  Python mutates whole tokens, and the Python masker never touches a
+  string delimiter, while an MLang mutant can land on `«` or `»`.
+* **Python's drop operator is indent-heavy.** A quarter of Python drops
+  remove one indentation level, which almost always is an
+  `IndentationError` — that inflates Python's caught-before-running
+  bucket relative to a pure token drop.
+* **MLang's deadlock bucket is mostly one operator.** 31 of the 33
+  deadlocks in the small-program sweep come from the channel-rename
+  operator, which has no Python analogue (renaming a Python identifier
+  is a `NameError`, not a hang).
+* **Python thread tracebacks with exit 0 count as silent.** A worker
+  thread that dies prints a traceback but the interpreter still exits 0;
+  the classifier files that as *silent wrong output* even though
+  something was printed on stderr.
+* **The model sees the golden output.** In both arms the prompt includes
+  the byte-exact expected stdout, so part of every repair is
+  output-matching, not just diagnosis.
+* **The `claude -p` runs cannot rule out file reads.** The recorded
+  `claude-cli` runs did not restrict the CLI's filesystem tools and did
+  not store transcripts, so they cannot exclude the model having read a
+  pristine source from the checkout. The provider now disables tools
+  (see above); re-run with the current script to remove the caveat.
+* **The 65% pre-diagnostics figure has no result file.** The
+  before-diagnostics Oracle run quoted in the top-level README (65% →
+  82%) was not committed under `results/`; only the post-diagnostics
+  runs are reproducible from this repository.

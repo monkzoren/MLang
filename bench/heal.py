@@ -106,14 +106,47 @@ def retrying(fn, tries=3, base_delay=5):
             time.sleep(base_delay * (attempt + 1))
 
 
+_CLAUDE_TOOL_FLAGS = None
+
+
+def claude_cli_tool_flags():
+    """Flags that switch off the CLI's tools, so the model repairs from the
+    prompt alone and cannot read the pristine source off disk.
+
+    Probed once from `claude --help`: `--tools ""` (the current CLI's way
+    to disable every built-in tool) is preferred; an older CLI that only
+    knows `--disallowedTools` gets the file and shell tools denied by name;
+    a CLI that knows neither runs with no flags (bench/README.md says how
+    to run such a CLI safely).
+    """
+    global _CLAUDE_TOOL_FLAGS
+    if _CLAUDE_TOOL_FLAGS is None:
+        try:
+            h = subprocess.run(["claude", "--help"], capture_output=True,
+                               timeout=60).stdout.decode("utf-8", "replace")
+        except (OSError, subprocess.SubprocessError):
+            h = ""
+        if "--tools" in h:
+            _CLAUDE_TOOL_FLAGS = ["--tools", ""]
+        elif "--disallowedTools" in h or "--disallowed-tools" in h:
+            _CLAUDE_TOOL_FLAGS = ["--disallowedTools",
+                                  "Bash,Read,Edit,Write,Glob,Grep,"
+                                  "WebFetch,WebSearch,Task"]
+        else:
+            _CLAUDE_TOOL_FLAGS = []
+    return _CLAUDE_TOOL_FLAGS
+
+
 def complete_claude_cli(model, prompt):
     def call():
-        p = subprocess.run(["claude", "-p", "--model", model],
+        p = subprocess.run(["claude", "-p", "--model", model,
+                            *claude_cli_tool_flags()],
                            input=prompt.encode(), capture_output=True,
                            timeout=600)
         if p.returncode != 0:
-            raise RuntimeError(f"claude -p failed: {p.stderr.decode()[:500]}")
-        return p.stdout.decode()
+            err = p.stderr.decode("utf-8", "replace")[:500]
+            raise RuntimeError(f"claude -p failed: {err}")
+        return p.stdout.decode("utf-8", "replace")
     return retrying(call)
 
 
@@ -158,7 +191,7 @@ def completer(provider, model):
         def run_cmd(prompt):
             p = subprocess.run(cmd, shell=True, input=prompt.encode(),
                                capture_output=True, timeout=600)
-            return p.stdout.decode()
+            return p.stdout.decode("utf-8", "replace")
         return run_cmd
     raise SystemExit(f"unknown provider {provider}")
 
@@ -240,6 +273,13 @@ def heal_one(arm, mutant, rounds, complete, primer):
             "attempts": attempts}
 
 
+def result_path(arm, args):
+    slug = re.sub(r"[^a-z0-9.-]+", "-", args.model.lower())
+    if args.tag:
+        slug = f"{args.tag}-{slug}"
+    return os.path.join(common.BENCH, "results", f"heal-{arm}-{slug}.json")
+
+
 def run_arm(arm, args, complete):
     primer = mlang_primer() if arm == "mlang" else None
     cases_filter = set(args.cases.split(",")) if args.cases else None
@@ -267,10 +307,7 @@ def run_arm(arm, args, complete):
            "healed": len(healed),
            "records": records}
     os.makedirs(os.path.join(common.BENCH, "results"), exist_ok=True)
-    slug = re.sub(r"[^a-z0-9.-]+", "-", args.model.lower())
-    if args.tag:
-        slug = f"{args.tag}-{slug}"
-    path = os.path.join(common.BENCH, "results", f"heal-{arm}-{slug}.json")
+    path = result_path(arm, args)
     with open(path, "w") as f:
         json.dump(out, f, indent=1)
         f.write("\n")
@@ -300,11 +337,21 @@ def main():
                     help="parallel program runs (labeling/verification)")
     ap.add_argument("--llm-jobs", type=int, default=4,
                     help="parallel LLM calls")
+    ap.add_argument("--force", action="store_true",
+                    help="overwrite an existing result file")
     args = ap.parse_args()
+
+    arms = ["mlang", "python"] if args.arm == "both" else [args.arm]
+    if not args.force:
+        # Refuse before spending any LLM calls: a recorded run is evidence.
+        for arm in arms:
+            path = result_path(arm, args)
+            if os.path.exists(path):
+                raise SystemExit(f"refusing to overwrite {path} "
+                                 f"(pass --force, or use --tag)")
 
     common.ensure_mlang()
     complete = completer(args.provider, args.model)
-    arms = ["mlang", "python"] if args.arm == "both" else [args.arm]
     for arm in arms:
         run_arm(arm, args, complete)
 

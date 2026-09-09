@@ -64,7 +64,7 @@ Flat form is the intended authoring form — text generators emit lines.
 A file whose first line consists of `⇓` is in rain form. The remaining
 lines form a grid. **Each column of the grid is one strand**, executed
 top to bottom. Columns containing only blanks are ignored (use them as
-gutters). Blank cells within a column act as separators (§3.1).
+gutters). Blank cells within a column act as separators (§3).
 
 A grid row whose first non-blank glyph is `⇊` is the **divider**: rows
 above it are the **boot section**, rows below it are the strands. The boot
@@ -188,7 +188,11 @@ A **glitch** is a fault carrying an arbitrary value — raised by the runtime
 (with a message string) or by `↯` (with any value). Runtime glitch sources
 include: stack underflow, type mismatches, `÷`/`%` by zero, `√` of a
 negative, out-of-bounds `@`, unparseable `⍎`, unbound names, and rebinding
-a global.
+a global. **Resource exhaustion is a glitch like any other, not a crash**:
+an allocation the runtime refuses — `⍸` of an absurd count, `^` with an
+enormous exponent, a definition that recurses without bound — is reported
+with the same coordinates and stack as every other glitch, kills only its
+strand, and is catchable with `⍥` (§7 for the exit status).
 
 `[body] [handler] ⍥` runs `body`; if a glitch reaches the `⍥`, the stack
 is truncated to its depth at entry, the glitch value is pushed, and
@@ -199,8 +203,9 @@ value), other strands continue, and the process exits 1.
 ### 4.6 Fault reports
 
 Every fault report is written for a machine reader that cannot count
-columns. The first line of each report keeps the fixed shape shown above
-(`✗ glitch …`, `✗ deadlock …`, `✗ weave error …`). It is followed by a
+columns. The first line of each report has a fixed shape — `✗ glitch in
+strand N (row R) at row:col: value`, `✗ deadlock — every remaining strand
+is blocked:`, `✗ weave error at row:col: message`. It is followed by a
 **source excerpt**: the offending physical line, windowed to at most 61
 glyphs around the fault (`…` marks a trimmed side), prefixed `  row│ `,
 with a caret line beneath marking the exact glyph and repeating the
@@ -225,10 +230,13 @@ language's deterministic, conformance-pinned behavior.
 
 ## 5. Operations
 
+### 5.1 The operation tables
+
 Stack effects are written `inputs → outputs`, top of stack rightmost.
 `X` marks operations that consume the following glyph as an argument.
+`mlang ops` prints the same reference.
 
-### Stack
+#### Stack
 | glyph | effect | |
 |---|---|---|
 | `∂` | `a → a a` | dup |
@@ -238,7 +246,7 @@ Stack effects are written `inputs → outputs`, top of stack rightmost.
 | `⥀` | `a b c → b c a` | rot |
 | `≢` | `→ n` | depth |
 
-### Arithmetic
+#### Arithmetic
 | glyph | effect | |
 |---|---|---|
 | `+` `-` `×` | `a b → r` | add, subtract, multiply |
@@ -249,11 +257,11 @@ Stack effects are written `inputs → outputs`, top of stack rightmost.
 | `⌊` `⌈` | `a → n` | floor, ceiling (to int) |
 | `±` | `a → −a` | negate |
 
-### Comparison & logic (push `1`/`0`)
+#### Comparison & logic (push `1`/`0`)
 `=` `≠` (any values, deep on lists) · `<` `≤` `>` `≥` (two numbers or two
 strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 
-### Control
+#### Control
 | glyph | effect | |
 |---|---|---|
 | `!` | `[q] → …` | apply a quotation |
@@ -261,7 +269,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⟳` | `[c] [b] → …` | while: run `[c]`; while it leaves truthy, run `[b]` |
 | `⍣` | `n [b] → …` | run `[b]` n times |
 
-### Iteration (over a list, or a string as 1-char strings)
+#### Iteration (over a list, or a string as 1-char strings)
 | glyph | effect | |
 |---|---|---|
 | `∵` | `L [f] → L′` | map |
@@ -270,7 +278,16 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍀` | `L a [f] → a′` | fold; `[f]` sees `acc item → acc′` |
 | `⍸` | `n → ⟨0…n−1⟩` | range |
 
-### Sequences (strings & lists)
+#### Inspection & rearrangement
+| glyph | effect | |
+|---|---|---|
+| `⍙` | `a → a s` | type-of: pushes the type name *without* consuming the value — `«int»` `«float»` `«str»` `«list»` `«quot»` `«∅»` |
+| `⌽` | `s → s′` | reverse a list or string |
+| `⍋` | `s → s′` | sort ascending; the items must be all numbers or all strings, otherwise glitch |
+| `∈` | `s v → 1 \| 0` | contains: is `v` an item of list `s` (or a substring of string `s`) |
+| `⍷` | `s v → i \| ¯1` | find: the index of the first occurrence of `v` in `s`, or `¯1` |
+
+#### Sequences (strings & lists)
 | glyph | effect | |
 |---|---|---|
 | `#` | `s → n` | length |
@@ -284,14 +301,14 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⌗` | `c → n` | code point of 1-char string |
 | `⍘` | `n → c` | 1-char string from code point |
 
-### Bindings
+#### Bindings
 | glyph | effect | |
 |---|---|---|
 | `≔X` | `v →` | bind `v` to global `X`; rebinding glitches |
 | `⇒X` | `v →` | store into strand-local `X`; rebindable |
 | `X` | `→ …` | reference: run if quotation, else push |
 
-### Strands & channels
+#### Strands & channels
 | glyph | effect | |
 |---|---|---|
 | `↥X` | `v →` | send `v` on channel `X` (never blocks) |
@@ -306,37 +323,39 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `≣` | `→ n` | number of main strands |
 | `⌛` | `→` | yield the scheduler slice |
 
-### Glitches
+#### Glitches
 | glyph | effect | |
 |---|---|---|
 | `⍥` | `[b] [h] → …` | try/catch (§4.5) |
 | `↯` | `v →` | raise `v` |
 
-### I/O
+#### I/O
 | glyph | effect | |
 |---|---|---|
 | `⍞` | `v →` | print with newline |
 | `⊸` | `v →` | print without newline |
 | `⌨` | `→ s \| ∅` | read a line of stdin without its terminator (LF or CRLF — Windows line endings never reach the program); `∅` at EOF; runs only once every other strand is quiet (§4.2), with pending `⊸` output flushed first, so prompts appear |
-| `⌥` | `→ e` | read one input event (§5.1): a key, or a mouse press `⟨«⌖» x y⟩`; `∅` at end of input; same lowest scheduling priority as `⌨` |
+| `⌥` | `→ e` | read one input event (§5.3): a key, or a mouse press `⟨«⌖» x y⟩`; `∅` at end of input; same lowest scheduling priority as `⌨` |
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍆` | `url → s` | HTTP(S) GET, the response body as a string (§5.2); failure glitches `⍆ cannot fetch «url»`, an error status glitches `⍆ «url» answered 404` |
-| `⎆` | `→ ⟨id method path body⟩ \| ∅` | accept the next HTTP request this program is serving (§5.2); `∅` at end of input; lowest scheduling priority, like `⌨` |
-| `⍅` | `⟨id status type body⟩ →` | answer request `id` with an HTTP status, content type, and body (§5.2); an unknown or already-answered id glitches |
+| `⎆` | `→ ⟨id method path body⟩ \| ∅` | accept the next HTTP request this program is serving (§5.5); `∅` at end of input; lowest scheduling priority, like `⌨` |
+| `⍅` | `⟨id status type body⟩ →` | answer request `id` with an HTTP status, content type, and body (§5.5); an unknown or already-answered id glitches |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
 | `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
 | `⌚` | `→ ms` | the clock, in Unix milliseconds; `MLANG_CLOCK=…` pins it |
 | `⌹` | `path → L` | sorted directory listing; directory names carry a trailing `/`; failure glitches `⌹ cannot read «path»` |
 
-### The canvas
+#### The canvas
 | glyph | effect | |
 |---|---|---|
 | `⌸` | `w h title →` | open a `w`×`h` pixel canvas (each side 1…4096); a second `⌸`, or one under `--parallel`, glitches |
 | `▦` | `x y w h c →` | fill a rectangle, clipped to the canvas, with color `c` — an integer read as `0xRRGGBB` |
 | `⌶` | `v x y c →` | draw `v` (stringified like `⊸`) with its top-left at `(x, y)`; `⏎` wraps to the next glyph row; characters the font strip lacks draw a hollow box |
 | `⎙` | `→` | present the frame |
+
+### 5.2 The inputs of a run
 
 Command-line arguments and the file system are part of a run's *input*:
 determinism means identical program, stdin, arguments, and file contents
@@ -345,7 +364,9 @@ produce an identical run. `⌂` sees the arguments after the source file
 executable name — which is how a file dropped onto a built editor arrives
 as its argument. File-operation glitch messages name only the path, never
 an operating-system error string — they are part of the language's
-deterministic, conformance-pinned output.
+deterministic, conformance-pinned output. Directory listings (`⌹`)
+return names sorted, directories marked with a trailing `/`, so a fixed
+tree yields a fixed listing.
 
 The clock is part of a run's input too: `⌚` answers the wall clock in
 Unix milliseconds, and the `MLANG_CLOCK` environment variable pins it
@@ -364,13 +385,74 @@ the language. In the deterministic scheduler a fetch completes within
 the executing strand's turn; run `--parallel` to overlap fetches from
 different strands.
 
-### 5.2 Serving the web
+### 5.3 Input events
+
+`⌥` parses the standard input byte stream into one event per call:
+
+* A printable key arrives as a one-character string («a», «é», …).
+* Enter is `«↵»`, tab `«⇥»`, backspace `«⌫»` (BS or DEL), delete
+  `«⌦»`; the arrow keys are `«↑» «↓» «←» «→»`, and Home/End/PgUp/PgDn/
+  Insert arrive as `«⇱» «⇲» «⇞» «⇟» «⎀»`. (Enter is deliberately not
+  `⏎` — inside string literals that glyph denotes a newline, so an event
+  named `«⏎»` could never be written or compared.)
+* Any other control character arrives as a caret-notation chord:
+  Ctrl-C is `«^C»`, Ctrl-S `«^S»`.
+* The bytes `⎋[` open a CSI sequence. An SGR mouse press becomes
+  `⟨«⌖» column row⟩` (1-based). Release, wheel, and motion reports, and
+  unrecognized sequences, are consumed silently — `⌥` keeps reading
+  until it has a deliverable event. An escape byte not followed by `[`
+  is delivered as `«⎋»`, and the byte after it is kept for the next
+  event.
+* End of input is `∅`, including inside an unfinished sequence.
+
+The mapping is a pure function of the byte stream, so a recorded pipe
+replays exactly what a live terminal produced. When a program that
+executes `⌥` runs with stdin and stdout on a real terminal, the runtime
+— not the program — switches the terminal to raw input with SGR mouse
+reporting on the alternate screen for the duration of the run, and
+restores it afterwards. None of that scaffolding appears in the
+program's own output, which stays byte-identical to a piped run.
+(A program that opens a canvas is the exception: its window owns the
+input, so the terminal is left alone — see §5.4.)
+
+### 5.4 The canvas
+
+`⌸` opens one pixel surface per program, and `▦`/`⌶` draw into it —
+there is no other drawing state. Text renders from a grayscale glyph
+strip baked into the runtime (`compiler/src/font.bin`, 8×16-pixel
+cells, regenerated by `compiler/font/bake.py`), so the same draws
+produce the same pixels on every platform, with no OS text stack
+involved.
+
+The surface has two interchangeable backends, and a program cannot
+tell them apart except by where its `⌥` events come from:
+
+* **Windowed** — a real OS window, chosen when the build carries the
+  `gui` cargo feature, stdin is a terminal, `MLANG_HEADLESS` is unset,
+  and the OS can open a window. `⎙` blits the frame, and `⌥` reads the
+  window's keyboard and mouse instead of stdin: the same event strings
+  as §5.3, with a mouse press `⟨«⌖» x y⟩` in 0-based pixel
+  coordinates. Closing the window delivers `∅`.
+* **Headless** — every other run, which includes CI and every recorded
+  golden. The frame stays in memory; `⌸` prints one line naming the
+  surface (`⌸ 960×600 «title»`) and each `⎙` prints the frame's
+  identity (`⎙ 3 #a1b2…`, an FNV-1a-64 of the RGB bytes, row-major),
+  so a recorded run pins every pixel byte-for-byte. `⌥` keeps reading
+  the stdin byte stream. Setting `MLANG_FRAMES=<dir>` additionally
+  dumps each presented frame as `frame-NNN.ppm` — in either backend —
+  which is how the screenshots in the README are made.
+
+The canvas requires the deterministic scheduler; `⌸` under
+`--parallel` glitches.
+
+### 5.5 Serving the web
 
 `⎆` (accept) and `⍅` (respond) make an MLang program an HTTP server.
 The program sees only values: each request arrives as
 `⟨id method path body⟩` — id counting up from 1, method uppercased,
 path with its query string intact, body decoded as UTF-8 — and each
-`⍅` answers one id. Like `⌥`, the pair has two faces with one meaning:
+`⍅` answers one id. Like `⌥` (§5.3), the pair has two faces with one
+meaning:
 
 * **Replay mode** — the default, and what the conformance corpus pins.
   `⎆` reads request frames from stdin: a line `▷ METHOD PATH`
@@ -397,70 +479,6 @@ waits on the outside world. A strand waiting at `⎆` is not deadlocked.
 Responding to an id twice, or to an id never accepted, glitches
 `⍅ no pending request n`.
 
-### 5.1 Input events
-
-`⌥` parses the standard input byte stream into one event per call:
-
-* A printable key arrives as a one-character string («a», «é», …).
-* Enter is `«↵»`, tab `«⇥»`, backspace `«⌫»` (BS or DEL), delete
-  `«⌦»`; the arrow keys are `«↑» «↓» «←» «→»`. (Enter is deliberately
-  not `⏎` — inside string literals that glyph denotes a newline, so an
-  event named `«⏎»` could never be written or compared.)
-* Enter is `«↵»`, and Home/End/PgUp/PgDn/Insert arrive as
-  `«⇱» «⇲» «⇞» «⇟» «⎀»`.
-* Any other control character arrives as a caret-notation chord:
-  Ctrl-C is `«^C»`, Ctrl-S `«^S»`.
-* The bytes `⎋[` open a CSI sequence. An SGR mouse press becomes
-  `⟨«⌖» column row⟩` (1-based). Release, wheel, and motion reports, and
-  unrecognized sequences, are consumed silently — `⌥` keeps reading
-  until it has a deliverable event. An escape byte not followed by `[`
-  is delivered as `«⎋»`, and the byte after it is kept for the next
-  event.
-* End of input is `∅`, including inside an unfinished sequence.
-
-The mapping is a pure function of the byte stream, so a recorded pipe
-replays exactly what a live terminal produced. When a program that
-executes `⌥` runs with stdin and stdout on a real terminal, the runtime
-— not the program — switches the terminal to raw input with SGR mouse
-reporting on the alternate screen for the duration of the run, and
-restores it afterwards. None of that scaffolding appears in the
-program's own output, which stays byte-identical to a piped run.
-(A program that opens a canvas is the exception: its window owns the
-input, so the terminal is left alone — see §5.2.)
-
-### 5.2 The canvas
-
-`⌸` opens one pixel surface per program, and `▦`/`⌶` draw into it —
-there is no other drawing state. Text renders from a grayscale glyph
-strip baked into the runtime (`compiler/src/font.bin`, 8×16-pixel
-cells, regenerated by `compiler/font/bake.py`), so the same draws
-produce the same pixels on every platform, with no OS text stack
-involved.
-
-The surface has two interchangeable backends, and a program cannot
-tell them apart except by where its `⌥` events come from:
-
-* **Windowed** — a real OS window, chosen when the build carries the
-  `gui` cargo feature, stdin is a terminal, `MLANG_HEADLESS` is unset,
-  and the OS can open a window. `⎙` blits the frame, and `⌥` reads the
-  window's keyboard and mouse instead of stdin: the same event strings
-  as §5.1, with a mouse press `⟨«⌖» x y⟩` in 0-based pixel
-  coordinates. Closing the window delivers `∅`.
-* **Headless** — every other run, which includes CI and every recorded
-  golden. The frame stays in memory; `⌸` prints one line naming the
-  surface (`⌸ 960×600 «title»`) and each `⎙` prints the frame's
-  identity (`⎙ 3 #a1b2…`, an FNV-1a-64 of the RGB bytes, row-major),
-  so a recorded run pins every pixel byte-for-byte. `⌥` keeps reading
-  the stdin byte stream. Setting `MLANG_FRAMES=<dir>` additionally
-  dumps each presented frame as `frame-NNN.ppm` — in either backend —
-  which is how the screenshots in the README are made.
-
-The canvas requires the deterministic scheduler; `⌸` under
-`--parallel` glitches. Directory listings (`⌹`) return names sorted,
-directories marked with a trailing `/`, so a fixed tree yields a fixed
-listing — like every other observable, the file system is part of a
-run's input (§ above).
-
 ## 6. The standard library
 
 The standard library is written in MLang (`std/std.ml`, printed by
@@ -486,9 +504,9 @@ defined». Names resolve late, at call time.
 Library internals use fullwidth letters (`ａ ｂ ｘ`) as strand-locals;
 programs should treat those as reserved.
 
-The engine provides five primitives the library builds on (part of the
-operation set, §5): `⍙` type-of, `⌽` reverse, `⍋` sort, `∈` contains,
-`⍷` find. Transcendental functions (log, exp, trig) are deliberately
+The engine provides five primitives the library builds on (the
+"Inspection & rearrangement" table in §5.1): `⍙` type-of, `⌽` reverse,
+`⍋` sort, `∈` contains, `⍷` find. Transcendental functions (log, exp, trig) are deliberately
 absent for now: MLang guarantees bit-identical runs across engines, and
 platform `libm` implementations are not correctly-rounded — they enter
 the library only alongside a correctly-rounded implementation.
@@ -523,7 +541,8 @@ serializes (a non-empty list whose items are all ⟨«key» value⟩ pairs
 becomes an object, any other list an array; quotations glitch); `obj
 «key»⒢` looks a key up (`∅` when absent); `v ⟨steps…⟩⒫` digs a path of
 object keys and array indices, answering `∅` as soon as a step has
-nothing to offer. `\u` escapes cover the Basic Multilingual Plane.
+nothing to offer. `\u` escapes are decoded, including surrogate pairs for code points
+beyond the Basic Multilingual Plane; a lone surrogate is malformed.
 Internals use the other parenthesized letters (`⒜ ⒝ …`) and the
 fullwidth strand-locals `ｊ ｐ` — reserved, like std's.
 
@@ -560,6 +579,11 @@ by changing that one glyph.
 
 `0` — all strands completed. `1` — at least one uncaught glitch, or
 deadlock. `2` — load (weave) error; nothing executed.
+
+There is no other exit. Resource exhaustion — an allocation the runtime
+refuses, an exponent it will not compute, recursion without bound — is
+a glitch (§4.5) and exits `1` with a report like any other fault; the
+runtime never crashes or aborts.
 
 ## 8. Design lineage
 

@@ -10,12 +10,16 @@ strands that share nothing — so a patch to one machine cannot break its
 neighbors — and a recorded byte-exact conformance corpus that doubles as
 an evaluator. No human needs to read it. That's fine.
 
-## This language cannot hang
+## This language cannot deadlock
 
 ![One stage of a concurrent pipeline dies: Python freezes forever; MLang prints the proven wait graph and exits](docs/deadlock-demo.svg)
 
 **An agent iterating on concurrent code needs the failure, not a hung
-process. MLang proves its deadlocks.** One stage of this three-machine
+process. MLang proves its deadlocks.** A busy loop (`[1][]⟳`) spins
+forever here like anywhere else — what cannot happen is a strand
+blocked on a channel that will never be fed: the scheduler notices the
+moment every remaining strand is blocked, prints the wait graph, and
+exits. One stage of this three-machine
 pipeline glitches mid-stream ([`examples/deadlock.ml`](examples/deadlock.ml)
 — its twin, [`docs/deadlock.py`](docs/deadlock.py), is the Python you'd
 naturally write with threads and queues):
@@ -74,7 +78,7 @@ of a wait graph.
 | healed, by what the bug turned into | MLang | Python |
 |---|---|---|
 | caught before running | 7/8 | 54/54 |
-| runtime fault, precise report | 36/36 | 23/23 |
+| runtime fault, precise report | 36/36 | 21/21 |
 | proven deadlock | 3/3 | — |
 | silent wrong output | 33/33 | 2/2 |
 | hang | — | 3/3 |
@@ -104,7 +108,7 @@ that should scare you, the silent one:
 | hang (killed at timeout) | 0.7% | 1.6% |
 | no behavior change (equivalent mutant) | 4.3% | 0.6% |
 
-1134 MLang mutants over 120 programs; 828 Python mutants over 29 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 9 of 13 Python hangs printed a thread traceback first — the process still never exited.
+1134 MLang mutants over 120 programs; 828 Python mutants over 29 ports. Same four operator classes per arm (swap / drop / transpose / rename), one edit per mutant, strings and comments masked. 9 of 13 Python hangs printed a thread traceback first — the process still never exited. (The corpus has since grown to 143 exit-0 programs; the table reflects the sweep as recorded in `bench/results/robustness.json`.)
 
 The trade is visible and it cuts both ways. Python's redundant syntax
 stops 7 in 10 one-edit bugs at the parser; MLang's dense syntax lets 82%
@@ -158,7 +162,7 @@ runs on both — same model, same rounds, same byte-exact bar:
 | Self-repair on the Oracle, ≤3 rounds, byte-exact | healed | in one round |
 |---|---|---|
 | Python — claude-haiku-4-5 | 40/40 (100%) | 100% |
-| MLang — claude-haiku-4-5 | 33/40 (82%) | 55% |
+| MLang — claude-haiku-4-5 | 33/40 (82%) | 55% (60% in each of the two later replicates) |
 | **MLang — claude-opus-5** | **40/40 (100%)** | **98%** |
 
 **With a small model Python wins; with a frontier model MLang draws
@@ -262,7 +266,7 @@ a cascade of `∅` poison pills — nothing is ever left blocked, as the
 deadlock prover would loudly report. And the whole scripted session —
 requests in, page and JSON out — is pinned byte-for-byte in the
 conformance corpus, because `⎆`/`⍅` replay framed requests from stdin
-exactly the way `⌥` replays keystrokes (SPEC §5.2): the app is a
+exactly the way `⌥` replays keystrokes (SPEC §5.5): the app is a
 deterministic function of its request stream.
 
 The sheet saves as honest TSV, so it pastes straight into Excel.
@@ -365,8 +369,9 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 156 cases covering every operation, concurrency, glitches, both
-source forms, and all example programs, compared byte-for-byte on stdout,
+corpus — 179 recorded goldens (158 inline cases and 21 example programs)
+covering every operation, concurrency, glitches, both source forms, and
+all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
 `conformance/expected.json` are the spec's ground truth, and any future
 second implementation must reproduce them exactly).
@@ -444,7 +449,8 @@ is woven into every program before its boot section: constants (`π τ ℯ ∞`)
 numerics (`∣` abs, `⊓` min, `⊔` max, `‼` factorial, `⟌` gcd), aggregates
 (`∑` sum, `∏` product, `µ` mean), list tools (`⊃` head, `⌷` last, `⍫`
 tail, `⊤`/`⊥` take/drop, `⍒` sort-desc, `⍚` zip), and text tools (`⇑`/`⇩`
-case, `⍭` words, `⍖` lines), built on five engine primitives: `⍙` type-of,
+case, `⍭` words, `⍖` lines, `◧`/`◨` pad left/right, `⍢` fixed decimals),
+built on five engine primitives: `⍙` type-of,
 `⌽` reverse, `⍋` sort, `∈` contains, `⍷` find. `examples/std-tour.ml`
 walks through all of it:
 
@@ -591,7 +597,7 @@ flat `⍋` sorts a selection set and an edit replays across it with
 per-line offsets — no new machinery, just lists and slices.
 
 The window is the interesting part. The canvas has two backends that
-draw identical pixels (SPEC §5.2): on a desktop it is an OS window
+draw identical pixels (SPEC §5.4): on a desktop it is an OS window
 whose keyboard and mouse feed `⌥`; piped, the frame stays in memory
 and every `⎙` prints the frame's hash instead, so the conformance
 corpus drives a full scripted tour — typing, a multi-cursor replace,
@@ -624,9 +630,11 @@ Qt's signals-and-slots become the good kind of simple: a **slot** is a
 quotation carried by the widget, and the event loop runs it when the
 widget's key arrives on stdin (`key`, or `key argument` for a line
 edit). State lives in your strand's locals; the view quotation rebuilds
-the widget tree from them every frame, so a stray slot can corrupt
-nothing — the worst it can do is glitch, which `▶` catches and shows as
-a `✗` status message while the app keeps running. A whole application
+the widget tree from them every frame, and a slot's stack effects are
+contained by the event loop: surplus values it leaves are dropped, a
+slot that consumes the caller's values is reported as a `✗` status, and
+a glitch inside a slot becomes a `✗` status message while the app keeps
+running. A whole application
 is a view and a handful of slots:
 
 ```
@@ -643,7 +651,7 @@ is a view and a handful of slots:
 
 And it is genuinely interactive — keyboard and mouse. The engine op
 `⌥` reads one input event: keys arrive as the glyph they are («↑»
-«↵» «⌫», Ctrl-C is «␃»), a mouse press as `⟨«⌖» x y⟩`. `⏵` is `▶`
+«↵» «⌫», Ctrl-C is «^C»), a mouse press as `⟨«⌖» x y⟩`. `⏵` is `▶`
 gone live: Tab and the arrow keys move focus (the focused widget wears
 `⟦brackets⟧`), typing lands in the focused line edit behind a `▏`
 caret, `↵` or space activates, a click lands on whatever drew the
@@ -685,17 +693,23 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   src/lex.rs      glyph stream → instructions
   src/forms.rs    rain/flat grid parsing and rendering
   src/vm.rs       compile, strands, channels, glitches, deterministic scheduler
+  src/values.rs   runtime values: ints, floats, strings, lists, quotations, ∅
   src/par.rs      the opt-in parallel scheduler: strands on OS threads
   src/net.rs      mlang hub / mlang worker — channels bridged over TCP
   src/wire.rs     the line-per-value wire codec net.rs speaks
+  src/http.rs     the web bridge: ⍆ fetch, ⎆/⍅ replay and live serving
+  src/gui.rs      the canvas (⌸ ▦ ⌶ ⎙) and its window / headless backends
+  src/term.rs     terminal size and raw-mode input for ⌥ / ⍜
   src/payload.rs  bytecode serialization + native binary welding (mlang build)
   tests/          cargo test: unit, payload round-trip, standalone-binary
                   execution, parallel + distributed runs, and the full
                   conformance corpus
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
-conformance/      cases.json + expected.json: 156 recorded goldens, the
-                  language's observable ground truth (RECORD=1 to re-record)
+std/json.ml       the Operator — the JSON library, also written in MLang
+conformance/      cases.json + expected.json: 179 recorded goldens (158 inline
+                  cases and 21 example programs), the language's observable
+                  ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
 docs/             the deadlock demo (animated SVG + the Python twin) and
@@ -741,7 +755,7 @@ SPEC.md           the full language specification
   cores.
 * **The benchmark's limits.** The small-program corpus is small by
   design, and the Python control arm is 29 hand-verified ports, not all
-  120 programs. Models have seen enormous amounts of Python and
+  143 exit-0 programs. Models have seen enormous amounts of Python and
   essentially zero MLang — the MLang arm leans entirely on an
   op-reference primer in the prompt. With a small model that costs real
   points at application scale (82% vs Python's 100% on the Oracle); with

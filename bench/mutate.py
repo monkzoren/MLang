@@ -133,15 +133,39 @@ PY_KEYWORD_POOL = ["and", "or", "not", "if", "else", "while", "for", "in",
                    "break", "continue", "return", "try", "except", "raise"]
 
 
+# Token kinds that are never mutated: structure, comments, and string
+# literals. On Python >= 3.12 an f-string no longer arrives as one STRING
+# token but as FSTRING_START / FSTRING_MIDDLE / FSTRING_END around the
+# tokens of its {…} interpolations (3.14 adds the TSTRING_* trio for
+# t-strings). Mask the whole span, interpolations included, so every
+# interpreter version yields the same token list — and the same mutants —
+# as 3.11, where the entire f-string is one STRING token.
+PY_MASKED_TOKENS = {
+    getattr(tokenize, name)
+    for name in ("ENCODING", "ENDMARKER", "NEWLINE", "NL", "COMMENT",
+                 "STRING", "INDENT", "DEDENT",
+                 "FSTRING_START", "FSTRING_MIDDLE", "FSTRING_END",
+                 "TSTRING_START", "TSTRING_MIDDLE", "TSTRING_END")
+    if hasattr(tokenize, name)
+}
+PY_STRING_OPENERS = {getattr(tokenize, n) for n in ("FSTRING_START", "TSTRING_START")
+                     if hasattr(tokenize, n)}
+PY_STRING_CLOSERS = {getattr(tokenize, n) for n in ("FSTRING_END", "TSTRING_END")
+                     if hasattr(tokenize, n)}
+
+
 def py_tokens(source):
     """Concrete tokens with source spans, on their physical positions."""
     toks = []
     lines = source.splitlines(keepends=True)
+    in_string = 0  # nesting depth inside f-/t-string literals (3.12+)
     try:
         for t in tokenize.generate_tokens(io.StringIO(source).readline):
-            if t.type in (tokenize.ENCODING, tokenize.ENDMARKER,
-                          tokenize.NEWLINE, tokenize.NL, tokenize.COMMENT,
-                          tokenize.STRING, tokenize.INDENT, tokenize.DEDENT):
+            if t.type in PY_STRING_OPENERS:
+                in_string += 1
+            elif t.type in PY_STRING_CLOSERS:
+                in_string = max(0, in_string - 1)
+            if in_string or t.type in PY_MASKED_TOKENS:
                 continue
             if t.start[0] != t.end[0]:
                 continue
