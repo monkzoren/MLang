@@ -271,6 +271,49 @@ deterministic function of its request stream.
 
 The sheet saves as honest TSV, so it pastes straight into Excel.
 
+## The grid never stops: the loom
+
+A server written in MLang does not have to come down to change. The
+**loom** lets any number of agents keep rewriting a running grid — pull
+the live source, edit it, weave it back in — while it serves:
+
+```sh
+./mlang serve examples/architect.ml 4321    # ⟡ the loom is open at …/.loom
+./mlang pull 4321 > architect.ml            # the live source, stamped v0
+$EDITOR architect.ml                        # change a definition or a strand
+./mlang patch architect.ml                  # ⟡ v1: 1 definition rebound (Ω)
+./mlang loom 4321                           # v0 as started · v1 …
+```
+
+No restart, no dropped request, no lost sheet: the Architect's state
+lives in its engine strand's locals, and the patch lands at the strand's
+next **seam** — the boundary between two iterations of its loop, which
+for a server is the moment it waits for the next request — with stack
+and locals intact. A changed **definition** is rebound the instant the
+patch is accepted, because names resolve at call time: fix the formula
+parser and the next formula uses it. An added strand starts, a removed
+one retires at its seam, and a strand that died of a glitch is a seam
+too — patch the bug and it comes back to life.
+
+**N agents at once.** Each patch carries the version it was written
+against, and the runtime three-way merges it onto the live version line
+by line — a line is a strand or a definition, so agents working on
+different machines of the same grid never block each other, and even
+neighbouring lines merge. Only a line two agents changed differently
+conflicts: that patch is refused with both versions of the line, the
+grid is untouched, and the agent pulls and reapplies. A patch that does
+not weave is refused with the ordinary weave report; a patch that
+changes boot *code* (a file read, a print — things that ran once and
+cannot run again) is refused and told to make it a definition. Every
+version is kept (`GET /.loom/log`, `/.loom/v3`), and every fault report
+names the version its code came from: `✗ glitch in strand 1 (row 5) at
+v3 5:12`, with version 3's line excerpted.
+
+And because patches travel in the request stream, a replayed session
+with patches is deterministic like everything else: `⟡ base nbytes`
+frames on stdin, `⟡ status` reports on stdout, pinned by the conformance
+corpus. SPEC §4.7 has the rules.
+
 ## Programs are grids
 
 You *write* MLang flat: **one line is one strand** — an independent
@@ -337,6 +380,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang hub examples/net-primes-hub.ml          # …or machines on TCP
 ./mlang worker --connect host:7777 examples/net-primes-worker.ml
 ./mlang serve examples/architect.ml 4321  # serve a web app (⎆/⍅) live
+./mlang pull 4321 > live.ml && ./mlang patch live.ml   # hot-patch it (the loom)
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
 ./mlang check examples/calc.ml       # compile only, report weave errors
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
@@ -369,7 +413,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 179 recorded goldens (158 inline cases and 21 example programs)
+corpus — 190 recorded goldens (169 inline cases and 21 example programs)
 covering every operation, concurrency, glitches, both source forms, and
 all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
@@ -697,6 +741,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
   src/par.rs      the opt-in parallel scheduler: strands on OS threads
   src/net.rs      mlang hub / mlang worker — channels bridged over TCP
   src/wire.rs     the line-per-value wire codec net.rs speaks
+  src/loom.rs     the loom: versions, three-way merge, hot patching (§4.7)
   src/http.rs     the web bridge: ⍆ fetch, ⎆/⍅ replay and live serving
   src/gui.rs      the canvas (⌸ ▦ ⌶ ⎙) and its window / headless backends
   src/term.rs     terminal size and raw-mode input for ⌥ / ⍜
@@ -707,7 +752,7 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
 std/json.ml       the Operator — the JSON library, also written in MLang
-conformance/      cases.json + expected.json: 179 recorded goldens (158 inline
+conformance/      cases.json + expected.json: 190 recorded goldens (169 inline
                   cases and 21 example programs), the language's observable
                   ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles

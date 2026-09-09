@@ -228,6 +228,78 @@ program's source lines into the binary, so a standalone executable's
 reports carry the same excerpts. All of this output is part of the
 language's deterministic, conformance-pinned behavior.
 
+### 4.7 The loom: hot patching
+
+A served grid (§5.5) never has to stop to change. The **loom** lets any
+number of agents rewrite the running program: each pulls the live
+source, edits it, and sends the whole file back stamped with the
+version it started from. Patches travel in the request stream — the
+runtime applies each one as `⎆` pulls it, before the program sees the
+next request — so a run's patch history is part of its input, and a
+replayed session with patches is deterministic like any other.
+
+**Versions.** Version 0 is the program as started; every accepted patch
+is the next version. Every position in a report carries its version:
+code that arrived with the third patch reports `v3 5:12` and excerpts
+version 3's line 5. Coordinates of the original program are unchanged.
+
+**Merging.** A patch written against version *b* while the live version
+is *c* > *b* is three-way merged, line by line (`diff3`): a line is a
+strand or a definition, so agents editing different lines never block
+one another, and adjacent single-line edits merge as well. A line both
+sides changed differently is a conflict: the patch is refused (409)
+with the live lines and the patch's lines, nothing changes, and the
+agent pulls the live version and reapplies its edit.
+
+**What is hot.** The merged file is woven in full first — a weave error
+refuses the patch (422) with the usual report, and nothing changes.
+Then:
+
+* **Definitions.** A boot-section binding of a literal — `[…]≔X`,
+  `42≔X`, `«…»≔X`, `⟨…⟩≔X` — that differs from the live one is rebound
+  at once; since names resolve at call time, the next reference
+  anywhere in the grid runs the new code. Added definitions bind,
+  removed ones unbind. Library sigils (§6, §6.1) may not be rebound.
+* **Boot code.** Anything else in the boot section — a file read, a
+  print, a computed binding — ran once at start and cannot honestly run
+  again: a patch that changes it is refused (422), naming the position.
+  Write hot boot sections as literal definitions.
+* **Strands.** Main strands are matched to the patched grid: unchanged
+  strands anchor the alignment; between anchors an old strand
+  continues as the new strand most like it (at least half its code
+  shared), and the rest retire or start. A **replaced** strand keeps
+  running its old code until its next **seam**, then continues on the
+  new code **with its stack and locals intact**, resuming inside the new
+  code's outermost loop (its prelude — the initialization that ran once
+  on the old code — does not run again); new code with no top-level
+  loop starts from its beginning. A **dead** strand (uncaught glitch) is
+  a seam too: it comes back to life on the new code with an empty
+  stack. A **retired** strand finishes at its seam. A **started** strand
+  begins at once with a fresh id (`≣` and existing ids are unchanged).
+  Strands spawned with `⚡` are not part of the grid and keep running
+  what they were given.
+
+A **seam** is a point where a strand can be re-woven without leaving
+half an iteration behind: the boundary between two iterations of its
+outermost loop — a top-level `⟳` about to test its condition, or
+parked at the very first instruction of its body or condition (which is
+how a server waits for its next request), a top-level `⇉` between two
+values — or a strand that has not started, or one that died. A strand
+busy inside an iteration takes its patch when the iteration ends.
+
+**Transports.** In replay mode a patch is a frame on stdin, `⟡ base
+nbytes` followed by nbytes of source, and the runtime writes `⟡ status
+nbytes` and its report to stdout (200 applied, 409 conflict, 422
+refused). In live mode the loom is a set of routes on the served port:
+`GET /.loom` answers the live source stamped `※ loom vN url` on its
+first line (a comment, so the file stays a valid program), `POST /.loom`
+takes a stamped file back (or `?base=N` for an unstamped one),
+`GET /.loom/log` lists every version with what it changed, and
+`GET /.loom/vN` is one past version. `mlang pull`, `mlang patch`, and
+`mlang loom` are those routes from the command line; `MLANG_LOOM=0`
+closes them. The loom requires the deterministic scheduler; under
+`--parallel` a patch is refused.
+
 ## 5. Operations
 
 ### 5.1 The operation tables
@@ -580,7 +652,8 @@ by changing that one glyph.
 `0` — all strands completed. `1` — at least one uncaught glitch, or
 deadlock. `2` — load (weave) error; nothing executed.
 
-There is no other exit. Resource exhaustion — an allocation the runtime
+A hot patch (§4.7) is never an exit: an applied, conflicting, or refused
+patch is reported and the run continues. There is no other exit. Resource exhaustion — an allocation the runtime
 refuses, an exponent it will not compute, recursion without bound — is
 a glitch (§4.5) and exits `1` with a report like any other fault; the
 runtime never crashes or aborts.

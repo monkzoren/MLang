@@ -152,7 +152,8 @@ impl HttpBridge {
             let _ = write_http_response(&stream, 400, "text/plain", b"bad request");
             return;
         };
-        let incoming = if path == LOOM_PATH || path.starts_with("/.loom/") {
+        let bare = path.split('?').next().unwrap_or("");
+        let incoming = if bare == LOOM_PATH || bare.starts_with("/.loom/") {
             match self.loom_route(&method, &path, &body) {
                 Ok(patch) => patch,
                 Err((status, text)) => {
