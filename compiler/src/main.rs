@@ -37,6 +37,36 @@ fn weave_error(text: &str, e: &LoadError) -> ExitCode {
     ExitCode::from(2)
 }
 
+/// Print a reference text to stdout through a locked handle, ignoring a
+/// broken pipe: `mlang ops | head -1` closes our stdout early, and that
+/// is the reader's business, not a panic (the exit status stays 0).
+fn emit(text: &str) -> ExitCode {
+    let stdout = std::io::stdout();
+    let mut out = stdout.lock();
+    let _ = out.write_all(text.as_bytes()).and_then(|_| out.flush());
+    ExitCode::SUCCESS
+}
+
+/// The one port shape `mlang serve` and MLANG_PORT accept: plain digits
+/// in 0…65535 (0 lets the OS choose). Err carries the offending text so
+/// the caller can name it.
+fn parse_port(text: &str) -> Result<u16, String> {
+    let digits = !text.is_empty() && text.bytes().all(|b| b.is_ascii_digit());
+    match text.parse::<u16>() {
+        Ok(p) if digits => Ok(p),
+        _ => Err(text.to_string()),
+    }
+}
+
+/// argv as strings, lossily: a non-UTF-8 argument (a file name from an
+/// odd filesystem) reaches ⌂ with replacement characters rather than
+/// crashing the toolchain before it starts.
+fn argv() -> Vec<String> {
+    std::env::args_os()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect()
+}
+
 /// MLANG_PAR=1 selects the parallel scheduler (strands on OS threads) —
 /// the only switch a welded binary has, since its argv belongs to ⌂.
 fn parallel_env() -> bool {
@@ -347,14 +377,21 @@ fn main() -> ExitCode {
             Ok(prog) => {
                 // MLANG_PORT turns a welded server binary live; anything
                 // else (or nothing) runs in replay mode.
-                let http = match std::env::var("MLANG_PORT").ok().and_then(|p| p.parse().ok()) {
-                    Some(port) => match start_bridge(port) {
+                let wanted = std::env::var_os("MLANG_PORT")
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .filter(|p| !p.is_empty());
+                let http = match wanted.as_deref().map(parse_port) {
+                    Some(Ok(port)) => match start_bridge(port) {
                         Ok(bridge) => Some(bridge),
                         Err(code) => return code,
                     },
+                    Some(Err(_)) => {
+                        eprintln!("✗ MLANG_PORT must be a port number");
+                        return ExitCode::from(2);
+                    }
                     None => None,
                 };
-                run_compiled(&prog, std::env::args().skip(1).collect(), false, http)
+                run_compiled(&prog, argv().into_iter().skip(1).collect(), false, http)
             }
             Err(e) => {
                 eprintln!("✗ corrupt program payload: {e}");
@@ -363,10 +400,14 @@ fn main() -> ExitCode {
         };
     }
 
-    let args: Vec<String> = std::env::args().collect();
+    let args = argv();
     let cmd = args.get(1).map(String::as_str).unwrap_or("");
     match (cmd, args.len()) {
         ("build", 5) if args[3] == "-o" => build(&args[2], &args[4]),
+        ("build", _) => {
+            eprintln!("✗ build wants the form: mlang build <src> -o <out>");
+            ExitCode::from(2)
+        }
         ("run", n) if n >= 3 => {
             let par = args[2] == "--parallel";
             let file = if par { args.get(3) } else { Some(&args[2]) };
@@ -404,10 +445,19 @@ fn main() -> ExitCode {
                 Err(e) => return weave_error(&text, &e),
             };
             // An optional port follows the file; anything after it — or a
-            // first argument that is not a number — belongs to ⌂.
-            let (port, rest) = match args.get(fi + 1).and_then(|p| p.parse::<u16>().ok()) {
-                Some(p) => (p, fi + 2),
-                None => (4321, fi + 1),
+            // first argument that does not start with a digit — belongs
+            // to ⌂. Something that *looks* like a port but is not one
+            // (70000, 4321x) is a usage error, never silently demoted to
+            // a program argument.
+            let (port, rest) = match args.get(fi + 1) {
+                Some(p) if p.starts_with(|c: char| c.is_ascii_digit()) => match parse_port(p) {
+                    Ok(port) => (port, fi + 2),
+                    Err(bad) => {
+                        eprintln!("✗ port must be a number 0…65535, got «{bad}»");
+                        return ExitCode::from(2);
+                    }
+                },
+                _ => (4321, fi + 1),
             };
             let bridge = match start_bridge(port) {
                 Ok(b) => b,
@@ -460,29 +510,14 @@ fn main() -> ExitCode {
                 forms::to_flat(&text)
             };
             match rendered {
-                Ok(s) => {
-                    print!("{s}");
-                    ExitCode::SUCCESS
-                }
+                Ok(s) => emit(&s),
                 Err(e) => weave_error(&text, &e),
             }
         }
-        ("ops", 2) => {
-            print!("{}", include_str!("ops.txt"));
-            ExitCode::SUCCESS
-        }
-        ("std", 2) => {
-            print!("{}", vm::STD_SOURCE);
-            ExitCode::SUCCESS
-        }
-        ("ui", 2) => {
-            print!("{}", vm::UI_SOURCE);
-            ExitCode::SUCCESS
-        }
-        ("json", 2) => {
-            print!("{}", vm::JSON_SOURCE);
-            ExitCode::SUCCESS
-        }
+        ("ops", 2) => emit(include_str!("ops.txt")),
+        ("std", 2) => emit(vm::STD_SOURCE),
+        ("ui", 2) => emit(vm::UI_SOURCE),
+        ("json", 2) => emit(vm::JSON_SOURCE),
         _ => {
             eprint!("{USAGE}");
             ExitCode::from(2)

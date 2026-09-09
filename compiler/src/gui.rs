@@ -95,6 +95,12 @@ impl Gui {
                 .unwrap_or(false);
             if !force_headless && !headless_env && std::io::stdin().is_terminal() {
                 gui.win = win::WinState::open(w, h, title);
+                // Someone at a terminal asked for a window and got none
+                // (no DISPLAY, an SSH session); say so once, on stderr,
+                // so the silent frame hashes on stdout are not a mystery.
+                if gui.win.is_none() {
+                    eprintln!("⌸ no display — running headless");
+                }
             }
         }
         #[cfg(not(feature = "gui"))]
@@ -111,15 +117,17 @@ impl Gui {
         false
     }
 
-    /// Fill a rectangle, clipped to the canvas.
+    /// Fill a rectangle, clipped to the canvas. Coordinates come straight
+    /// from the program, so every sum saturates: a rectangle at i64::MAX
+    /// clips to nothing instead of overflowing.
     pub fn rect(&mut self, x: i64, y: i64, rw: i64, rh: i64, color: u32) {
         if rw <= 0 || rh <= 0 {
             return;
         }
         let x0 = x.max(0).min(self.w as i64) as usize;
         let y0 = y.max(0).min(self.h as i64) as usize;
-        let x1 = (x + rw).max(0).min(self.w as i64) as usize;
-        let y1 = (y + rh).max(0).min(self.h as i64) as usize;
+        let x1 = x.saturating_add(rw).max(0).min(self.w as i64) as usize;
+        let y1 = y.saturating_add(rh).max(0).min(self.h as i64) as usize;
         for row in y0..y1 {
             self.fb[row * self.w + x0..row * self.w + x1].fill(color);
         }
@@ -132,23 +140,27 @@ impl Gui {
         let f = font();
         let (cw, chh) = (f.cell_w as i64, f.cell_h as i64);
         let (mut cx, mut cy) = (x, y);
+        // (x, y) are the program's, possibly at the ends of i64 — all the
+        // per-glyph offsets saturate so an absurd position draws nothing
+        // rather than panicking.
         for c in s.chars() {
             if c == '\n' {
                 cx = x;
-                cy += chh;
+                cy = cy.saturating_add(chh);
                 continue;
             }
             match f.glyph(c) {
                 Some(a) => self.blend_glyph(a, cx, cy, color),
                 None => {
                     // a hollow box marks a character the strip lacks
-                    self.rect(cx + 1, cy + 3, cw - 2, 1, color);
-                    self.rect(cx + 1, cy + chh - 4, cw - 2, 1, color);
-                    self.rect(cx + 1, cy + 3, 1, chh - 6, color);
-                    self.rect(cx + cw - 2, cy + 3, 1, chh - 6, color);
+                    let (bx, by) = (cx.saturating_add(1), cy.saturating_add(3));
+                    self.rect(bx, by, cw - 2, 1, color);
+                    self.rect(bx, cy.saturating_add(chh - 4), cw - 2, 1, color);
+                    self.rect(bx, by, 1, chh - 6, color);
+                    self.rect(cx.saturating_add(cw - 2), by, 1, chh - 6, color);
                 }
             }
-            cx += cw;
+            cx = cx.saturating_add(cw);
         }
     }
 
@@ -156,7 +168,7 @@ impl Gui {
         let f = font();
         let (fr, fg, fb) = ((color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff);
         for gy in 0..f.cell_h {
-            let py = y + gy as i64;
+            let py = y.saturating_add(gy as i64);
             if py < 0 || py >= self.h as i64 {
                 continue;
             }
@@ -165,7 +177,7 @@ impl Gui {
                 if a == 0 {
                     continue;
                 }
-                let px = x + gx as i64;
+                let px = x.saturating_add(gx as i64);
                 if px < 0 || px >= self.w as i64 {
                     continue;
                 }
