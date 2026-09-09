@@ -99,6 +99,18 @@ pub struct Bus {
     chan_sites: HashMap<char, (usize, usize)>,
 }
 
+/// Take a lock, recovering from poisoning. A strand thread that panics
+/// (contained in `drive`) may have held one of these; the state itself is
+/// consistent between statements, so continuing is right — the panic is
+/// reported and treated as that strand's death, not as the run's.
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+fn wait<'a, T>(cv: &Condvar, g: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
+    cv.wait(g).unwrap_or_else(|e| e.into_inner())
+}
+
 impl Bus {
     fn new(
         main_count: usize,
@@ -160,8 +172,8 @@ impl Bus {
     /// Read one ▷ request frame from the shared stdin, holding its lock
     /// for the whole frame so concurrent accepts cannot interleave bytes.
     pub fn read_request(&self) -> Result<Option<crate::http::Request>, String> {
-        let mut stdin = self.stdin.lock().unwrap();
-        { let _ = self.stdout.lock().unwrap().flush(); }
+        let mut stdin = lock(&self.stdin);
+        { let _ = lock(&self.stdout).flush(); }
         let mut next = move || {
             let buf = stdin.fill_buf().ok()?;
             if buf.is_empty() {
@@ -174,7 +186,7 @@ impl Bus {
         match crate::http::read_framed(&mut next)? {
             None => Ok(None),
             Some((method, path, body)) => {
-                let mut web = self.replay_web.lock().unwrap();
+                let mut web = lock(&self.replay_web);
                 let id = web.0;
                 web.0 += 1;
                 web.1.insert(id);
@@ -185,7 +197,7 @@ impl Bus {
 
     /// Retire a replay request id; false when it was never open.
     pub fn close_request(&self, id: i64) -> bool {
-        self.replay_web.lock().unwrap().1.remove(&id)
+        lock(&self.replay_web).1.remove(&id)
     }
 
     // ── channels ───────────────────────────────────────────────────────
@@ -198,7 +210,7 @@ impl Bus {
             tap(v);
             return;
         }
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         st.chans.entry(c).or_default().push_back(v);
         self.cv.notify_all();
     }
@@ -208,20 +220,20 @@ impl Bus {
     /// verdict, and the verdict is re-checked in case every remaining
     /// strand was already parked.
     pub(crate) fn close_import(&self, c: char) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         st.open_imports.remove(&c);
         self.maybe_deadlock(&st);
     }
 
     pub fn try_recv(&self, c: char) -> Option<Value> {
-        self.state.lock().unwrap().chans.entry(c).or_default().pop_front()
+        lock(&self.state).chans.entry(c).or_default().pop_front()
     }
 
     /// Blocking receive: parks the thread until a value arrives. If parking
     /// would leave every live strand parked, that is the program's deadlock —
     /// report it and end the run, exactly as the sequential engine would.
     pub fn recv(&self, c: char, sid: i64, label: &str, pos: Pos) -> Value {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         loop {
             if let Some(v) = st.chans.entry(c).or_default().pop_front() {
                 return v;
@@ -229,7 +241,7 @@ impl Bus {
             st.waiting
                 .insert(sid, (label.to_string(), WaitOn::Chan(c), pos));
             self.maybe_deadlock(&st);
-            st = self.cv.wait(st).unwrap();
+            st = wait(&self.cv, st);
             st.waiting.remove(&sid);
         }
     }
@@ -237,12 +249,12 @@ impl Bus {
     // ── globals (single-assignment) ────────────────────────────────────
 
     pub fn global_get(&self, c: char) -> Option<Value> {
-        self.state.lock().unwrap().globals.get(&c).cloned()
+        lock(&self.state).globals.get(&c).cloned()
     }
 
     /// False if the sigil was already defined (the ≔ rebind glitch).
     pub fn global_define(&self, c: char, v: Value) -> bool {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         if st.globals.contains_key(&c) {
             return false;
         }
@@ -253,12 +265,12 @@ impl Bus {
     // ── strands ────────────────────────────────────────────────────────
 
     pub fn knows_strand(&self, sid: i64) -> bool {
-        sid == -1 || (sid >= 0 && sid < self.state.lock().unwrap().next_spawn_sid)
+        sid == -1 || (sid >= 0 && sid < lock(&self.state).next_spawn_sid)
     }
 
     /// Park until strand `sid` has finished (normally or by glitch).
     pub fn join_wait(&self, sid: i64, my_sid: i64, label: &str, pos: Pos) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         loop {
             if sid == -1 || st.done.contains(&sid) {
                 return;
@@ -266,7 +278,7 @@ impl Bus {
             st.waiting
                 .insert(my_sid, (label.to_string(), WaitOn::Strand(sid), pos));
             self.maybe_deadlock(&st);
-            st = self.cv.wait(st).unwrap();
+            st = wait(&self.cv, st);
             st.waiting.remove(&my_sid);
         }
     }
@@ -279,7 +291,7 @@ impl Bus {
         locals: Vec<(char, Value)>,
     ) -> i64 {
         let sid = {
-            let mut st = self.state.lock().unwrap();
+            let mut st = lock(&self.state);
             let sid = st.next_spawn_sid;
             st.next_spawn_sid += 1;
             st.live += 1;
@@ -291,35 +303,35 @@ impl Bus {
     }
 
     fn finish(&self, sid: i64) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         st.live -= 1;
         st.done.insert(sid);
         self.cv.notify_all();
     }
 
     fn add_live(&self, n: usize) {
-        self.state.lock().unwrap().live += n;
+        lock(&self.state).live += n;
     }
 
     fn wait_quiescent(&self) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = lock(&self.state);
         while st.live > 0 {
-            st = self.cv.wait(st).unwrap();
+            st = wait(&self.cv, st);
         }
     }
 
     // ── i/o ────────────────────────────────────────────────────────────
 
     pub fn read_line(&self, line: &mut String) -> usize {
-        let mut stdin = self.stdin.lock().unwrap();
-        { let _ = self.stdout.lock().unwrap().flush(); }
+        let mut stdin = lock(&self.stdin);
+        { let _ = lock(&self.stdout).flush(); }
         stdin.read_line(line).unwrap_or(0)
     }
 
     /// One byte for the ⌥ event parser; None at end of input.
     pub fn read_byte(&self) -> Option<u8> {
-        let mut stdin = self.stdin.lock().unwrap();
-        { let _ = self.stdout.lock().unwrap().flush(); }
+        let mut stdin = lock(&self.stdin);
+        { let _ = lock(&self.stdout).flush(); }
         let buf = stdin.fill_buf().ok()?;
         if buf.is_empty() {
             return None;
@@ -331,15 +343,15 @@ impl Bus {
 
     fn write_stream(&self, err: bool, bytes: &[u8]) {
         if err {
-            let _ = self.stderr.lock().unwrap().write_all(bytes);
+            let _ = lock(&self.stderr).write_all(bytes);
         } else {
-            let _ = self.stdout.lock().unwrap().write_all(bytes);
+            let _ = lock(&self.stdout).write_all(bytes);
         }
     }
 
     fn flush_streams(&self) {
-        let _ = self.stdout.lock().unwrap().flush();
-        let _ = self.stderr.lock().unwrap().flush();
+        let _ = lock(&self.stdout).flush();
+        let _ = lock(&self.stderr).flush();
     }
 
     // ── failure ────────────────────────────────────────────────────────
@@ -398,9 +410,9 @@ impl Bus {
             })
             .collect();
         report.push_str(&crate::vm::channel_census(&self.chan_sites, &waited));
-        let _ = self.stdout.lock().unwrap().flush();
+        let _ = lock(&self.stdout).flush();
         {
-            let mut err = self.stderr.lock().unwrap();
+            let mut err = lock(&self.stderr);
             let _ = err.write_all(report.as_bytes());
             let _ = err.flush();
         }
@@ -410,6 +422,10 @@ impl Bus {
 
 /// A per-thread stdout/stderr proxy: buffers locally and hands whole lines
 /// to the shared stream, so parallel strands never interleave mid-line.
+/// A partial line is held however long it grows — flushing it early would
+/// break "output is atomic per line" (SPEC §4.2) exactly for the long
+/// lines where interleaving is most visible. Only an explicit flush (⌨
+/// prompts, end of strand) emits an unterminated tail.
 struct SharedWriter {
     bus: Arc<Bus>,
     err: bool,
@@ -421,9 +437,6 @@ impl Write for SharedWriter {
         self.buf.extend_from_slice(bytes);
         if let Some(i) = self.buf.iter().rposition(|&b| b == b'\n') {
             let chunk: Vec<u8> = self.buf.drain(..=i).collect();
-            self.bus.write_stream(self.err, &chunk);
-        } else if self.buf.len() > 8192 {
-            let chunk = std::mem::take(&mut self.buf);
             self.bus.write_stream(self.err, &chunk);
         }
         Ok(bytes.len())
@@ -448,42 +461,68 @@ impl Drop for SharedWriter {
 /// park inside the Bus, so Sig::Block never surfaces here; a burst ends
 /// only on completion, an uncaught glitch, or ⌛ (which becomes a real
 /// thread yield).
+///
+/// A *panic* on the thread (an interpreter bug, not a program fault) is
+/// contained here: without that the strand would silently vanish with
+/// `live` never decremented, `wait_quiescent` would hang, and deadlock
+/// detection would be disabled for the rest of the run. It is reported
+/// and treated as the strand's death, through the same finish path.
 fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: Vec<(char, Value)>) {
-    let mut stdin = std::io::empty();
-    let mut out = SharedWriter { bus: bus.clone(), err: false, buf: Vec::new() };
-    let mut err = SharedWriter { bus: bus.clone(), err: true, buf: Vec::new() };
-    {
-        let mut vm = VM::new(&mut stdin, &mut out, &mut err);
-        vm.bus = Some(bus.clone());
-        vm.main_count = bus.main_count;
-        vm.args = bus.args.clone();
-        vm.http = bus.http.clone();
-        let mut s = Strand::new(sid, label, code, locals);
-        loop {
-            run_burst(&mut vm, &mut s, usize::MAX);
-            match s.status {
-                Status::Done | Status::Dead => break,
-                Status::Run => std::thread::yield_now(), // ⌛
-                Status::Blocked => unreachable!("blocking op surfaced in parallel mode"),
+    let shown = format!("{} ({})", fmt_i64(sid), label);
+    let body = std::panic::AssertUnwindSafe(|| {
+        let mut stdin = std::io::empty();
+        let mut out = SharedWriter { bus: bus.clone(), err: false, buf: Vec::new() };
+        let mut err = SharedWriter { bus: bus.clone(), err: true, buf: Vec::new() };
+        {
+            let mut vm = VM::new(&mut stdin, &mut out, &mut err);
+            vm.bus = Some(bus.clone());
+            vm.main_count = bus.main_count;
+            vm.args = bus.args.clone();
+            vm.http = bus.http.clone();
+            let mut s = Strand::new(sid, label, code, locals);
+            loop {
+                run_burst(&mut vm, &mut s, usize::MAX);
+                match s.status {
+                    Status::Done | Status::Dead => break,
+                    Status::Run => std::thread::yield_now(), // ⌛
+                    Status::Blocked => unreachable!("blocking op surfaced in parallel mode"),
+                }
+            }
+            if s.status == Status::Dead {
+                // The whole report is composed first and written once, so
+                // its lines never interleave with another strand's output.
+                let (v, pos) = s.glitch.take().unwrap();
+                let mut report = format!(
+                    "✗ glitch in strand {} ({}) at {}: {}\n",
+                    fmt_i64(s.sid),
+                    s.label,
+                    coords(pos),
+                    fmt(&v, false)
+                );
+                report.push_str(&crate::vm::fault_detail(
+                    &bus.source, pos, &s.glitch_chain, s.stack_view()));
+                let _ = vm.err.flush();
+                let _ = vm.err.write_all(report.as_bytes());
+                bus.set_failed();
             }
         }
-        if s.status == Status::Dead {
-            let (v, pos) = s.glitch.take().unwrap();
-            let _ = writeln!(
-                vm.err,
-                "✗ glitch in strand {} ({}) at {}: {}",
-                fmt_i64(s.sid),
-                s.label,
-                coords(pos),
-                fmt(&v, false)
-            );
-            let _ = write!(vm.err, "{}", crate::vm::fault_detail(
-                &bus.source, pos, &s.glitch_chain, s.stack_view()));
-            bus.set_failed();
-        }
+        let _ = out.flush();
+        let _ = err.flush();
+    });
+    if let Err(payload) = std::panic::catch_unwind(body) {
+        let what = payload
+            .downcast_ref::<String>()
+            .map(|s| s.as_str())
+            .or_else(|| payload.downcast_ref::<&str>().copied())
+            .unwrap_or("");
+        let line = if what.is_empty() {
+            format!("✗ strand {shown} panicked\n")
+        } else {
+            format!("✗ strand {shown} panicked: {what}\n")
+        };
+        bus.write_stream(true, line.as_bytes());
+        bus.set_failed();
     }
-    let _ = out.flush();
-    let _ = err.flush();
     bus.finish(sid);
 }
 
