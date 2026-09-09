@@ -10,9 +10,13 @@
 //! ```
 //!
 //! At startup the runtime checks its own file for the footer; if present it
-//! runs the embedded program instead of behaving as a compiler. Because the
-//! payload rides inside the exact runtime it was built with, version
-//! mismatches are impossible by construction.
+//! runs the embedded program instead of behaving as a compiler. The payload
+//! normally rides inside the exact runtime it was built with, but nothing
+//! stops someone splicing a payload onto a different runtime (or the file
+//! being damaged in transit), so the `FORMAT_VERSION` check at the head of
+//! the payload is the defence against version mismatches, and the reader
+//! below treats every byte as untrusted: any malformed input yields `Err`,
+//! never a panic or an unbounded allocation.
 //!
 //! (The layout line above is a diagram, not code — kept out of doctests.)
 
@@ -133,33 +137,76 @@ pub fn serialize(prog: &CompiledProgram) -> Vec<u8> {
 }
 
 // ── reader ─────────────────────────────────────────────────────────────
+//
+// Everything in the reader is total: the payload may be truncated, bit
+// flipped or hand-crafted, and the only acceptable outcome is `Err`. In
+// particular no length read from the payload is ever handed to an allocator
+// unchecked — a corrupted `u64` count would otherwise abort the process with
+// a capacity overflow long before main() could print "corrupt program
+// payload" and exit 2.
 struct R<'a> {
     buf: &'a [u8],
     i: usize,
+    /// Current nesting of quotations/lists being decoded. The reader is
+    /// recursive, so a hand-crafted payload nesting `⟨⟨⟨…` tens of thousands
+    /// deep would overflow the stack — an abort, not an `Err`. Real programs
+    /// nest as deep as their source does, which is nowhere near the cap.
+    depth: u32,
 }
+
+const MAX_DEPTH: u32 = 1024;
 
 type PResult<T> = Result<T, String>;
 
+/// A `Vec` capacity hint that can't be weaponised by a bogus count. Every
+/// item of every list encodes to at least one byte, so a claimed count of
+/// `n` items is only plausible if at least `n` bytes remain; the hint is
+/// capped there so the allocation stays proportional to real input.
+fn bounded_capacity(claimed: usize, remaining: usize) -> usize {
+    claimed.min(remaining)
+}
+
 impl<'a> R<'a> {
+    fn remaining(&self) -> usize {
+        self.buf.len() - self.i
+    }
+
     fn take(&mut self, n: usize) -> PResult<&'a [u8]> {
-        if self.i + n > self.buf.len() {
+        // `self.i + n` could wrap for a hostile `n`, which would let the
+        // bounds check pass and the slice below panic — hence checked math.
+        let end = self.i.checked_add(n).ok_or("truncated payload")?;
+        if end > self.buf.len() {
             return Err("truncated payload".into());
         }
-        let s = &self.buf[self.i..self.i + n];
-        self.i += n;
+        let s = &self.buf[self.i..end];
+        self.i = end;
         Ok(s)
     }
     fn u8(&mut self) -> PResult<u8> {
         Ok(self.take(1)?[0])
     }
     fn u32(&mut self) -> PResult<u32> {
-        Ok(u32::from_le_bytes(self.take(4)?.try_into().unwrap()))
+        let b = self.take(4)?;
+        Ok(u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
     }
     fn u64(&mut self) -> PResult<u64> {
-        Ok(u64::from_le_bytes(self.take(8)?.try_into().unwrap()))
+        let b = self.take(8)?;
+        Ok(u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+    }
+    /// A length prefix (count of bytes or items). Validated against the
+    /// remaining input before anyone allocates on the strength of it: a
+    /// count that can't possibly fit is reported as truncation right away.
+    /// The u64 → usize narrowing (a concern on 32-bit targets) folds into
+    /// the same error instead of silently wrapping.
+    fn len(&mut self) -> PResult<usize> {
+        let n = usize::try_from(self.u64()?).map_err(|_| "truncated payload")?;
+        if n > self.remaining() {
+            return Err("truncated payload".into());
+        }
+        Ok(n)
     }
     fn bytes(&mut self) -> PResult<&'a [u8]> {
-        let n = self.u64()? as usize;
+        let n = self.len()?;
         self.take(n)
     }
     fn string(&mut self) -> PResult<String> {
@@ -168,16 +215,33 @@ impl<'a> R<'a> {
     fn ch(&mut self) -> PResult<char> {
         char::from_u32(self.u32()?).ok_or_else(|| "bad char".into())
     }
+    fn enter(&mut self) -> PResult<()> {
+        if self.depth >= MAX_DEPTH {
+            return Err("program nested too deeply".into());
+        }
+        self.depth += 1;
+        Ok(())
+    }
+    fn leave(&mut self) {
+        self.depth -= 1;
+    }
 
     fn value(&mut self) -> PResult<Value> {
+        self.enter()?;
+        let v = self.value_inner();
+        self.leave();
+        v
+    }
+
+    fn value_inner(&mut self) -> PResult<Value> {
         Ok(match self.u8()? {
             0 => Value::Nil,
             1 => Value::from_big(BigInt::from_signed_bytes_le(self.bytes()?)),
             2 => Value::Float(f64::from_bits(self.u64()?)),
             3 => Value::Str(Arc::new(self.string()?)),
             4 => {
-                let n = self.u64()? as usize;
-                let mut items = Vec::with_capacity(n);
+                let n = self.len()?;
+                let mut items = Vec::with_capacity(bounded_capacity(n, self.remaining()));
                 for _ in 0..n {
                     items.push(self.value()?);
                 }
@@ -202,8 +266,15 @@ impl<'a> R<'a> {
     }
 
     fn code(&mut self) -> PResult<Vec<Instr>> {
-        let n = self.u64()? as usize;
-        let mut code = Vec::with_capacity(n);
+        self.enter()?;
+        let c = self.code_inner();
+        self.leave();
+        c
+    }
+
+    fn code_inner(&mut self) -> PResult<Vec<Instr>> {
+        let n = self.len()?;
+        let mut code = Vec::with_capacity(bounded_capacity(n, self.remaining()));
         for _ in 0..n {
             code.push(self.instr()?);
         }
@@ -212,23 +283,28 @@ impl<'a> R<'a> {
 }
 
 pub fn deserialize(buf: &[u8]) -> PResult<CompiledProgram> {
-    let mut r = R { buf, i: 0 };
+    let mut r = R { buf, i: 0, depth: 0 };
     let version = r.u32()?;
     if version != FORMAT_VERSION {
         return Err(format!("payload format v{version}, runtime speaks v{FORMAT_VERSION}"));
     }
     let boot = r.code()?;
-    let n = r.u64()? as usize;
-    let mut strands = Vec::with_capacity(n);
+    let n = r.len()?;
+    let mut strands = Vec::with_capacity(bounded_capacity(n, r.remaining()));
     for _ in 0..n {
         let label = r.string()?;
         let code = r.code()?;
         strands.push((label, code));
     }
-    let n = r.u64()? as usize;
-    let mut source = Vec::with_capacity(n);
+    let n = r.len()?;
+    let mut source = Vec::with_capacity(bounded_capacity(n, r.remaining()));
     for _ in 0..n {
         source.push(r.string()?);
+    }
+    // Bytes left over after a complete program mean the length footer and
+    // the program disagree — that is corruption too, not something to run.
+    if r.remaining() != 0 {
+        return Err("trailing bytes after program".into());
     }
     Ok(CompiledProgram { boot, strands, source })
 }
@@ -239,13 +315,18 @@ pub fn extract(image: &[u8]) -> Option<PResult<CompiledProgram>> {
     if image.len() < 16 || &image[image.len() - 8..] != MAGIC {
         return None;
     }
-    let len_bytes: [u8; 8] = image[image.len() - 16..image.len() - 8].try_into().unwrap();
+    let body = &image[..image.len() - 16];
+    let mut len_bytes = [0u8; 8];
+    len_bytes.copy_from_slice(&image[image.len() - 16..image.len() - 8]);
     let plen = u64::from_le_bytes(len_bytes);
-    if plen.saturating_add(16) > image.len() as u64 {
-        return Some(Err("corrupt payload footer".into()));
-    }
-    let start = image.len() - 16 - plen as usize;
-    Some(deserialize(&image[start..image.len() - 16]))
+    // The footer's length is as untrusted as the payload: a value larger
+    // than the file (or one that doesn't fit a usize) is a corrupt footer,
+    // not a reason to index out of bounds.
+    let start = match usize::try_from(plen).ok().and_then(|n| body.len().checked_sub(n)) {
+        Some(start) => start,
+        None => return Some(Err("corrupt payload footer".into())),
+    };
+    Some(deserialize(&body[start..]))
 }
 
 /// The payload embedded in the currently running executable, if any.
