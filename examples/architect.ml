@@ -29,6 +29,8 @@
 ※
 ※ Formulas (typed into any cell after =):
 ※   arithmetic  + - * / ^ %  ·  ( )  ·  unary minus  ·  & concatenates
+※               (unary minus binds tightest, as in Excel: =-2^2 is 4,
+※                =2^-1 is 0.5, =2*-3 is -6, =1--1 is 2)
 ※   compare     = <> < <= > >=      ·  "quoted" or bare strings
 ※   refs        B3 · ranges B3:D5   ·  SUM AVG MIN MAX CNT over ranges
 ※   logic       IF(cond,then,else)  ·  ABS ROUND SQRT LEN
@@ -48,7 +50,13 @@
 ※
 ※ The sheet arrives and leaves as honest TSV (⍇/⍈), so it pastes
 ※ straight into and out of any other spreadsheet — and a block copied
-※ from one lands here through POST /api/batch.
+※ from one lands here through POST /api/batch. Honest cuts both ways:
+※ a file larger than the 30×16 grid is refused rather than clipped (and
+※ never becomes the save target), CRLF line ends are accepted, and a
+※ save is refused while any cell holds a tab or line break. Every edit
+※ (cell, batch, fill, style) is validated before it is committed, so a
+※ rejected request — a cell off the grid answers 500 — leaves the sheet,
+※ its version, and the undo history exactly as they were.
 ※
 ※ Engine-strand register file (strand-locals; Greek carries the new
 ※ machinery so the Latin letters keep their old jobs):
@@ -60,6 +68,7 @@
 ※   recalc C     p d e h        edits A/Π  i j         router U  r ε δ
 ※   shift Ξ      t i a c j ε δ ζ ν       fill ∇  σ ψ ω ς ϰ ε ζ
 ※   dates Θ      ε ζ ι ο υ ν            style ¤  ι ο
+※   on-grid ✓    i j                    load B / save X  ι ο
 30≔N
 16≔M
 «ABCDEFGHIJKLMNOP»≔Y
@@ -71,6 +80,7 @@
 5υ×2+153÷⌊⇒ν υ153ν×2+5÷⌊-1+ν10<[ν3+][ν9-]?ο ε400×+⊚2≤[1+][]?
 ⟨⇅⟩⇅⟨⇅⟩⧺⇅⟨⇅⟩⧺]≔Θ
 [⇒z⇒m⇒y∂y@∂0 m⊂⟨z⟩⧺⇅∂#m 1+⇅⊂⧺⇅∂0 y⊂⥀⟨⇅⟩⧺⇅∂#y 1+⇅⊂⧺]≔S
+[⇒j⇒i i 0≥i N<∧j 0≥∧j M<∧¬[«cell »i⍕⧺«,»⧺j⍕⧺« is off the grid»⧺↯][]?]≔✓
 [∂«»=[][∂0 1⊂«=»=[⌫⟨«⌛»⟩][∂[⍎⇅⌫][⌫]⍥]?]?]≔K
 [10⍢[∂⌷«0»=][∂#1-0⇅⊂]⟳∂⌷«.»=[∂#1-0⇅⊂][]?]≔Φ
 [∂0<[±⍕«-»⇅⧺][⍕]?]≔Γ
@@ -78,7 +88,7 @@
 [∂«»=[⌫«»][⍙«int»=[⌫«n»][⍙«float»=[⌫«n»][⍙«str»=[⌫«t»][∂⊃«e»=[⌫«e»][⌫«p»]?]?]?]?]?]≔Λ
 [⍙«list»=[[⍙∂«int»=⇅«float»=∨⇅⌫]⌿][⍙«str»=[⌫⟨⟩][⟨⇅⟩]?]?]≔Z
 [∂«+»=[⌫+][∂«-»=[⌫-][∂«*»=[⌫×][∂«/»=[⌫÷][∂«^»=[⌫^][∂«%»=[⌫%][∂«&»=[⌫⇅⍕⇅⍕⧺][∂«=»=[⌫=][∂«<»=[⌫<][∂«>»=[⌫>][∂«<=»=[⌫≤][∂«>=»=[⌫≥][∂«<>»=[⌫≠][«bad op »⇅⍕⧺↯]?]?]?]?]?]?]?]?]?]?]?]?]?]≔O
-[∂«^»=[⌫5][∂«*»=[⌫4][∂«/»=[⌫4][∂«%»=[⌫4][∂«+»=[⌫3][∂«-»=[⌫3][∂«&»=[⌫2][⌫1]?]?]?]?]?]?]?]≔V
+[∂«~»=[⌫6][∂«^»=[⌫5][∂«*»=[⌫4][∂«/»=[⌫4][∂«%»=[⌫4][∂«+»=[⌫3][∂«-»=[⌫3][∂«&»=[⌫2][⌫1]?]?]?]?]?]?]?]?]≔V
 [⊚⊚v⥀@⇅@∂⟨«⌛»⟩=[«⌛»↯][⍙«list»=[⌫Q«✗ in »⇅⧺↯][⥀⌫⇅⌫]?]?]≔R
 [R∂«»=[⌫0][]?]≔W
 [∂0@⇒f∂1@⇒h∂2@⇒u 3@⇒x u f-1+⍸[f+x h-1+⍸[h+⊚⇅R]∵⇅⌫]∵⟨⟩[⧺]⍀]≔G
@@ -110,7 +120,7 @@ c«<»=[i 1+t#<[t i 1+@∂«=»=[⌫«<=»2][∂«>»=[⌫«<>»2][⌫«<»1]?]?
 c«>»=[i 1+t#<[t i 1+@«=»=[«>=»2][«>»1]?][«>»1]?
   ⇅⟨«o»⥀⟩a⇅⟨⇅⟩⧺⇒a i⇅+⇒i][
 «+-*/^%&=(),»c∈[
-  c«-»=[a#0=[1][a⌷⊃∂«o»=⊚«(»=∨⇅«,»=∨]?[a⟨«n»0⟩⟨⇅⟩⧺⇒a][]?][]?
+  c«-»=[a#0=[1][a⌷⊃∂«o»=⊚«(»=∨⇅«,»=∨]?[«~»⇒c][]?][]?
   c«(»=[⟨«(»⟩][c«)»=[⟨«)»⟩][c«,»=[⟨«,»⟩][⟨«o»c⟩]?]?]?a⇅⟨⇅⟩⧺⇒a i 1+⇒i][
 c«#»=[«shifted off the grid»↯][«bad char »c⧺↯]?]?]?]?]?]?]?]?]⟳ a]≔T
 ※ P: shunting-yard — tokens → RPN.  E: evaluate RPN on the data stack.
@@ -118,12 +128,12 @@ c«#»=[«shifted off the grid»↯][«bad char »c⧺↯]?]?]?]?]?]?]?]?]⟳ a]
 z⊃«n»=z⊃«s»=∨z⊃«r»=∨z⊃«g»=∨[q z⟨⇅⟩⧺⇒q][
 z⊃«f»=z⊃«(»=∨[o z⟨⇅⟩⧺⇒o][
 z⊃«,»=[[o#0>[o⌷⊃«(»≠][0]?][q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o]⟳ o#0=[«misplaced ,»↯][]?][
-z⊃«o»=[z 1@V z 1@«^»=[1+][]?⇒y
+z⊃«o»=[z 1@V z 1@∂«^»=⇅«~»=∨[1+][]?⇒y
   [o#0>[o⌷∂⊃«o»=[1@V y≥][⌫0]?][0]?][q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o]⟳ o z⟨⇅⟩⧺⇒o][
 z⊃«)»=[[o#0>[o⌷⊃«(»≠][0]?][q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o]⟳ o#0=[«unbalanced )»↯][]?o 0 o#1-⊂⇒o
   o#0>[o⌷⊃«f»=][0]?[q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o][]?][]?]?]?]?]?]∀
 [o#0>][o⌷⊃«(»=[«unbalanced (»↯][]?q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o]⟳ q]≔P
-[⇒z≢⇒m z[∂⊃«n»=[1@][∂⊃«s»=[1@][∂⊃«r»=[1@∂0@⇅1@W][∂⊃«g»=[1@G][∂⊃«o»=[1@O][1@F]?]?]?]?]?]∀≢m 1+≠[«bad formula»↯][]?]≔E
+[⇒z≢⇒m z[∂⊃«n»=[1@][∂⊃«s»=[1@][∂⊃«r»=[1@∂0@⇅1@W][∂⊃«g»=[1@G][∂⊃«o»=[1@∂«~»=[⌫±][O]?][1@F]?]?]?]?]?]∀≢m 1+≠[«bad formula»↯][]?]≔E
 [⇅⇒l k l⒢∂∅=[⌫⌫ w l∈¬[w l⟨⇅⟩⧺⇒w][]?«⌛»↯][⍙«list»=[∂#2=[∂⊃«✗fetch»=[1@↯][]?][]?][]?⇅⒫∂∅=[⌫«no data at that path»↯][⍙«list»=[⌫«not a single value»↯][]?]?]?]≔H
 [∂«SUM»=[⌫Z 0[+]⍀][
 ∂«AVG»=[⌫Z µ][
@@ -151,7 +161,10 @@ z⊃«)»=[[o#0>[o⌷⊃«(»≠][0]?][q o⌷⟨⇅⟩⧺⇒q o 0 o#1-⊂⇒o]�
 «unknown function »⇅⧺↯]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]?]≔F
 ※ C: recalculate v from b. Formula cells parse once, then evaluate in
 ※ passes until a fixpoint: a pass that resolves nothing leaves only
-※ cells waiting on live data (w) — or, when w is empty, proven cycles.
+※ cells waiting on live data and proven cycles. A second fixpoint tells
+※ them apart: every leftover is presumed ⚠ circular, then any cell that
+※ still raises ⌛ (a fetch, or a reference to a cell that is waiting on
+※ one) is pardoned back to … — what remains is a cycle, on any sheet.
 [b[[K]∵]∵⇒v ⟨⟩⇒w ⟨⟩⇒p
 N⍸[⇒e M⍸[⇒h v e@h@⟨«⌛»⟩=[
   [b e@h@∂#1⇅⊂T P⟨⇅⟩⟨e h⟩⇅⧺p⇅⟨⇅⟩⧺⇒p]
@@ -160,7 +173,11 @@ N⍸[⇒e M⍸[⇒h v e@h@⟨«⌛»⟩=[
   [e 2@E v⇅e 0@e 1@⥀S⇒v 1⇒d]
   [∂«⌛»=[⌫a e⟨⇅⟩⧺⇒a][⟨«e»⥀⟩v⇅e 0@e 1@⥀S⇒v 1⇒d]?]⍥]∀
 a⇒p]⟳
-w#0=[p[⇒e v e 0@e 1@⟨«e» «⚠ circular»⟩S⇒v]∀][]?]≔C
+p[⇒e v e 0@e 1@⟨«e» «⚠ circular»⟩S⇒v]∀
+1⇒d[d p#0>∧][0⇒d⟨⟩⇒a p[⇒e
+  [e 2@E v⇅e 0@e 1@⥀S⇒v 1⇒d]
+  [«⌛»=[v e 0@e 1@⟨«⌛»⟩S⇒v 1⇒d][a e⟨⇅⟩⧺⇒a]?]⍥]∀
+a⇒p]⟳]≔C
 ※ Ξ: shift the cell references in a formula body by ⟨δrow δcol⟩ —
 ※ the relative-reference rewrite behind fill and paste. Quoted text
 ※ is copied verbatim; a reference pushed off the grid becomes #REF,
@@ -177,36 +194,46 @@ a c⧺⇒a i 1+⇒i]?]?]⟳ a]≔Ξ
 ※ ⊞: normalize a list of cell rows to exactly N rows of M cells.
 [[[∂#M<][«»⟨⇅⟩⧺]⟳M⊤]∵[∂#N<][M⍸[⌫«»]∵⟨⇅⟩⧺]⟳N⊤]≔⊞
 ※ Σ: snapshot ⟨grid styles⟩ for undo (last 50); a new edit clears redo.
+※ Every edit below is computed first and committed last — Σ, then the
+※ store, then C Ρ — so a request that fails validation (a cell off the
+※ grid, a bad body) leaves the sheet, the version, and undo untouched.
 [θ⟨⟨b η⟩⟩⧺∂#50>[∂#50-⊥][]?⇒θ⟨⟩⇒λ]≔Σ
 ※ Ρ: a change happened — bump the version and answer every held poll.
 [μ1+⇒μ ξ[⟨⇅200«application/json»J⟩↥β]∀⟨⟩⇒ξ]≔Ρ
 ※ J: the whole sheet as one JSON document.
 [⟨⟨«name» n⟩ ⟨«rows» N⟩ ⟨«cols» M⟩ ⟨«v» μ⟩ ⟨«status» s⟩ ⟨«live» w#⟩ ⟨«styles» η⟩ ⟨«cells» b⟩ ⟨«disp» v[[D]∵]∵⟩ ⟨«kind» v[[Λ]∵]∵⟩⟩⒮]≔J
 ※ A: apply one cell edit {"r","c","t"} and recalculate.
-[Σ∂«r»⒢⇒i∂«c»⒢⇒j«t»⒢⍕b⇅i j⥀S⇒b C Ρ]≔A
+[∂«r»⒢⇒i∂«c»⒢⇒j i j✓«t»⒢⍕b⇅i j⥀S Σ⇒b C Ρ]≔A
 ※ Π: apply a batch of edits {"edits":[{"r","c","t"}…]} in one recalc —
-※ a block pasted from another spreadsheet arrives here.
-[Σ«edits»⒢[∂«r»⒢⇒i∂«c»⒢⇒j«t»⒢⍕b⇅i j⥀S⇒b]∀C Ρ]≔Π
+※ a block pasted from another spreadsheet arrives here. The whole batch
+※ is folded into a fresh grid before anything is committed: one edit
+※ off the grid rejects the entire block.
+[«edits»⒢b[∂«r»⒢⇒i∂«c»⒢⇒j i j✓«t»⒢⍕i j⥀S]⍀Σ⇒b C Ρ]≔Π
 ※ ∇: fill {"sr","sc","r0","c0","r1","c1"} — stamp the source cell over
-※ the rectangle, shifting each formula's references by its offset.
-[Σ∂«sr»⒢⇒σ∂«sc»⒢⇒ψ∂«r0»⒢⇒ε∂«r1»⒢⇅∂«c0»⒢⇒ζ«c1»⒢ζ-1+⍸[ζ+]∵⇒ϰ
-ε-1+⍸[ε+]∵[⇒ω ϰ[⇒ς b σ@ψ@∂0 1⊂«=»=[∂#1⇅⊂ω σ-ς ψ-Ξ«=»⇅⧺][]?b⇅ω ς⥀S⇒b]∀]∀C Ρ]≔∇
+※ the rectangle, shifting each formula's references by its offset. The
+※ corners are normalised (a rectangle dragged upward or leftward is the
+※ same rectangle) and both are validated before the fill is committed.
+[∂«sr»⒢⇒σ∂«sc»⒢⇒ψ σ ψ✓∂«r0»⒢⊚«r1»⒢∂⊚⊓⇒ε⊔⇅∂«c0»⒢⊚«c1»⒢∂⊚⊓⇒ζ⊔⇅⌫ε ζ✓⊚⊚✓
+ζ-1+⍸[ζ+]∵⇒ϰ ε-1+⍸[ε+]∵b⇅[⇒ω ϰ[⇒ς b σ@ψ@∂0 1⊂«=»=[∂#1⇅⊂ω σ-ς ψ-Ξ«=»⇅⧺][]?ω ς⥀S]∀]∀Σ⇒b C Ρ]≔∇
 ※ ¤: set a cell's style flags {"r","c","s"} — bold, alignment, format.
-[Σ∂«r»⒢⍕«,»⧺⇅∂«c»⒢⍕⥀⇅⧺⇒ι«s»⒢⍕⇒ο η[⊃ι≠]⌿ο«»≠[⟨⟨ι ο⟩⟩⧺][]?⇒η Ρ]≔¤
+[∂«r»⒢⊚«c»⒢✓∂«r»⒢⍕«,»⧺⇅∂«c»⒢⍕⥀⇅⧺⇒ι«s»⒢⍕⇒ο η[⊃ι≠]⌿ο«»≠[⟨⟨ι ο⟩⟩⧺][]?Σ⇒η Ρ]≔¤
 ※ ↶ ↷: undo and redo — whole ⟨grid styles⟩ snapshots, like MatrixPad.
 [θ#0>[λ⟨⟨b η⟩⟩⧺⇒λ θ⌷∂0@⇒b 1@⇒η θ 0 θ#1-⊂⇒θ C«undid»⇒s Ρ][«nothing to undo»⇒s]?]≔↶
 [λ#0>[θ⟨⟨b η⟩⟩⧺⇒θ λ⌷∂0@⇒b 1@⇒η λ 0 λ#1-⊂⇒λ C«redid»⇒s Ρ][«nothing to redo»⇒s]?]≔↷
 ※ Δ: refresh — forget the cache, find every live url, fan the fetches
 ※ out to the worker pool on φ, fold the answers back in from ρ, recalc.
 [⟨⟩⇒k C w#0>[w[↥φ]∀w#[↧ρ⟨⇅⟩k⇅⧺⇒k]⍣⟨⟩⇒w C«live data refreshed»⇒s Ρ][«no live cells in this sheet»⇒s]?]≔Δ
-※ X: save the raw grid as honest TSV.
-[n«»=[«zion-ledger.tsv»⇒n][]?b[9⍘⊇]∵«⏎»⊇«⏎»⧺[n⍈«saved as »n⧺⇒s][⌫«cannot write »n⧺⇒s]⍥]≔X
+※ X: save the raw grid as honest TSV — refused while any cell holds a
+※ tab or a line break, since that cell could not survive the round trip.
+[⟨⟩N⍸[⇒ι M⍸[⇒ο b ι@ο@∂9⍘∈⊚«⏎»∈∨⇅13⍘∈∨[ι ο Q⟨⇅⟩⧺][]?]∀]∀
+∂#0>[«cannot save: »⇅«, »⊇⧺« holds a tab or line break»⧺⇒s][⌫
+n«»=[«zion-ledger.tsv»⇒n][]?b[9⍘⊇]∵«⏎»⊇«⏎»⧺[n⍈«saved as »n⧺⇒s][⌫«cannot write »n⧺⇒s]⍥]?]≔X
 ※ U: route one request r → the response ⟨id status type body⟩, or ∅
 ※ when the answer is deferred (a held poll waiting for the next change).
 [r 2@«?»⊆∂⊃⇒ε∂#1>[1@][⌫«»]?⇒δ
 r 1@«GET»=[ε«/»=ε«/index.html»=∨[⟨r⊃ 200«text/html; charset=utf-8»Ω⟩][
   ε«/api/sheet»=[⟨r⊃ 200«application/json»J⟩][
-  ε«/api/poll»=[δ«=»⊆∂#1>[1@[⍎][⌫0]⍥][⌫0]?μ<[⟨r⊃ 200«application/json»J⟩][ξ r⊃⟨⇅⟩⧺⇒ξ∅]?][
+  ε«/api/poll»=[δ«&»⊆[«=»⊆]∵[∂⊃«v»=⇅#2=∧]⌿∂#0>[⊃1@[⍎][⌫0]⍥][⌫0]?μ<[⟨r⊃ 200«application/json»J⟩][ξ r⊃⟨⇅⟩⧺⇒ξ∅]?][
   ⟨r⊃ 404«text/plain»«lost in the Matrix»⟩]?]?]?][
 r 1@«POST»=[
   ε«/api/cell»=[r 3@⒥A⟨r⊃ 200«application/json»J⟩][
@@ -235,9 +262,15 @@ r 1@«POST»=[
 ⟨«today» «=TODAY()» «utc» «=TIME()» «» «» «» «»⟩
 ⟨«usd trend» «=SPARK(D3:D6)» «» «» «» «» «» «»⟩⟩≔Ψ
 ※ B: open the sheet named on the command line, or wake into the demo.
+※ CRLF files are welcome (every ⏎ is stripped of its ␍). A file taller
+※ than N rows or wider than M cells is refused rather than clipped: the
+※ demo wakes with a status naming the sizes, and the file is not made
+※ the save target, so nothing is ever written back over it truncated.
 [⟨⟩⇒k⟨⟩⇒w«»⇒s⟨⟩⇒θ⟨⟩⇒λ1⇒μ⟨⟩⇒ξ⟨⟩⇒η⌂#0>[⌂⊃⇒n
-[n⍇«⏎»⊆[9⍘⊆]∵⊞⇒b«opened »n⧺⇒s]
-[⌫Ψ⊞⇒b«new sheet »n⧺⇒s]⍥]
+[n⍇][⌫∅]⍥∂∅=[⌫Ψ⊞⇒b«new sheet »n⧺⇒s][
+13⍘⊆«»⊇«⏎»⊆∂⌷«»=[∂#1-0⇅⊂][]?[9⍘⊆]∵∂#⇒ι∂[#]∵0[⊔]⍀⇒ο
+ι N>ο M>∨[⌫Ψ⊞⇒b«cannot open »n⧺«: »⧺ι⍕⧺«×»⧺ο⍕⧺« does not fit the »⧺N⍕⧺«×»⧺M⍕⧺« grid»⧺⇒s«»⇒n]
+[⊞⇒b«opened »n⧺⇒s]?]?]
 [Ψ⊞⇒b«»⇒n«the demo ledger — click a cell and type»⇒s
 ⟨⟨«0,0» «b»⟩ ⟨«1,0» «b»⟩ ⟨«1,1» «b»⟩ ⟨«1,2» «b»⟩ ⟨«1,3» «b»⟩ ⟨«2,3» «$»⟩ ⟨«3,3» «$»⟩ ⟨«4,3» «$»⟩ ⟨«5,3» «$»⟩ ⟨«7,3» «$»⟩⟩⇒η]?]≔B
 ※ Ω: the page itself — the whole front end, served at /.
