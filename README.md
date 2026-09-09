@@ -309,6 +309,17 @@ version is kept (`GET /.loom/log`, `/.loom/v3`), and every fault report
 names the version its code came from: `✗ glitch in strand 1 (row 5) at
 v3 5:12`, with version 3's line excerpted.
 
+The lineage is Erlang's hot code loading: a process there switches to
+new code at its next fully-qualified call, and a strand here switches at
+its next seam. What Erlang has and the loom does not yet is
+`code_change`, a hook that reshapes a process's state when the code
+changes — a re-woven strand carries its stack and locals over as they
+are. What the loom adds is the merge: in Erlang, and in every hot-reload
+tool since (Lisp images, JVM HotSwap, Flutter, kernel live patching),
+concurrent edits are settled by version control *before* deployment and
+the running system sees one linear history; here the running program is
+the merge target, and N agents patch it at once.
+
 And because patches travel in the request stream, a replayed session
 with patches is deterministic like everything else: `⟡ base nbytes`
 frames on stdin, `⟡ status` reports on stdout, pinned by the conformance

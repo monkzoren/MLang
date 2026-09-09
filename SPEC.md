@@ -662,5 +662,6 @@ runtime never crashes or aborts.
 
 Concatenative core from Forth and Joy (quotations as the sole control-flow
 mechanism); glyph vocabulary in the spirit of APL; concurrency from CSP and
-Erlang (channels, share-nothing isolation, let-it-crash strands); the grid
+Erlang (channels, share-nothing isolation, let-it-crash strands, and hot
+code loading — the loom's seam is Erlang's next-call switch, §4.7); the grid
 from punched tape, transposed to fall like rain.
