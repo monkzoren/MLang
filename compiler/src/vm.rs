@@ -13,6 +13,12 @@ use std::io::{BufRead, Write};
 use std::sync::Arc;
 
 const SLICE: usize = 8;
+/// Resource limits. Exhausting a resource is a glitch like any other
+/// fault — never an allocation abort or a stack overflow — because a
+/// strand that dies with coordinates is something an agent can act on.
+const MAX_RANGE: i64 = 100_000_000;
+const MAX_POW_BITS: u64 = 1 << 30;
+pub const MAX_FRAMES: usize = 200_000;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Status {
@@ -58,6 +64,7 @@ enum Frame {
         cond: Arc<Vec<Instr>>,
         body: Arc<Vec<Instr>>,
         phase: u8,
+        pos: Pos,
     },
     Repeat {
         left: i64,
@@ -70,6 +77,7 @@ enum Frame {
         mode: IterMode,
         out: Vec<Value>,
         awaiting: bool,
+        pos: Pos,
     },
     Try {
         handler: Arc<Vec<Instr>>,
@@ -116,6 +124,10 @@ pub struct Strand {
     /// depth before any new call is made. Drives the fault report's call
     /// chain, so a glitch inside a definition names its caller.
     calls: Vec<(char, Pos, usize)>,
+    /// Open ⟨ marks: (stack index of the mark, its position). A strand
+    /// that finishes with one still open glitches there instead of
+    /// silently ending with an unfinished list on its stack.
+    marks: Vec<(usize, Pos)>,
 }
 
 impl Strand {
@@ -131,6 +143,7 @@ impl Strand {
             glitch: None,
             glitch_chain: Vec::new(),
             calls: Vec::new(),
+            marks: Vec::new(),
         }
     }
 
@@ -146,6 +159,7 @@ impl Strand {
             glitch: None,
             glitch_chain: Vec::new(),
             calls: Vec::new(),
+            marks: Vec::new(),
         }
     }
 
@@ -167,6 +181,18 @@ impl Strand {
             Some(slot) => slot.1 = v,
             None => self.locals.push((c, v)),
         }
+    }
+
+    /// Unbounded recursion is a fault with coordinates, not a slow death
+    /// by memory exhaustion: past MAX_FRAMES the call glitches.
+    fn check_depth(&self, pos: Pos) -> R<()> {
+        if self.frames.len() >= MAX_FRAMES {
+            return glitch(
+                format!("call depth exceeds {MAX_FRAMES} frames — unbounded recursion?"),
+                pos,
+            );
+        }
+        Ok(())
     }
 
     fn pop(&mut self, pos: Pos, what: &str) -> R<Value> {
@@ -251,6 +277,7 @@ impl Strand {
             if let Frame::Try { handler, depth } = top {
                 let (handler, depth) = (handler.clone(), *depth);
                 self.stack.truncate(depth);
+                self.marks.retain(|&(i, _)| i < depth);
                 self.frames.pop();
                 self.push(value);
                 self.frames.push(cf(handler));
@@ -353,9 +380,13 @@ fn arith(op: char, a: &Value, b: &Value, pos: Pos) -> R<Value> {
                 if y.is_negative() {
                     Value::Float(a.as_f64().unwrap().powf(b.as_f64().unwrap()))
                 } else {
+                    // The result has about bits(x)·e bits; refuse to build one
+                    // that would exhaust memory — a glitch, never an abort.
                     match y.to_u32() {
-                        Some(e) => Value::from_big(x.pow(e)),
-                        None => return glitch("^ exponent too large", pos),
+                        Some(e) if x.bits().saturating_mul(u64::from(e)) <= MAX_POW_BITS => {
+                            Value::from_big(x.pow(e))
+                        }
+                        _ => return glitch("^ result too large", pos),
                     }
                 }
             }
@@ -1178,6 +1209,16 @@ pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
     let mut executed = 0;
     'outer: while executed < limit {
         if s.frames.is_empty() {
+            // An unfinished ⟨ at the end of a strand is a fault, not a
+            // silently successful run with a stray mark on the stack.
+            if s.stack.iter().any(|v| matches!(v, Value::Mark)) {
+                let pos = s.marks.last().map(|&(_, p)| p).unwrap_or((0, 0));
+                s.status = Status::Dead;
+                s.glitch = Some((Value::str("⟨ without matching ⟩"), pos));
+                s.glitch_chain = Vec::new();
+                executed += 1;
+                break;
+            }
             s.status = Status::Done;
             break;
         }
@@ -1297,8 +1338,10 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
             Ok(())
         }
         Frame::While { .. } => {
-            let (phase, cond, body) = match &s.frames[fi] {
-                Frame::While { phase, cond, body } => (*phase, cond.clone(), body.clone()),
+            let (phase, cond, body, pos) = match &s.frames[fi] {
+                Frame::While { phase, cond, body, pos } => {
+                    (*phase, cond.clone(), body.clone(), *pos)
+                }
                 _ => unreachable!(),
             };
             if phase == 0 {
@@ -1310,7 +1353,7 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                 if let Frame::While { phase, .. } = &mut s.frames[fi] {
                     *phase = 0;
                 }
-                let flag = s.pop_any((0, 0))?;
+                let flag = s.pop_for(pos, "⟳", "the condition's result")?;
                 if truthy(&flag) {
                     s.frames.push(cf(body));
                 } else {
@@ -1335,9 +1378,9 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
             Ok(())
         }
         Frame::Iter { .. } => {
-            let (mode, awaiting, i, len, f) = match &s.frames[fi] {
-                Frame::Iter { mode, awaiting, i, items, f, .. } => {
-                    (*mode, *awaiting, *i, items.len(), f.clone())
+            let (mode, awaiting, i, len, f, pos) = match &s.frames[fi] {
+                Frame::Iter { mode, awaiting, i, items, f, pos, .. } => {
+                    (*mode, *awaiting, *i, items.len(), f.clone(), *pos)
                 }
                 _ => unreachable!(),
             };
@@ -1347,13 +1390,13 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
                 }
                 match mode {
                     IterMode::Map => {
-                        let v = s.pop_any((0, 0))?;
+                        let v = s.pop_for(pos, "map", "the body's result for each item")?;
                         if let Frame::Iter { out, .. } = &mut s.frames[fi] {
                             out.push(v);
                         }
                     }
                     IterMode::Filter => {
-                        let flag = s.pop_any((0, 0))?;
+                        let flag = s.pop_for(pos, "filter", "the body's verdict for each item")?;
                         if truthy(&flag) {
                             if let Frame::Iter { out, items, i, .. } = &mut s.frames[fi] {
                                 let item = items[*i - 1].clone();
@@ -1457,9 +1500,15 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
                 return glitch(format!("undefined sigil '{c}'"), pos);
             };
             if let Value::Quot(q) = v {
+                s.check_depth(pos)?;
                 // Record the call so a fault inside the definition can
                 // name it and its call site.
-                s.calls.retain(|&(_, _, depth)| depth <= s.frames.len());
+                // Entries are pushed in depth order, so pruning the stale
+                // tail is enough — and O(1) amortized, which matters for a
+                // deep recursion racing toward MAX_FRAMES.
+                while s.calls.last().is_some_and(|&(_, _, d)| d > s.frames.len()) {
+                    s.calls.pop();
+                }
                 s.frames.push(cf(q));
                 s.calls.push((*c, pos, s.frames.len()));
             } else {
@@ -1468,6 +1517,7 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             Ok(())
         }
         Op::LMark => {
+            s.marks.push((s.stack.len(), pos));
             s.push(Value::Mark);
             Ok(())
         }
@@ -1475,7 +1525,10 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             let mut items = Vec::new();
             loop {
                 match s.stack.pop() {
-                    Some(Value::Mark) => break,
+                    Some(Value::Mark) => {
+                        s.marks.pop();
+                        break;
+                    }
                     Some(v) => items.push(v),
                     None => return glitch("⟩ without matching ⟨", pos),
                 }
@@ -1544,6 +1597,9 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             match v {
                 Value::Int(_) | Value::Big(_) => s.push(v),
                 Value::Float(f) => {
+                    if !f.is_finite() {
+                        return glitch(format!("{ch} of {} has no integer value", fmt(&v, false)), pos);
+                    }
                     let r = if ch == '⌊' { f.floor() } else { f.ceil() };
                     let big = BigInt::from_f64(r).unwrap_or_default();
                     s.push(Value::from_big(big));
@@ -1616,6 +1672,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         // ── control ──
         '!' => {
             let q = s.pop_quot(pos, "!")?;
+            s.check_depth(pos)?;
             s.frames.push(cf(q));
         }
         '?' => {
@@ -1624,6 +1681,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let c = s.pop_any(pos)?;
             let pick = if truthy(&c) { t } else { e };
             if let Value::Quot(q) = pick {
+                s.check_depth(pos)?;
                 s.frames.push(cf(q));
             } else {
                 s.push(pick);
@@ -1632,7 +1690,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         '⟳' => {
             let body = s.pop_quot(pos, "⟳")?;
             let cond = s.pop_quot(pos, "⟳")?;
-            s.frames.push(Frame::While { cond, body, phase: 0 });
+            s.frames.push(Frame::While { cond, body, phase: 0, pos });
         }
         '⍣' => {
             let body = s.pop_quot(pos, "⍣")?;
@@ -1653,7 +1711,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             };
             let f = s.pop_quot(pos, name)?;
             let items = s.pop_seq(pos, name)?;
-            s.frames.push(Frame::Iter { items, i: 0, f, mode, out: Vec::new(), awaiting: false });
+            s.frames.push(Frame::Iter { items, i: 0, f, mode, out: Vec::new(), awaiting: false, pos });
         }
         '⍀' => {
             let f = s.pop_quot(pos, "⍀")?;
@@ -1667,10 +1725,17 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 mode: IterMode::Fold,
                 out: Vec::new(),
                 awaiting: false,
+                pos,
             });
         }
         '⍸' => {
             let n = s.pop_i64(pos, "⍸")?;
+            if n > MAX_RANGE {
+                return glitch(
+                    format!("⍸ {} is too many items (limit {MAX_RANGE})", fmt_i64(n)),
+                    pos,
+                );
+            }
             let items: Vec<Value> = (0..n.max(0)).map(Value::int).collect();
             s.push(Value::List(Arc::new(items)));
         }
