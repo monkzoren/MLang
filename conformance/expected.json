@@ -189,6 +189,11 @@
     "stderr": "",
     "stdout": "Hello, Matrix\n"
   },
+  "example:hot-counter.ml": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 7\nhello 1\n◁ 2 200 text/plain 7\nhello 2\n⟡ 200 36\n⟡ v1: 2 definitions rebound (G E)\n◁ 3 200 text/plain 8\nserved 3\n⟡ 200 99\n⟡ v2: 1 strand replaced\n  strand 0 continues as row 20 at its next seam, after its ⟲ migration\n◁ 4 200 text/plain 16\nserved 4 of 3001\n◁ 5 200 text/plain 16\nserved 5 of 3002\n"
+  },
   "example:jack-in.ml": {
     "exit": 0,
     "stderr": "",
@@ -394,6 +399,11 @@
     "stderr": "✗ weave error at 1:1: lone ¯ — negatives are written like ¯5\n",
     "stdout": ""
   },
+  "loom-computed-definition": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 1\n6\n⟡ 200 36\n⟡ v1: 2 definitions rebound (A B)\n◁ 2 200 text/plain 1\n8\n"
+  },
   "loom-conflict": {
     "exit": 0,
     "stderr": "",
@@ -409,10 +419,35 @@
     "stderr": "✗ glitch in strand 1 (row 5) at v1 5:5: + expects numbers, got str\n  v1 5│ «x»1+⍞\n            ↑ v1 5:5\n  stack: (empty)\n",
     "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 53\n⟡ v1: 1 strand started\n  strand 1 started as row 5\n◁ 2 200 text/plain 1\n9\n"
   },
+  "loom-impure-definition-is-boot-code": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 174\n✗ patch rejected: boot code changed at 1:1 — it ran once at start and cannot run again; only pure ≔ definitions and strands are hot\n  1│ «hi»⍞ 5≔Q\n     ↑ 1:1\n◁ 1 200 text/plain 1\n5\n"
+  },
   "loom-merge-stale-base": {
     "exit": 0,
     "stderr": "",
     "stdout": "⟡ 200 33\n⟡ v1: 1 definition rebound (Q)\n⟡ 200 33\n⟡ v2: 1 definition rebound (W)\n◁ 1 200 text/plain 5\n81two\n"
+  },
+  "loom-migration-adds-a-local": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 1\n1\n◁ 2 200 text/plain 1\n2\n⟡ 200 98\n⟡ v1: 1 strand replaced\n  strand 0 continues as row 2 at its next seam, after its ⟲ migration\n◁ 3 200 text/plain 5\n3/101\n◁ 4 200 text/plain 5\n4/102\n"
+  },
+  "loom-migration-glitch-kills-the-strand": {
+    "exit": 1,
+    "stderr": "✗ glitch in strand 0 (row 2) at v1 1:6: ÷ by zero\n  v1 1│ ※ ⟲ 1 0÷⇒m\n             ↑ v1 1:6\n  stack: (empty)\n",
+    "stdout": "◁ 1 200 text/plain 1\n1\n⟡ 200 98\n⟡ v1: 1 strand replaced\n  strand 0 continues as row 2 at its next seam, after its ⟲ migration\n"
+  },
+  "loom-migration-in-a-program-is-a-weave-error": {
+    "exit": 2,
+    "stderr": "✗ weave error at 1:1: ⟲ is a hot-patch migration: it starts a line of its own, just above the strand it migrates, in a patch (SPEC §4.7)\n",
+    "stdout": ""
+  },
+  "loom-migration-needs-a-strand-below": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 65\n✗ patch rejected: ⟲ at 2:1 has no strand below it to migrate\n◁ 1 200 text/plain 1\n1\n"
   },
   "loom-no-change": {
     "exit": 0,
@@ -427,7 +462,7 @@
   "loom-reject-boot-code": {
     "exit": 0,
     "stderr": "",
-    "stdout": "⟡ 422 200\n✗ patch rejected: boot code changed at 1:14 — it ran once at start and cannot run again; only literal ≔ definitions and strands are hot\n  1│ [∂×]≔Q «boot»⍞\n                  ↑ 1:14\n◁ 1 200 text/plain 1\n9\n"
+    "stdout": "⟡ 422 189\n✗ patch rejected: boot code changed at 1:8 — it ran once at start and cannot run again; only pure ≔ definitions and strands are hot\n  1│ [∂×]≔Q «boot»⍞\n            ↑ 1:8\n◁ 1 200 text/plain 1\n9\n"
   },
   "loom-reject-std-sigil": {
     "exit": 0,
@@ -444,10 +479,20 @@
     "stderr": "",
     "stdout": "⟡ 422 70\n✗ weave error at 4:1: unclosed [ quotation\n  4│ [1 2\n     ↑ 4:1\n◁ 1 200 text/plain 1\n9\n"
   },
+  "loom-runaway-definition-is-boot-code": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 173\n✗ patch rejected: boot code changed at 1:1 — it ran once at start and cannot run again; only pure ≔ definitions and strands are hot\n  1│ [1][]⟳ 5≔Q\n     ↑ 1:1\n◁ 1 200 text/plain 1\n5\n"
+  },
   "loom-strands-replace-start-retire": {
     "exit": 0,
     "stderr": "",
     "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 173\n⟡ v1: 1 strand replaced, 1 strand started, 1 strand retired\n  strand 0 continues as row 4 at its next seam\n  strand 2 started as row 3\n  strand 1 retires at its next seam\nnew\n◁ 2 200 text/plain 4\nhi 9\n"
+  },
+  "loom-without-migration-the-new-local-is-unbound": {
+    "exit": 1,
+    "stderr": "✗ glitch in strand 0 (row 1) at v1 1:36: undefined sigil 'm'\n  v1 1│ …⇒m 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n m1+⇒m ⟨r0@ 200 «text/plain» n⍕«…\n                                       ↑ v1 1:36\n  stack: (empty)\n",
+    "stdout": "◁ 1 200 text/plain 1\n1\n⟡ 200 73\n⟡ v1: 1 strand replaced\n  strand 0 continues as row 1 at its next seam\n"
   },
   "loose-continuation": {
     "exit": 2,

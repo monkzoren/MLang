@@ -325,9 +325,11 @@ fn patch(rest: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    if let Err(e) = vm::compile_text(body) {
-        // Weave locally first: a broken file never reaches the grid.
-        return weave_error(body, &e);
+    // Weave locally first: a broken file never reaches the grid. The ⟲
+    // migration lines are the loom's, not the program's — set aside.
+    let (program, _) = mlang::loom::split_migrations(body);
+    if let Err(e) = vm::compile_text(&program) {
+        return weave_error(&program, &e);
     }
     let stamped = mlang::loom::stamp(base, &url, body);
     match loom_body(loom_client().post(&url).set("Content-Type", "text/plain; charset=utf-8").send_string(&stamped)) {

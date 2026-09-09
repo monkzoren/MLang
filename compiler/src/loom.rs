@@ -292,61 +292,42 @@ pub fn value_eq(a: &Value, b: &Value) -> bool {
 
 // ── the boot section's shape ───────────────────────────────────────────
 
-/// What a boot strip is made of: the literal definitions it binds, in
-/// order, and every instruction that is *not* part of one — the boot
-/// code that ran once with effects and cannot be re-run.
+/// What a boot strip is made of: the definitions it binds, in order,
+/// each with the value its expression computes, and every instruction
+/// that is *not* part of a pure definition — the boot code that ran once
+/// with effects and cannot be re-run. The VM computes it (§4.7): a
+/// definition's expression is everything since the previous `≔`, and it
+/// counts only if it evaluates, without effects, to exactly one value.
 pub struct BootShape {
     pub defs: Vec<(char, Value, crate::values::Pos)>,
     pub code: Vec<Instr>,
-    /// Values a pure prefix left on the stack without binding them.
-    pub leftover: usize,
 }
 
-/// Evaluate the pure part of a boot strip: pushes, list building, and
-/// `≔`. Anything else is boot code.
-pub fn boot_shape(code: &[Instr]) -> BootShape {
-    let mut stack: Vec<Value> = Vec::new();
-    let mut defs = Vec::new();
-    let mut rest = Vec::new();
-    for i in code {
-        match &i.op {
-            Op::Push(v) => stack.push(v.clone()),
-            Op::LMark => stack.push(Value::Mark),
-            Op::LBuild => {
-                let mut items = Vec::new();
-                let mut closed = false;
-                while let Some(v) = stack.pop() {
-                    if matches!(v, Value::Mark) {
-                        closed = true;
-                        break;
-                    }
-                    items.push(v);
-                }
-                if !closed {
-                    rest.push(i.clone());
-                    continue;
-                }
-                items.reverse();
-                stack.push(Value::List(Arc::new(items)));
-            }
-            Op::B('≔', c, _) => match stack.pop() {
-                Some(v) if stack.is_empty() => defs.push((*c, v, i.pos)),
-                Some(v) => {
-                    // Something computed underneath: not a literal binding.
-                    stack.push(v);
-                    rest.push(i.clone());
-                }
-                None => rest.push(i.clone()),
-            },
-            _ => {
-                // Any pending literals are operands of this code, not
-                // definitions.
-                rest.extend(stack.drain(..).map(|v| Instr { op: Op::Push(v), pos: i.pos }));
-                rest.push(i.clone());
-            }
+// ── migrations ─────────────────────────────────────────────────────────
+
+/// The migration marker: a patch line `⟲ code` just above a strand line
+/// runs `code` once, at that strand's seam, on the old stack and locals,
+/// before the new code takes over — Erlang's `code_change`, as a line.
+pub const MIGRATE: char = '⟲';
+
+/// Pull the migration lines out of a merged patch. Returns the text the
+/// loom stores — every `⟲` line rewritten as a comment, so row numbers
+/// stay put and the history shows what was migrated — and the
+/// migrations as (row, code) in file order.
+pub fn split_migrations(text: &str) -> (String, Vec<(u32, String)>) {
+    let mut stored = String::new();
+    let mut migrations = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if let Some(code) = trimmed.strip_prefix(MIGRATE) {
+            migrations.push((i as u32 + 1, code.to_string()));
+            stored.push_str(&format!("※ {MIGRATE}{code}\n"));
+        } else {
+            stored.push_str(line);
+            stored.push('\n');
         }
     }
-    BootShape { defs, code: rest, leftover: stack.len() }
+    (stored, migrations)
 }
 
 // ── strand matching ────────────────────────────────────────────────────
@@ -474,6 +455,13 @@ mod tests {
     fn adjacent_line_edits_merge() {
         assert_eq!(m("a\nb\nc", "A\nb\nc", "a\nB\nc"), Ok("A\nB\nc".into()));
         assert_eq!(m("a\nb", "A\nb", "a2\nB"), Err(1));
+    }
+
+    #[test]
+    fn migrations_split_out_and_keep_rows() {
+        let (stored, m) = split_migrations("a\n⟲ 0⇒n\nb\n");
+        assert_eq!(stored, "a\n※ ⟲ 0⇒n\nb\n");
+        assert_eq!(m, vec![(2, " 0⇒n".to_string())]);
     }
 
     #[test]

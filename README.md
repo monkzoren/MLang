@@ -309,12 +309,22 @@ version is kept (`GET /.loom/log`, `/.loom/v3`), and every fault report
 names the version its code came from: `✗ glitch in strand 1 (row 5) at
 v3 5:12`, with version 3's line excerpted.
 
+A strand that has to change shape gets a **migration**: a `⟲ code`
+line above it in the patch runs once at the seam, on the old stack and
+locals, before the new code takes over — add a counter, reshape a
+record, seed a new local from an old one. Definitions are hot whenever
+they are *pure*: `«hello »≔G` and `G«!»⧺≔E` both re-weave, and
+rebinding `G` recomputes `E`. And if a patch kills a strand, the served
+grid does not exit: it holds its port, answers 503 with the fault
+report, and comes back to life on the next patch with its locals intact.
+[`examples/hot-counter.ml`](examples/hot-counter.ml) is that whole
+story in one strand, and [`docs/loom.md`](docs/loom.md) walks through
+it.
+
 The lineage is Erlang's hot code loading: a process there switches to
 new code at its next fully-qualified call, and a strand here switches at
-its next seam. What Erlang has and the loom does not yet is
-`code_change`, a hook that reshapes a process's state when the code
-changes — a re-woven strand carries its stack and locals over as they
-are. What the loom adds is the merge: in Erlang, and in every hot-reload
+its next seam, and `⟲` is Erlang's `code_change` as a line. What the
+loom adds is the merge: in Erlang, and in every hot-reload
 tool since (Lisp images, JVM HotSwap, Flutter, kernel live patching),
 concurrent edits are settled by version control *before* deployment and
 the running system sees one linear history; here the running program is
@@ -424,7 +434,7 @@ standard library, and can never hit a runtime-version mismatch, because
 it carries the exact runtime it was built with.
 
 The language's observable behavior is pinned by a recorded conformance
-corpus — 190 recorded goldens (169 inline cases and 21 example programs)
+corpus — 199 recorded goldens (177 inline cases and 22 example programs)
 covering every operation, concurrency, glitches, both source forms, and
 all example programs, compared byte-for-byte on stdout,
 stderr, and exit code (`cargo test` runs it; the goldens in
@@ -763,12 +773,12 @@ compiler/         the MLang toolchain (one binary: compiler + runner + runtime)
 std/std.ml        the standard library — written in MLang
 std/ui.ml         the Construct — the UI library, also written in MLang
 std/json.ml       the Operator — the JSON library, also written in MLang
-conformance/      cases.json + expected.json: 190 recorded goldens (169 inline
+conformance/      cases.json + expected.json: 199 recorded goldens (177 inline
                   cases and 21 example programs), the language's observable
                   ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
-docs/             the deadlock demo (animated SVG + the Python twin) and
+docs/             loom.md (hot patching, walked through), the deadlock demo (animated SVG + the Python twin) and
                   distributed.md — the hub/worker design and its trade-offs
 examples/         runnable programs (mandelbrot, calc, editor, oracle, …)
 SPEC.md           the full language specification

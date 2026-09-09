@@ -114,6 +114,56 @@ fn pull_patch_and_keep_serving() {
     assert_eq!(get(port, "/.loom/nope").0, 404);
 }
 
+/// A server whose only strand dies. With the loom open the grid holds
+/// its port: requests get 503 until a patch revives the strand — with
+/// its locals intact.
+const DYING: &str = "0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n r2@«/die»=[1 0÷][]? ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n";
+
+#[test]
+fn a_stopped_grid_holds_its_port_until_mended() {
+    let bridge = HttpBridge::start(0).unwrap();
+    let port = bridge.port;
+    let loom = Loom::new(DYING);
+    bridge.attach_loom(loom.clone());
+    let prog = vm::compile_text(DYING).unwrap();
+    std::thread::spawn(move || {
+        let mut stdin = Cursor::new(Vec::new());
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let mut machine = vm::VM::new(&mut stdin, &mut out, &mut err);
+        machine.http = Some(bridge);
+        machine.loom = Some(loom);
+        machine.run_compiled(&prog);
+    });
+    assert_eq!(get(port, "/"), (200, "1".into()));
+    // /die kills the strand: that request gets no answer, and every
+    // request after it (requests from separate connections may be
+    // queued in either order, so poll) is answered 503.
+    let mut s = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    s.write_all(b"GET /die HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
+    let mut answer = (0, String::new());
+    for _ in 0..50 {
+        answer = get(port, "/");
+        if answer.0 == 503 {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert_eq!(answer.0, 503, "{}", answer.1);
+    assert!(answer.1.contains("dead: strand 0"), "{}", answer.1);
+    // Mend it: the fix arrives with a ⟲ migration that scales the
+    // counter; the strand revives with n intact, migrated.
+    let (_, pulled) = get(port, "/.loom");
+    let fixed = pulled.replace("r2@«/die»=[1 0÷][]? ", "").replace("0⇒n 1⇒g", "⟲ n 10×⇒n\n0⇒n 1⇒g");
+    let (status, report) = post(port, "/.loom", &fixed);
+    assert_eq!(status, 200, "{report}");
+    assert!(report.contains("after its ⟲ migration"), "{report}");
+    let (status, first) = get(port, "/");
+    let n: i64 = first.trim().parse().unwrap();
+    assert_eq!(status, 200);
+    assert!(n >= 21 && n % 10 == 1, "n survived death and was migrated: {first}");
+    assert_eq!(get(port, "/"), (200, (n + 1).to_string()));
+}
+
 #[test]
 fn without_a_loom_the_routes_are_closed() {
     let bridge = HttpBridge::start(0).unwrap();

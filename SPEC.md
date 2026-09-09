@@ -255,15 +255,24 @@ agent pulls the live version and reapplies its edit.
 refuses the patch (422) with the usual report, and nothing changes.
 Then:
 
-* **Definitions.** A boot-section binding of a literal — `[…]≔X`,
-  `42≔X`, `«…»≔X`, `⟨…⟩≔X` — that differs from the live one is rebound
-  at once; since names resolve at call time, the next reference
-  anywhere in the grid runs the new code. Added definitions bind,
-  removed ones unbind. Library sigils (§6, §6.1) may not be rebound.
+* **Definitions.** Each `≔X` in the boot section closes a definition
+  whose expression is everything since the previous `≔`. The definition
+  is **hot** when that expression is **pure**: evaluated from an empty
+  stack with no effects — no I/O, channels, spawning, joining, or
+  binding (`⌂`, `⌚`, and `⍜` are reads of the run's input and are
+  allowed) — within a step budget, it leaves exactly one value. A
+  literal (`[…]≔X`, `42≔X`, `«…»≔X`, `⟨…⟩≔X`) is the simplest case;
+  `A 2×≔B` is hot too, and sees the definitions before it. A hot
+  definition whose value differs from the live one is rebound at once;
+  since names resolve at call time, the next reference anywhere in the
+  grid runs the new code. A definition computed from a rebound one is
+  recomputed and rebound with it. Added definitions bind, removed ones
+  unbind. Library sigils (§6, §6.1) may not be rebound.
 * **Boot code.** Anything else in the boot section — a file read, a
-  print, a computed binding — ran once at start and cannot honestly run
-  again: a patch that changes it is refused (422), naming the position.
-  Write hot boot sections as literal definitions.
+  print, an expression with an effect or one that does not settle — ran
+  once at start and cannot honestly run again: a patch that changes it
+  is refused (422), naming the position. Write hot boot sections as
+  pure definitions.
 * **Strands.** Main strands are matched to the patched grid: unchanged
   strands anchor the alignment; between anchors an old strand
   continues as the new strand most like it (at least half its code
@@ -278,6 +287,15 @@ Then:
   begins at once with a fresh id (`≣` and existing ids are unchanged).
   Strands spawned with `⚡` are not part of the grid and keep running
   what they were given.
+* **Migrations.** A patch line `⟲ code`, just above a strand line,
+  is that strand's **migration**: at the seam, before the new code
+  takes over, `code` runs once on the strand's old stack and locals —
+  the place to give a new local its first value, reshape state, or
+  convert a stack. A migration that glitches kills the strand like any
+  fault, reporting the `⟲` line's coordinates. The loom stores the
+  line as a comment (`※ ⟲ code`), so rows stay put and the history
+  shows what was migrated; `⟲` anywhere in a program proper is a weave
+  error. This is Erlang's `code_change`, as a line.
 
 A **seam** is a point where a strand can be re-woven without leaving
 half an iteration behind: the boundary between two iterations of its
@@ -299,6 +317,13 @@ takes a stamped file back (or `?base=N` for an unstamped one),
 `mlang loom` are those routes from the command line; `MLANG_LOOM=0`
 closes them. The loom requires the deterministic scheduler; under
 `--parallel` a patch is refused.
+
+**A served grid never exits.** When every strand has finished, died,
+or deadlocked, a live program with its loom open holds its port: each
+request is answered 503 naming the dead strands, and the runtime waits
+for a patch. A patch that revives a dead strand or starts a new one
+sets the grid running again. (In replay mode the run ends as usual and
+§7 applies.)
 
 ## 5. Operations
 

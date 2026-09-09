@@ -170,8 +170,9 @@ pub struct Strand {
 
 /// What a hot patch asks of a running strand.
 pub enum Swap {
-    /// Continue on new code (with the new label) at the next seam.
-    Replace(Arc<Vec<Instr>>, String),
+    /// Continue on new code (with the new label) at the next seam, after
+    /// running the migration, if any, on the old stack and locals.
+    Replace(Arc<Vec<Instr>>, String, Option<Arc<Vec<Instr>>>),
     /// Finish at the next seam.
     Retire,
 }
@@ -247,7 +248,7 @@ impl Strand {
                 self.status = Status::Done;
                 self.block = None;
             }
-            Swap::Replace(code, label) => {
+            Swap::Replace(code, label, migrate) => {
                 if self.status == Status::Dead {
                     self.stack.clear();
                     self.marks.clear();
@@ -255,6 +256,11 @@ impl Strand {
                     self.glitch_chain.clear();
                 }
                 self.frames = frames_at_loop(&code);
+                // The migration runs first — on top of the new frames, so
+                // when it returns the new loop is what continues.
+                if let Some(m) = migrate {
+                    self.frames.push(cf(m));
+                }
                 self.calls.clear();
                 self.origin = code;
                 self.label = label;
@@ -580,9 +586,16 @@ pub struct VM<'io> {
     /// Sigils the standard library and bundled libraries define; a patch
     /// may not rebind them.
     lib_sigils: HashSet<char>,
-    /// The literal definitions and boot code of the live version, for
-    /// deciding what a patch changes.
+    /// The definitions and boot code of the live version, for deciding
+    /// what a patch changes. Computed from `boot_code` on the first patch
+    /// — after the boot ran, so its definitions can be evaluated against
+    /// the globals they refer to.
     boot_shape: Option<BootShape>,
+    boot_code: Vec<Instr>,
+    /// Set while the loom evaluates a definition's expression: every
+    /// effect — I/O, channels, spawning, binding — glitches, so a hot
+    /// definition is exactly a pure one.
+    pure: bool,
     /// Per-channel count of (send sites, receive sites) across the whole
     /// program, computed once at start. A channel with sites on only one
     /// side cannot ever complete a handoff — the fingerprint of a mistyped
@@ -814,6 +827,8 @@ impl<'io> VM<'io> {
             slots: Vec::new(),
             lib_sigils: HashSet::new(),
             boot_shape: None,
+            boot_code: Vec::new(),
+            pure: false,
             chan_sites: HashMap::new(),
             gui: None,
             force_headless: false,
@@ -1182,7 +1197,7 @@ impl<'io> VM<'io> {
         self.next_spawn_sid = prog.strands.len() as i64;
         self.sources = vec![prog.source.clone()];
         self.slots = (0..prog.strands.len() as i64).collect();
-        self.boot_shape = Some(loom::boot_shape(&program_boot(&prog.boot)));
+        self.boot_code = program_boot(&prog.boot);
         for (_, source, band) in LIBS {
             scan_names(&lib_code(source, *band), &mut HashSet::new(), &mut self.lib_sigils);
         }
@@ -1215,10 +1230,68 @@ impl<'io> VM<'io> {
             ));
         }
         self.run_scheduler();
+        self.hold_for_patches();
         if self.failed {
             1
         } else {
             0
+        }
+    }
+
+    /// A served grid with its loom open does not exit when its strands
+    /// have all finished, died, or deadlocked: it holds the port, answers
+    /// every request 503 with the fault reports, and waits for a patch
+    /// — which can revive a dead strand or start a new one, whereupon
+    /// the scheduler runs again. The grid never stops; it waits to be
+    /// mended.
+    fn hold_for_patches(&mut self) {
+        loop {
+            let (Some(bridge), Some(_)) = (self.http.clone(), self.loom.as_ref()) else { return };
+            let dead: Vec<String> = self
+                .strands
+                .iter()
+                .filter(|s| s.status == Status::Dead)
+                .map(|s| format!("strand {} ({})", fmt_i64(s.sid), s.label))
+                .collect();
+            let why = if dead.is_empty() {
+                "every strand has finished or is blocked".to_string()
+            } else {
+                format!("dead: {}", dead.join(", "))
+            };
+            let _ = writeln!(self.err, "⟡ the grid has stopped ({why}) — holding the port for a patch");
+            let _ = self.err.flush();
+            loop {
+                match bridge.accept() {
+                    crate::http::Incoming::Request((id, _, _, _)) => {
+                        bridge.respond(
+                            id,
+                            503,
+                            "text/plain; charset=utf-8",
+                            &format!("the grid has stopped ({why}) — mend it: mlang pull / mlang patch\n"),
+                        );
+                    }
+                    crate::http::Incoming::Patch { id, base, text } => {
+                        let (status, body) = match self.hot_patch(base, &text, None) {
+                            Ok(report) => (200, report),
+                            Err((status, why)) => (i64::from(status), why),
+                        };
+                        let _ = self.err.write_all(body.as_bytes());
+                        let _ = self.err.flush();
+                        bridge.respond(id, status, "text/plain; charset=utf-8", &body);
+                        // Anything the patch can wake — a revived or a new
+                        // strand — is at its seam already; run the grid.
+                        for s in self.strands.iter_mut() {
+                            if s.pending.is_some() && s.at_seam() {
+                                s.swap_in();
+                            }
+                        }
+                        if self.strands.iter().any(|s| s.status == Status::Run) {
+                            break;
+                        }
+                    }
+                }
+            }
+            self.run_scheduler();
         }
     }
 }
@@ -1229,7 +1302,68 @@ fn program_boot(boot: &[Instr]) -> Vec<Instr> {
     boot.iter().filter(|i| i.pos.0 < STD_ROWS).cloned().collect()
 }
 
+/// Operations a hot definition may not perform: anything that reaches
+/// outside the expression. (⌂, ⌚, and ⍜ are reads of the run's input,
+/// not effects, and stay allowed.)
+const EFFECT_OPS: &str = "↥↧⇂⇈⇟⇉⚡⋈⌛⍞⊸⌨⌥⍟⍇⍈⍆⎆⍅⌸▦⌶⎙⌹≔";
+
+/// How many steps a hot definition's expression may take. Past this it
+/// is boot code — a patch cannot wait on it.
+const PURE_BUDGET: usize = 1_000_000;
+
 impl VM<'_> {
+    /// Evaluate an instruction strip with no effects allowed, from an
+    /// empty stack; Ok is the stack it leaves.
+    fn eval_pure(&mut self, code: Arc<Vec<Instr>>) -> Result<Vec<Value>, String> {
+        let mut s = Strand::new(i64::MIN, "hot definition".into(), code, Vec::new());
+        self.pure = true;
+        let mut steps = 0;
+        while s.status == Status::Run && steps < PURE_BUDGET {
+            steps += run_burst(self, &mut s, SLICE).max(1);
+        }
+        self.pure = false;
+        match s.status {
+            Status::Done => Ok(s.stack),
+            Status::Dead => Err(fmt(&s.glitch.map(|(v, _)| v).unwrap_or(Value::Nil), false)),
+            Status::Blocked => Err("blocks".into()),
+            Status::Run => Err(format!("takes more than {PURE_BUDGET} steps")),
+        }
+    }
+
+    /// Classify a boot strip (§4.7): each `≔X` closes a definition whose
+    /// expression is everything since the previous one; it is a hot
+    /// definition when that expression evaluates purely to one value.
+    /// Everything else is boot code. Definitions see the ones before
+    /// them, as they would at boot.
+    fn shape_of(&mut self, boot: &[Instr]) -> BootShape {
+        let saved = std::mem::take(&mut self.globals);
+        self.globals = saved.clone();
+        let mut defs = Vec::new();
+        let mut code = Vec::new();
+        let mut segment: Vec<Instr> = Vec::new();
+        for i in boot {
+            if let Op::B('≔', c, _) = &i.op {
+                let expr = Arc::new(std::mem::take(&mut segment));
+                match self.eval_pure(expr.clone()) {
+                    Ok(stack) if stack.len() == 1 => {
+                        let v: Value = stack.into_iter().next().unwrap();
+                        self.globals.insert(*c, v.clone());
+                        defs.push((*c, v, i.pos));
+                    }
+                    _ => {
+                        code.extend(expr.iter().cloned());
+                        code.push(i.clone());
+                    }
+                }
+            } else {
+                segment.push(i.clone());
+            }
+        }
+        code.extend(segment);
+        self.globals = saved;
+        BootShape { defs, code }
+    }
+
     /// Apply a hot patch (SPEC §4.7): merge `text`, written against
     /// version `base`, onto the live source; weave it; rebind changed
     /// literal definitions now; hand changed strands their new code for
@@ -1262,7 +1396,11 @@ impl VM<'_> {
             return Err((422, format!("✗ patch rejected: the loom holds at most {MAX_VERSIONS} versions\n")));
         }
         let merged = loom.merge(base, text).map_err(|e| (409, e))?;
+        let (merged, migrations) = loom::split_migrations(&merged);
         let merged_lines: Vec<String> = merged.lines().map(String::from).collect();
+        if !migrations.is_empty() && merged_lines.first().map(|l| l.trim() == "⇓").unwrap_or(false) {
+            return Err((422, "✗ patch rejected: ⟲ migrations are written in flat form\n".into()));
+        }
         if merged_lines.len() as u32 >= ROW_STRIDE {
             return Err((422, format!("✗ patch rejected: a source may have at most {} lines\n", ROW_STRIDE - 1)));
         }
@@ -1288,13 +1426,15 @@ impl VM<'_> {
         // The boot section: literal definitions may change; code may not.
         let mut new_boot = program_boot(&prog.boot);
         offset_rows(&mut new_boot, off);
-        let new_shape = loom::boot_shape(&new_boot);
-        let old_shape = self.boot_shape.take().unwrap_or(BootShape {
-            defs: Vec::new(),
-            code: Vec::new(),
-            leftover: 0,
-        });
-        if !loom::instrs_eq(&old_shape.code, &new_shape.code) || old_shape.leftover != new_shape.leftover {
+        let old_shape = match self.boot_shape.take() {
+            Some(shape) => shape,
+            None => {
+                let boot_code = self.boot_code.clone();
+                self.shape_of(&boot_code)
+            }
+        };
+        let new_shape = self.shape_of(&new_boot);
+        if !loom::instrs_eq(&old_shape.code, &new_shape.code) {
             let at = new_shape
                 .code
                 .iter()
@@ -1307,7 +1447,7 @@ impl VM<'_> {
             // The rejected text never became a version: plain coordinates.
             let at = at.map(|p| (p.0 % ROW_STRIDE, p.1));
             let mut out = format!(
-                "✗ patch rejected: boot code changed{} — it ran once at start and cannot run again; only literal ≔ definitions and strands are hot\n",
+                "✗ patch rejected: boot code changed{} — it ran once at start and cannot run again; only pure ≔ definitions and strands are hot\n",
                 at.map(|p| format!(" at {}", coords(p))).unwrap_or_default()
             );
             if let Some(x) = at.and_then(|p| excerpt(&merged_lines, p)) {
@@ -1346,6 +1486,33 @@ impl VM<'_> {
         for (_, code) in new_strands.iter_mut() {
             offset_rows(code, off);
         }
+        // Migrations: each ⟲ line belongs to the first strand below it.
+        let strand_rows: Vec<u32> = new_strands
+            .iter()
+            .map(|(label, _)| label.strip_prefix("row ").and_then(|r| r.parse().ok()).unwrap_or(0))
+            .collect();
+        let mut migrate_of: Vec<Option<Arc<Vec<Instr>>>> = vec![None; new_strands.len()];
+        for (row, code) in &migrations {
+            let Some(n) = strand_rows.iter().position(|&r| r > *row) else {
+                self.boot_shape = Some(old_shape);
+                return Err((422, format!("✗ patch rejected: ⟲ at {row}:1 has no strand below it to migrate\n")));
+            };
+            let cells: Vec<crate::lex::Cell> = code
+                .chars()
+                .enumerate()
+                .map(|(k, ch)| crate::lex::Cell { ch, row: *row, col: k as u32 + 2 })
+                .collect();
+            let mut lexed = match lex_strand(cells, crate::lex::Axis::Row) {
+                Ok(l) => l,
+                Err(e) => {
+                    self.boot_shape = Some(old_shape);
+                    let loc = e.pos.map(|(r, c)| format!(" at {r}:{c}")).unwrap_or_default();
+                    return Err((422, format!("✗ weave error{loc}: {} (in a ⟲ migration)\n", e.msg)));
+                }
+            };
+            offset_rows(&mut lexed, off);
+            migrate_of[n] = Some(Arc::new(lexed));
+        }
         let origin_of = |vm: &VM, me: &Option<&mut Strand>, sid: i64| -> Arc<Vec<Instr>> {
             match me {
                 Some(m) if m.sid == sid => m.origin.clone(),
@@ -1376,7 +1543,7 @@ impl VM<'_> {
                 StrandAction::Replace(o, n) => {
                     let sid = self.slots[o];
                     let (label, code) = &new_strands[n];
-                    let swap = Swap::Replace(Arc::new(code.clone()), label.clone());
+                    let swap = Swap::Replace(Arc::new(code.clone()), label.clone(), migrate_of[n].clone());
                     match &mut me {
                         Some(m) if m.sid == sid => m.pending = Some(swap),
                         _ => self.strands[self.by_sid[&sid]].pending = Some(swap),
@@ -1396,7 +1563,11 @@ impl VM<'_> {
                     let sid = self.next_spawn_sid;
                     self.next_spawn_sid += 1;
                     let (label, code) = &new_strands[n];
-                    self.register(Strand::new(sid, label.clone(), Arc::new(code.clone()), Vec::new()));
+                    let mut fresh = Strand::new(sid, label.clone(), Arc::new(code.clone()), Vec::new());
+                    if let Some(m) = &migrate_of[n] {
+                        fresh.frames.push(cf(m.clone()));
+                    }
+                    self.register(fresh);
                     started.push((sid, label.clone()));
                     slots.push(sid);
                 }
@@ -1433,7 +1604,12 @@ impl VM<'_> {
         let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
         let mut report = format!("⟡ v{version}: {note}\n");
         for (sid, label) in &replaced {
-            report.push_str(&format!("  strand {} continues as {label} at its next seam\n", fmt_i64(*sid)));
+            let migrated = new_strands.iter().position(|(l, _)| l == label).and_then(|n| migrate_of[n].as_ref());
+            report.push_str(&format!(
+                "  strand {} continues as {label} at its next seam{}\n",
+                fmt_i64(*sid),
+                if migrated.is_some() { ", after its ⟲ migration" } else { "" }
+            ));
         }
         for (sid, label) in &started {
             report.push_str(&format!("  strand {} started as {label}\n", fmt_i64(*sid)));
@@ -1929,6 +2105,9 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
 }
 
 fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Pos) -> R<()> {
+    if vm.pure && EFFECT_OPS.contains(ch) {
+        return glitch(format!("{ch} has an effect — a hot definition must be pure"), pos);
+    }
     match ch {
         // ── stack ──
         '∂' => {

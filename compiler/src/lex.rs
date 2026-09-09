@@ -31,7 +31,7 @@ pub enum Axis {
 pub const OP_CHARS: &str = "∂⇅⌫⊚⥀≢+-×÷%^√⌊⌈±=≠<≤>≥∧∨¬⊻!?⟳⍣∵∀⌿⍀⍸#⧺@⊂⊆⊇⍕⍎⌗⍘⚡⋈⍳≣⌛⍥↯⍞⊸⌨⌥⍟⍙⌽⍋∈⍷⍇⍈⍆⎆⍅⌂⍜⌚⌸▦⌶⎙⌹";
 pub const ARG_OP_CHARS: &str = "≔⇒↥↧⇂⇈⇟";
 pub const ARG2_OP_CHARS: &str = "⇉";
-const STRUCTURAL: &str = "«»⟨⟩[]⏎¯.※⋮⇓⇊∅ \t";
+const STRUCTURAL: &str = "«»⟨⟩[]⏎¯.※⋮⇓⇊∅⟲ \t";
 
 pub fn is_op(c: char) -> bool {
     OP_CHARS.contains(c)
@@ -260,6 +260,12 @@ impl Lexer {
                 );
             } else if ch == '⋮' {
                 return self.err("⋮ continues a strand and must start a line", &cell);
+            } else if ch == '⟲' {
+                return self.err(
+                    "⟲ is a hot-patch migration: it starts a line of its own, just \
+                     above the strand it migrates, in a patch (SPEC §4.7)",
+                    &cell,
+                );
             } else if ch == '⏎' {
                 return self.err("⏎ is only meaningful inside « » strings", &cell);
             } else {

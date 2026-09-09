@@ -844,6 +844,46 @@
    "name": "loom-no-change",
    "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
    "stdin": "⟡ 0 94\n[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-migration-adds-a-local",
+   "source": "0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n",
+   "stdin": "▷ GET /a\n▷ GET /b\n⟡ 0 133\n⟲ 100⇒m\n0⇒n 0⇒m 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n m1+⇒m ⟨r0@ 200 «text/plain» n⍕«/»⧺m⍕⧺⟩⍅]?]⟳\n▷ GET /c\n▷ GET /d\n"
+  },
+  {
+   "name": "loom-without-migration-the-new-local-is-unbound",
+   "source": "0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 121\n0⇒n 0⇒m 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n m1+⇒m ⟨r0@ 200 «text/plain» n⍕«/»⧺m⍕⧺⟩⍅]?]⟳\n▷ GET /c\n"
+  },
+  {
+   "name": "loom-migration-glitch-kills-the-strand",
+   "source": "0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 135\n⟲ 1 0÷⇒m\n0⇒n 0⇒m 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n m1+⇒m ⟨r0@ 200 «text/plain» n⍕«/»⧺m⍕⧺⟩⍅]?]⟳\n▷ GET /c\n"
+  },
+  {
+   "name": "loom-migration-needs-a-strand-below",
+   "source": "0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n",
+   "stdin": "⟡ 0 102\n0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» n⍕⟩⍅]?]⟳\n⟲ 0⇒m\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-computed-definition",
+   "source": "3≔A A 2×≔B\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» B⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 97\n4≔A A 2×≔B\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» B⍕⟩⍅ 1]?]⟳\n▷ GET /b\n"
+  },
+  {
+   "name": "loom-impure-definition-is-boot-code",
+   "source": "5≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 97\n«hi»⍞ 5≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-runaway-definition-is-boot-code",
+   "source": "5≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 96\n[1][]⟳ 5≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-migration-in-a-program-is-a-weave-error",
+   "source": "⟲ 0⇒m\n1⍞\n",
+   "stdin": ""
   }
  ],
  "examples": [
@@ -951,6 +991,11 @@
    "name": "architect.ml",
    "file": "examples/architect.ml",
    "stdin": "▷ GET /api/sheet\n▷ GET /api/poll?v=1\n▷ POST /api/cell 27\n{\"r\":15,\"c\":0,\"t\":\"edited\"}\n▷ POST /api/fill 43\n{\"sr\":2,\"sc\":3,\"r0\":3,\"c0\":3,\"r1\":4,\"c1\":3}\n▷ POST /api/style 24\n{\"r\":15,\"c\":0,\"s\":\"bc$\"}\n▷ POST /api/undo 2\n{}\n▷ POST /api/redo 2\n{}\n▷ POST /api/batch 88\n{\"edits\":[{\"r\":20,\"c\":0,\"t\":\"from\"},{\"r\":20,\"c\":1,\"t\":\"excel\"},{\"r\":20,\"c\":2,\"t\":\"42\"}]}\n▷ GET /api/poll?v=99\n▷ GET /\n"
+  },
+  {
+   "name": "hot-counter.ml",
+   "file": "examples/hot-counter.ml",
+   "stdin": "▷ GET /\n▷ GET /\n⟡ 0 906\n※ hot-counter — the smallest server worth patching while it runs.\n※\n※ One strand accepts requests and answers each with the number of\n※ requests it has served so far; the count lives in the strand-local n.\n※ The greeting is a definition, G. Serve it, then rewrite it live:\n※\n※   ./mlang serve examples/hot-counter.ml 4321\n※   curl 127.0.0.1:4321/          → «hello 1»\n※   ./mlang pull 4321 > c.ml       … edit … ./mlang patch c.ml\n※\n※ docs/loom.md walks through three patches: rebinding G (and a\n※ definition computed from it), replacing this strand with one that\n※ keeps a second counter — with a ⟲ migration that gives the new local\n※ its first value, so n is not lost — and reviving the strand after a\n※ patch that killed it.\n«served »≔G\nG«!»⧺≔E\n⇊\n0⇒n 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n ⟨r0@ 200 «text/plain» G n⍕⧺⟩⍅]?]⟳\n▷ GET /\n⟡ 1 955\n※ hot-counter — the smallest server worth patching while it runs.\n※\n※ One strand accepts requests and answers each with the number of\n※ requests it has served so far; the count lives in the strand-local n.\n※ The greeting is a definition, G. Serve it, then rewrite it live:\n※\n※   ./mlang serve examples/hot-counter.ml 4321\n※   curl 127.0.0.1:4321/          → «hello 1»\n※   ./mlang pull 4321 > c.ml       … edit … ./mlang patch c.ml\n※\n※ docs/loom.md walks through three patches: rebinding G (and a\n※ definition computed from it), replacing this strand with one that\n※ keeps a second counter — with a ⟲ migration that gives the new local\n※ its first value, so n is not lost — and reviving the strand after a\n※ patch that killed it.\n«served »≔G\nG«!»⧺≔E\n⇊\n⟲ n 1000×⇒m\n0⇒n 0⇒m 1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r n1+⇒n m1+⇒m ⟨r0@ 200 «text/plain» G n⍕⧺« of »⧺m⍕⧺⟩⍅]?]⟳\n▷ GET /\n▷ GET /\n"
   }
  ]
 }

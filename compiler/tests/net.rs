@@ -207,6 +207,10 @@ fn a_worker_killed_mid_item_is_requeued() {
 
     let mut w1 = start_worker(&addr, &worker_prog);
     hub.await_line("worker 1 joined");
+    // With --workers 1 the hub starts pouring only once this worker has
+    // joined, so give the deal a moment to land before the kill — the
+    // point is items in flight, not an empty-handed worker.
+    std::thread::sleep(std::time::Duration::from_millis(400));
     w1.kill().unwrap();
     let mut w2 = start_worker(&addr, &worker_prog);
 
