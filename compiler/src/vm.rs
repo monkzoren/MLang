@@ -3,6 +3,7 @@
 //! every diagnostic message. Same program + same input ⇒ same bytes out.
 
 use crate::forms::Program;
+use crate::loom::{self, BootShape, Loom, StrandAction};
 use crate::lex::{lex_strand, LoadError};
 use crate::values::{fmt, fmt_i64, truthy, type_name, val_eq, Instr, Op, Pos, Value};
 use num_bigint::BigInt;
@@ -101,6 +102,38 @@ fn cf(code: Arc<Vec<Instr>>) -> Frame {
     Frame::CF { code, ip: 0 }
 }
 
+/// The frames a strand re-woven onto `code` resumes with: parked at the
+/// iteration boundary of the code's first top-level loop (`[c][b]⟳` or
+/// `[f]⇉xy`), so the loop's own prelude — the initialization that ran
+/// once on the old code — is not run again. Code with no top-level loop
+/// starts from its beginning.
+fn frames_at_loop(code: &Arc<Vec<Instr>>) -> Vec<Frame> {
+    for (k, i) in code.iter().enumerate() {
+        match &i.op {
+            Op::B('⟳', _, _) if k >= 2 => {
+                if let (Op::Push(Value::Quot(c)), Op::Push(Value::Quot(b))) =
+                    (&code[k - 2].op, &code[k - 1].op)
+                {
+                    return vec![
+                        Frame::CF { code: code.clone(), ip: k + 1 },
+                        Frame::While { cond: c.clone(), body: b.clone(), phase: 0, pos: i.pos },
+                    ];
+                }
+            }
+            Op::B('⇉', src, dst) if k >= 1 => {
+                if let Op::Push(Value::Quot(f)) = &code[k - 1].op {
+                    return vec![
+                        Frame::CF { code: code.clone(), ip: k + 1 },
+                        Frame::Pump { src: *src, dst: *dst, f: f.clone(), phase: 0, pos: i.pos },
+                    ];
+                }
+            }
+            _ => {}
+        }
+    }
+    vec![cf(code.clone())]
+}
+
 pub struct Strand {
     pub sid: i64,
     pub label: String,
@@ -128,6 +161,19 @@ pub struct Strand {
     /// that finishes with one still open glitches there instead of
     /// silently ending with an unfinished list on its stack.
     marks: Vec<(usize, Pos)>,
+    /// The code this strand was started (or last re-woven) on — its
+    /// identity for matching against a patched source.
+    origin: Arc<Vec<Instr>>,
+    /// A hot patch waiting for this strand's next seam.
+    pending: Option<Swap>,
+}
+
+/// What a hot patch asks of a running strand.
+pub enum Swap {
+    /// Continue on new code (with the new label) at the next seam.
+    Replace(Arc<Vec<Instr>>, String),
+    /// Finish at the next seam.
+    Retire,
 }
 
 impl Strand {
@@ -135,7 +181,7 @@ impl Strand {
         Strand {
             sid,
             label,
-            frames: vec![cf(code)],
+            frames: vec![cf(code.clone())],
             stack: Vec::new(),
             locals,
             status: Status::Run,
@@ -144,6 +190,8 @@ impl Strand {
             glitch_chain: Vec::new(),
             calls: Vec::new(),
             marks: Vec::new(),
+            origin: code,
+            pending: None,
         }
     }
 
@@ -160,6 +208,59 @@ impl Strand {
             glitch_chain: Vec::new(),
             calls: Vec::new(),
             marks: Vec::new(),
+            origin: Arc::new(Vec::new()),
+            pending: None,
+        }
+    }
+
+    /// Is this strand at a seam — a point where a hot patch can take
+    /// over without leaving half an iteration behind? Seams are the
+    /// boundary between two iterations of the strand's outermost loop
+    /// (about to test the condition, or parked at the very first
+    /// instruction of the body or condition — which is how a server
+    /// waits for its next request), a pump between two values, a strand
+    /// that has not started, and a strand that died.
+    fn at_seam(&self) -> bool {
+        match self.status {
+            Status::Dead => return true,
+            Status::Done => return false,
+            _ => {}
+        }
+        match self.frames.as_slice() {
+            [] => false,
+            [Frame::CF { ip, .. }] => *ip == 0,
+            [Frame::CF { .. }, Frame::While { phase: 0, .. }] => true,
+            [Frame::CF { .. }, Frame::While { .. }, Frame::CF { ip: 0, .. }] => true,
+            [Frame::CF { .. }, Frame::Pump { phase: 0, .. }] => true,
+            _ => false,
+        }
+    }
+
+    /// Take the pending patch at a seam: rebuild the frames on the new
+    /// code, resuming inside its outermost loop, with stack and locals
+    /// intact. A dead strand comes back to life with an empty stack.
+    fn swap_in(&mut self) {
+        let Some(swap) = self.pending.take() else { return };
+        match swap {
+            Swap::Retire => {
+                self.frames.clear();
+                self.status = Status::Done;
+                self.block = None;
+            }
+            Swap::Replace(code, label) => {
+                if self.status == Status::Dead {
+                    self.stack.clear();
+                    self.marks.clear();
+                    self.glitch = None;
+                    self.glitch_chain.clear();
+                }
+                self.frames = frames_at_loop(&code);
+                self.calls.clear();
+                self.origin = code;
+                self.label = label;
+                self.status = Status::Run;
+                self.block = None;
+            }
         }
     }
 
@@ -465,9 +566,23 @@ pub struct VM<'io> {
     /// clock; the conformance harness and MLANG_CLOCK pin it, because the
     /// clock is part of a run's input.
     pub clock: Option<i64>,
-    /// The program's physical source lines, for report excerpts. Empty
-    /// when the source is unavailable (payloads from older toolchains).
-    src_lines: Vec<String>,
+    /// The program's physical source lines, one entry per version: the
+    /// program as started, then each hot patch the loom accepted. Empty
+    /// lines when the source is unavailable (payloads from older toolchains).
+    sources: Vec<Vec<String>>,
+    /// The loom: the shared version store hot patches go through. Set by
+    /// `mlang serve` (shared with the web bridge) or created on the first
+    /// replayed patch frame.
+    pub loom: Option<Arc<Loom>>,
+    /// The main strands as the live source lists them, by strand id, in
+    /// grid order — the slots a patch replaces, retires, or inserts into.
+    slots: Vec<i64>,
+    /// Sigils the standard library and bundled libraries define; a patch
+    /// may not rebind them.
+    lib_sigils: HashSet<char>,
+    /// The literal definitions and boot code of the live version, for
+    /// deciding what a patch changes.
+    boot_shape: Option<BootShape>,
     /// Per-channel count of (send sites, receive sites) across the whole
     /// program, computed once at start. A channel with sites on only one
     /// side cannot ever complete a handoff — the fingerprint of a mistyped
@@ -499,21 +614,36 @@ pub fn channel_sites(code: &[Instr], sites: &mut HashMap<char, (usize, usize)>) 
     }
 }
 
-/// Library code carries its positions in high row bands so a report can
-/// name the source it points into: std.ml rows live at +STD_ROWS, ui.ml
-/// rows at +UI_ROWS, json.ml rows at +JSON_ROWS. Program rows are
-/// untouched.
-pub const STD_ROWS: u32 = 1_000_000;
-pub const UI_ROWS: u32 = 2_000_000;
-pub const JSON_ROWS: u32 = 3_000_000;
+/// A position's row field carries more than a row. Program rows live in
+/// bands of ROW_STRIDE per source version — version 0 is the program as
+/// started, each accepted hot patch (the loom) the next — so a report can
+/// name the version a position belongs to and excerpt that version's
+/// source. Library code sits above every version band: std.ml rows at
+/// +STD_ROWS, ui.ml rows at +UI_ROWS, json.ml rows at +JSON_ROWS.
+pub const ROW_STRIDE: u32 = 1 << 16;
+pub const MAX_VERSIONS: u32 = 1 << 14;
+pub const STD_ROWS: u32 = ROW_STRIDE * MAX_VERSIONS;
+pub const UI_ROWS: u32 = STD_ROWS + (1 << 28);
+pub const JSON_ROWS: u32 = STD_ROWS + (1 << 29);
 
-/// Split a position into (source label, display row, col).
-fn pos_origin(pos: Pos) -> (&'static str, u32, u32) {
+/// Split a position into (source label, version, display row, col).
+/// Library positions carry version 0.
+fn pos_origin(pos: Pos) -> (&'static str, u32, u32, u32) {
     match pos.0 {
-        r if r >= JSON_ROWS => ("json.ml ", r - JSON_ROWS, pos.1),
-        r if r >= UI_ROWS => ("ui.ml ", r - UI_ROWS, pos.1),
-        r if r >= STD_ROWS => ("std.ml ", r - STD_ROWS, pos.1),
-        r => ("", r, pos.1),
+        r if r >= JSON_ROWS => ("json.ml ", 0, r - JSON_ROWS, pos.1),
+        r if r >= UI_ROWS => ("ui.ml ", 0, r - UI_ROWS, pos.1),
+        r if r >= STD_ROWS => ("std.ml ", 0, r - STD_ROWS, pos.1),
+        r => ("", r / ROW_STRIDE, r % ROW_STRIDE, pos.1),
+    }
+}
+
+/// The label a report prints before coordinates: nothing for the
+/// program as started, `v3 ` for code that arrived with the third patch.
+fn version_label(src: &str, version: u32) -> String {
+    if !src.is_empty() || version == 0 {
+        src.to_string()
+    } else {
+        format!("v{version} ")
     }
 }
 
@@ -526,8 +656,18 @@ pub fn fault_detail(
     chain: &[(char, Pos)],
     stack: &[Value],
 ) -> String {
+    fault_detail_in(std::slice::from_ref(&source.to_vec()), pos, chain, stack)
+}
+
+/// `fault_detail` over every source version a run has seen.
+pub fn fault_detail_in(
+    sources: &[Vec<String>],
+    pos: Pos,
+    chain: &[(char, Pos)],
+    stack: &[Value],
+) -> String {
     let mut out = String::new();
-    if let Some(x) = excerpt(source, pos) {
+    if let Some(x) = excerpt_in(sources, pos) {
         out.push_str(&x);
         out.push('\n');
     }
@@ -599,8 +739,8 @@ fn coords(pos: Pos) -> String {
     if pos == (0, 0) {
         "?".into()
     } else {
-        let (src, row, col) = pos_origin(pos);
-        format!("{src}{row}:{col}")
+        let (src, version, row, col) = pos_origin(pos);
+        format!("{}{row}:{col}", version_label(src, version))
     }
 }
 
@@ -610,12 +750,18 @@ fn coords(pos: Pos) -> String {
 /// Returns None when the position is unlocatable (e.g. a payload built by
 /// an older toolchain, or eval'd code no longer at hand).
 pub fn excerpt(lines: &[String], pos: Pos) -> Option<String> {
+    excerpt_in(std::slice::from_ref(&lines.to_vec()), pos)
+}
+
+/// `excerpt` over every source version a run has seen: `sources[v]` is
+/// the physical lines of version v.
+pub fn excerpt_in(sources: &[Vec<String>], pos: Pos) -> Option<String> {
     if pos == (0, 0) {
         return None;
     }
-    let (src, row, col) = pos_origin(pos);
+    let (src, version, row, col) = pos_origin(pos);
     let line: String = match src {
-        "" => lines.get(row.checked_sub(1)? as usize)?.clone(),
+        "" => sources.get(version as usize)?.get(row.checked_sub(1)? as usize)?.clone(),
         "std.ml " => STD_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
         "json.ml " => JSON_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
         _ => UI_SOURCE.lines().nth(row.checked_sub(1)? as usize)?.to_string(),
@@ -630,6 +776,7 @@ pub fn excerpt(lines: &[String], pos: Pos) -> Option<String> {
     let shown: String = chars[start..end].iter().collect();
     let pre = if start > 0 { "…" } else { "" };
     let post = if end < n { "…" } else { "" };
+    let src = version_label(src, version);
     let label = format!("  {src}{row}│ ");
     let caret_at = label.chars().count() + pre.chars().count() + (ci - start);
     Some(format!(
@@ -662,7 +809,11 @@ impl<'io> VM<'io> {
             next_request_id: 1,
             open_requests: HashSet::new(),
             clock: clock_env(),
-            src_lines: Vec::new(),
+            sources: Vec::new(),
+            loom: None,
+            slots: Vec::new(),
+            lib_sigils: HashSet::new(),
+            boot_shape: None,
             chan_sites: HashMap::new(),
             gui: None,
             force_headless: false,
@@ -883,7 +1034,7 @@ impl<'io> VM<'io> {
             coords(*pos),
             fmt(v, false)
         );
-        let detail = fault_detail(&self.src_lines, *pos, &s.glitch_chain, s.stack_view());
+        let detail = fault_detail_in(&self.sources, *pos, &s.glitch_chain, s.stack_view());
         let _ = write!(self.err, "{detail}");
     }
 
@@ -906,7 +1057,7 @@ impl<'io> VM<'io> {
                 what,
                 coords(pos)
             );
-            if let Some(x) = excerpt(&self.src_lines, pos) {
+            if let Some(x) = excerpt_in(&self.sources, pos) {
                 let _ = writeln!(self.err, "{x}");
             }
         }
@@ -983,6 +1134,9 @@ impl<'io> VM<'io> {
             let mut progressed = 0;
             let snapshot = self.strands.len();
             for i in 0..snapshot {
+                if self.strands[i].pending.is_some() && self.strands[i].at_seam() {
+                    self.strands[i].swap_in();
+                }
                 if self.strands[i].status == Status::Blocked {
                     self.try_unblock(i);
                 }
@@ -1026,7 +1180,13 @@ impl<'io> VM<'io> {
     pub fn run_compiled(&mut self, prog: &CompiledProgram) -> i32 {
         self.main_count = prog.strands.len();
         self.next_spawn_sid = prog.strands.len() as i64;
-        self.src_lines = prog.source.clone();
+        self.sources = vec![prog.source.clone()];
+        self.slots = (0..prog.strands.len() as i64).collect();
+        self.boot_shape = Some(loom::boot_shape(&program_boot(&prog.boot)));
+        for (_, source, band) in LIBS {
+            scan_names(&lib_code(source, *band), &mut HashSet::new(), &mut self.lib_sigils);
+        }
+        scan_names(&std_code(), &mut HashSet::new(), &mut self.lib_sigils);
         channel_sites(&prog.boot, &mut self.chan_sites);
         for (_, code) in &prog.strands {
             channel_sites(code, &mut self.chan_sites);
@@ -1061,6 +1221,231 @@ impl<'io> VM<'io> {
             0
         }
     }
+}
+
+/// The program's own boot instructions — everything below the library
+/// row bands.
+fn program_boot(boot: &[Instr]) -> Vec<Instr> {
+    boot.iter().filter(|i| i.pos.0 < STD_ROWS).cloned().collect()
+}
+
+impl VM<'_> {
+    /// Apply a hot patch (SPEC §4.7): merge `text`, written against
+    /// version `base`, onto the live source; weave it; rebind changed
+    /// literal definitions now; hand changed strands their new code for
+    /// their next seam; start added strands; retire removed ones. `me`
+    /// is the strand executing the accept that delivered the patch (it
+    /// is checked out of the strand table while it runs). Ok carries the
+    /// report, Err an HTTP-style status and the reason: 409 for a merge
+    /// conflict, 422 for a patch the loom cannot apply.
+    pub fn hot_patch(
+        &mut self,
+        base: usize,
+        text: &str,
+        mut me: Option<&mut Strand>,
+    ) -> Result<String, (u16, String)> {
+        if self.bus.is_some() {
+            return Err((422, "✗ patch rejected: hot patching needs the deterministic scheduler — drop --parallel\n".into()));
+        }
+        let loom = match &self.loom {
+            Some(l) => l.clone(),
+            None => {
+                let text = self.sources.first().map(|l| l.join("\n") + "\n").unwrap_or_default();
+                let l = Loom::new(&text);
+                self.loom = Some(l.clone());
+                l
+            }
+        };
+        let cur = loom.current();
+        let version = cur + 1;
+        if version as u32 >= MAX_VERSIONS {
+            return Err((422, format!("✗ patch rejected: the loom holds at most {MAX_VERSIONS} versions\n")));
+        }
+        let merged = loom.merge(base, text).map_err(|e| (409, e))?;
+        let merged_lines: Vec<String> = merged.lines().map(String::from).collect();
+        if merged_lines.len() as u32 >= ROW_STRIDE {
+            return Err((422, format!("✗ patch rejected: a source may have at most {} lines\n", ROW_STRIDE - 1)));
+        }
+        let prog = match compile_text(&merged) {
+            Ok(p) => p,
+            Err(e) => {
+                let loc = match e.pos {
+                    Some((r, c)) => format!(" at {r}:{c}"),
+                    None => String::new(),
+                };
+                let mut out = format!("✗ weave error{loc}: {}\n", e.msg);
+                if let Some(pos) = e.pos {
+                    if let Some(x) = excerpt(&merged_lines, pos) {
+                        out.push_str(&x);
+                        out.push('\n');
+                    }
+                }
+                return Err((422, out));
+            }
+        };
+        let off = version as u32 * ROW_STRIDE;
+
+        // The boot section: literal definitions may change; code may not.
+        let mut new_boot = program_boot(&prog.boot);
+        offset_rows(&mut new_boot, off);
+        let new_shape = loom::boot_shape(&new_boot);
+        let old_shape = self.boot_shape.take().unwrap_or(BootShape {
+            defs: Vec::new(),
+            code: Vec::new(),
+            leftover: 0,
+        });
+        if !loom::instrs_eq(&old_shape.code, &new_shape.code) || old_shape.leftover != new_shape.leftover {
+            let at = new_shape
+                .code
+                .iter()
+                .zip(old_shape.code.iter())
+                .find(|(n, o)| !loom::instrs_eq(std::slice::from_ref(*n), std::slice::from_ref(*o)))
+                .map(|(n, _)| n.pos)
+                .or_else(|| new_shape.code.get(old_shape.code.len()).map(|i| i.pos))
+                .or_else(|| old_shape.code.first().map(|i| i.pos));
+            self.boot_shape = Some(old_shape);
+            let mut out = format!(
+                "✗ patch rejected: boot code changed{} — it ran once at start and cannot run again; only literal ≔ definitions and strands are hot\n",
+                at.map(|p| format!(" at {}", coords(p))).unwrap_or_default()
+            );
+            if let Some(x) = at.and_then(|p| excerpt(&merged_lines, (p.0 % ROW_STRIDE, p.1))) {
+                out.push_str(&x);
+                out.push('\n');
+            }
+            return Err((422, out));
+        }
+        for (c, _, pos) in &new_shape.defs {
+            if self.lib_sigils.contains(c) {
+                self.boot_shape = Some(old_shape);
+                return Err((422, format!(
+                    "✗ patch rejected: ≔{c} at {} — {c} is defined by the standard library\n",
+                    coords(*pos)
+                )));
+            }
+        }
+        let mut rebound = Vec::new();
+        let mut added = Vec::new();
+        let mut removed = Vec::new();
+        for (c, v, _) in &new_shape.defs {
+            match old_shape.defs.iter().find(|(o, _, _)| o == c) {
+                Some((_, ov, _)) if loom::value_eq(ov, v) => {}
+                Some(_) => rebound.push(*c),
+                None => added.push(*c),
+            }
+        }
+        for (c, _, _) in &old_shape.defs {
+            if !new_shape.defs.iter().any(|(n, _, _)| n == c) {
+                removed.push(*c);
+            }
+        }
+
+        // The strands: match the live slots against the patched grid.
+        let mut new_strands: Vec<(String, Vec<Instr>)> = prog.strands.clone();
+        for (_, code) in new_strands.iter_mut() {
+            offset_rows(code, off);
+        }
+        let origin_of = |vm: &VM, me: &Option<&mut Strand>, sid: i64| -> Arc<Vec<Instr>> {
+            match me {
+                Some(m) if m.sid == sid => m.origin.clone(),
+                _ => vm.strands[vm.by_sid[&sid]].origin.clone(),
+            }
+        };
+        let old: Vec<Arc<Vec<Instr>>> =
+            self.slots.iter().map(|&sid| origin_of(self, &me, sid)).collect();
+        let new_codes: Vec<Vec<Instr>> = new_strands.iter().map(|(_, c)| c.clone()).collect();
+        let plan = loom::plan_strands(&old, &new_codes);
+
+        // ── commit ──
+        self.sources.push(merged_lines);
+        for c in &removed {
+            self.globals.remove(c);
+        }
+        for (c, v, _) in &new_shape.defs {
+            if rebound.contains(c) || added.contains(c) {
+                self.globals.insert(*c, v.clone());
+            }
+        }
+        self.boot_shape = Some(new_shape);
+        let mut slots = Vec::new();
+        let (mut replaced, mut started, mut retired) = (Vec::new(), Vec::new(), Vec::new());
+        for action in plan {
+            match action {
+                StrandAction::Keep(o, _) => slots.push(self.slots[o]),
+                StrandAction::Replace(o, n) => {
+                    let sid = self.slots[o];
+                    let (label, code) = &new_strands[n];
+                    let swap = Swap::Replace(Arc::new(code.clone()), label.clone());
+                    match &mut me {
+                        Some(m) if m.sid == sid => m.pending = Some(swap),
+                        _ => self.strands[self.by_sid[&sid]].pending = Some(swap),
+                    }
+                    replaced.push((sid, label.clone()));
+                    slots.push(sid);
+                }
+                StrandAction::Retire(o) => {
+                    let sid = self.slots[o];
+                    match &mut me {
+                        Some(m) if m.sid == sid => m.pending = Some(Swap::Retire),
+                        _ => self.strands[self.by_sid[&sid]].pending = Some(Swap::Retire),
+                    }
+                    retired.push(sid);
+                }
+                StrandAction::Start(n) => {
+                    let sid = self.next_spawn_sid;
+                    self.next_spawn_sid += 1;
+                    let (label, code) = &new_strands[n];
+                    self.register(Strand::new(sid, label.clone(), Arc::new(code.clone()), Vec::new()));
+                    started.push((sid, label.clone()));
+                    slots.push(sid);
+                }
+            }
+        }
+        self.slots = slots;
+        self.chan_sites.clear();
+        channel_sites(&prog.boot, &mut self.chan_sites);
+        for (_, code) in &prog.strands {
+            channel_sites(code, &mut self.chan_sites);
+        }
+
+        // ── the report ──
+        let sigils = |v: &[char]| v.iter().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
+        let mut parts = Vec::new();
+        if !rebound.is_empty() {
+            parts.push(format!("{} rebound ({})", plural(rebound.len(), "definition"), sigils(&rebound)));
+        }
+        if !added.is_empty() {
+            parts.push(format!("{} added ({})", plural(added.len(), "definition"), sigils(&added)));
+        }
+        if !removed.is_empty() {
+            parts.push(format!("{} removed ({})", plural(removed.len(), "definition"), sigils(&removed)));
+        }
+        if !replaced.is_empty() {
+            parts.push(format!("{} replaced", plural(replaced.len(), "strand")));
+        }
+        if !started.is_empty() {
+            parts.push(format!("{} started", plural(started.len(), "strand")));
+        }
+        if !retired.is_empty() {
+            parts.push(format!("{} retired", plural(retired.len(), "strand")));
+        }
+        let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
+        let mut report = format!("⟡ v{version}: {note}\n");
+        for (sid, label) in &replaced {
+            report.push_str(&format!("  strand {} continues as {label} at its next seam\n", fmt_i64(*sid)));
+        }
+        for (sid, label) in &started {
+            report.push_str(&format!("  strand {} started as {label}\n", fmt_i64(*sid)));
+        }
+        for sid in &retired {
+            report.push_str(&format!("  strand {} retires at its next seam\n", fmt_i64(*sid)));
+        }
+        loom.push(merged, note);
+        Ok(report)
+    }
+}
+
+fn plural(n: usize, what: &str) -> String {
+    format!("{n} {what}{}", if n == 1 { "" } else { "s" })
 }
 
 /// A fully compiled program: the standard library and boot section woven

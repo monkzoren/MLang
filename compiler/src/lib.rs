@@ -5,6 +5,7 @@ pub mod forms;
 pub mod gui;
 pub mod http;
 pub mod lex;
+pub mod loom;
 pub mod net;
 pub mod par;
 pub mod payload;
