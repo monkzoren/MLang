@@ -789,6 +789,61 @@
    "name": "clock-pinned",
    "source": "⌚⍞",
    "stdin": ""
+  },
+  {
+   "name": "loom-rebind-definition",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 99\n[∂×∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /b\n"
+  },
+  {
+   "name": "loom-strands-replace-start-retire",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n[1][↧z⍞]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 115\n[∂×]≔Q\n⇊\n«new»⍞\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» «hi »3Q⍕⧺⟩⍅ 1]?]⟳\n▷ GET /b\n"
+  },
+  {
+   "name": "loom-reject-boot-code",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 106\n[∂×]≔Q «boot»⍞\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-reject-std-sigil",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 104\n[∂×]≔Q [1]≔∑\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-reject-weave-error",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 99\n[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n[1 2\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-reject-unknown-base",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 7 99\n[∂×∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-conflict",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 99\n[∂×∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n⟡ 0 93\n[∂+]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-merge-stale-base",
+   "source": "[∂×]≔Q\n[«one»]≔W\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕W⧺⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 117\n[∂×∂×]≔Q\n[«one»]≔W\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕W⧺⟩⍅ 1]?]⟳\n⟡ 0 112\n[∂×]≔Q\n[«two»]≔W\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕W⧺⟩⍅ 1]?]⟳\n▷ GET /a\n"
+  },
+  {
+   "name": "loom-dead-strand-restarts",
+   "source": "⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» «ok»⟩⍅ 1]?]⟳\n1 0÷⍞\n",
+   "stdin": "▷ GET /a\n⟡ 0 88\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» «ok»⟩⍅ 1]?]⟳\n7⍞\n▷ GET /b\n"
+  },
+  {
+   "name": "loom-glitch-in-patched-code-names-its-version",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "▷ GET /a\n⟡ 0 106\n[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n\n«x»1+⍞\n▷ GET /b\n"
+  },
+  {
+   "name": "loom-no-change",
+   "source": "[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n",
+   "stdin": "⟡ 0 94\n[∂×]≔Q\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» 3Q⍕⟩⍅ 1]?]⟳\n▷ GET /a\n"
   }
  ],
  "examples": [

@@ -1304,11 +1304,13 @@ impl VM<'_> {
                 .or_else(|| new_shape.code.get(old_shape.code.len()).map(|i| i.pos))
                 .or_else(|| old_shape.code.first().map(|i| i.pos));
             self.boot_shape = Some(old_shape);
+            // The rejected text never became a version: plain coordinates.
+            let at = at.map(|p| (p.0 % ROW_STRIDE, p.1));
             let mut out = format!(
                 "✗ patch rejected: boot code changed{} — it ran once at start and cannot run again; only literal ≔ definitions and strands are hot\n",
                 at.map(|p| format!(" at {}", coords(p))).unwrap_or_default()
             );
-            if let Some(x) = at.and_then(|p| excerpt(&merged_lines, (p.0 % ROW_STRIDE, p.1))) {
+            if let Some(x) = at.and_then(|p| excerpt(&merged_lines, p)) {
                 out.push_str(&x);
                 out.push('\n');
             }
@@ -1319,7 +1321,7 @@ impl VM<'_> {
                 self.boot_shape = Some(old_shape);
                 return Err((422, format!(
                     "✗ patch rejected: ≔{c} at {} — {c} is defined by the standard library\n",
-                    coords(*pos)
+                    coords((pos.0 % ROW_STRIDE, pos.1))
                 )));
             }
         }

@@ -219,6 +219,22 @@ pub fn merge3(base: &[&str], ours: &[&str], theirs: &[&str]) -> Result<Vec<Strin
             out.extend(tc.iter().map(|s| s.to_string()));
         } else if tc == bc || tc == oc {
             out.extend(oc.iter().map(|s| s.to_string()));
+        } else if oc.len() == bc.len() && tc.len() == bc.len() {
+            // Adjacent edits: every line is its own unit — a strand or a
+            // definition — so two agents changing neighbouring lines
+            // merge line by line, and only a line both changed
+            // differently conflicts.
+            for k in 0..bc.len() {
+                let (b, o, t) = (bc[k], oc[k], tc[k]);
+                if o == b || o == t {
+                    out.push(t.to_string());
+                } else if t == b {
+                    out.push(o.to_string());
+                } else {
+                    conflicts.push(Conflict { at: o0 + k, ours: vec![o.to_string()], theirs: vec![t.to_string()] });
+                    out.push(o.to_string());
+                }
+            }
         } else {
             conflicts.push(Conflict {
                 at: o0,
@@ -344,10 +360,35 @@ pub enum StrandAction {
     Start(usize),
 }
 
+/// How alike two strips are: shared instructions (as an LCS) over the
+/// longer strip, 0…1.
+fn similarity(a: &[Instr], b: &[Instr]) -> f64 {
+    struct Key<'a>(&'a Instr);
+    impl PartialEq for Key<'_> {
+        fn eq(&self, o: &Self) -> bool {
+            op_eq(&self.0.op, &o.0.op)
+        }
+    }
+    let longest = a.len().max(b.len());
+    if longest == 0 {
+        return 1.0;
+    }
+    let ka: Vec<Key> = a.iter().map(Key).collect();
+    let kb: Vec<Key> = b.iter().map(Key).collect();
+    lcs_pairs(&ka, &kb).len() as f64 / longest as f64
+}
+
+/// A changed strand is the same strand when at least this much of its
+/// code survived the edit; below it, the old one retires and the new one
+/// starts fresh — an unrelated strand must not inherit a stranger's
+/// stack and locals.
+const SAME_STRAND: f64 = 0.5;
+
 /// Pair the live source strands with the patched ones. Unchanged strands
-/// anchor the alignment (LCS on code identity); between anchors, old and
-/// new strands pair up in order as replacements, and the leftovers
-/// retire or start.
+/// anchor the alignment (LCS on code identity); between anchors, each old
+/// strand continues as the most similar new one (if similar enough), and
+/// the leftovers retire or start. The plan lists new strands in source
+/// order, retirements last.
 pub fn plan_strands(old: &[Arc<Vec<Instr>>], new: &[Vec<Instr>]) -> Vec<StrandAction> {
     struct Key<'a>(&'a [Instr]);
     impl PartialEq for Key<'_> {
@@ -359,29 +400,37 @@ pub fn plan_strands(old: &[Arc<Vec<Instr>>], new: &[Vec<Instr>]) -> Vec<StrandAc
     let nk: Vec<Key> = new.iter().map(|c| Key(c)).collect();
     let mut anchors = lcs_pairs(&ok, &nk);
     anchors.push((old.len(), new.len()));
-    let mut plan = Vec::new();
+    // continues_as[n] = the old strand that lives on as new strand n.
+    let mut continues_as: Vec<Option<usize>> = vec![None; new.len()];
+    let mut retired: Vec<usize> = Vec::new();
     let (mut o0, mut n0) = (0, 0);
     for &(o1, n1) in &anchors {
-        let mut o = o0;
-        let mut n = n0;
-        while o < o1 && n < n1 {
-            plan.push(StrandAction::Replace(o, n));
-            o += 1;
-            n += 1;
-        }
-        while o < o1 {
-            plan.push(StrandAction::Retire(o));
-            o += 1;
-        }
-        while n < n1 {
-            plan.push(StrandAction::Start(n));
-            n += 1;
+        for o in o0..o1 {
+            let best = (n0..n1)
+                .filter(|&n| continues_as[n].is_none())
+                .map(|n| (n, similarity(&old[o], &new[n])))
+                .filter(|&(_, s)| s >= SAME_STRAND)
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+            match best {
+                Some((n, _)) => continues_as[n] = Some(o),
+                None => retired.push(o),
+            }
         }
         if o1 < old.len() {
-            plan.push(StrandAction::Keep(o1, n1));
+            continues_as[n1] = Some(o1);
         }
         (o0, n0) = (o1 + 1, n1 + 1);
     }
+    let mut plan: Vec<StrandAction> = continues_as
+        .iter()
+        .enumerate()
+        .map(|(n, o)| match o {
+            Some(o) if instrs_eq(&old[*o], &new[n]) => StrandAction::Keep(*o, n),
+            Some(o) => StrandAction::Replace(*o, n),
+            None => StrandAction::Start(n),
+        })
+        .collect();
+    plan.extend(retired.into_iter().map(StrandAction::Retire));
     plan
 }
 
@@ -419,6 +468,12 @@ mod tests {
     #[test]
     fn deletion_versus_edit_conflicts() {
         assert_eq!(m("a\nb\nc", "a\nc", "a\nB\nc"), Err(1));
+    }
+
+    #[test]
+    fn adjacent_line_edits_merge() {
+        assert_eq!(m("a\nb\nc", "A\nb\nc", "a\nB\nc"), Ok("A\nB\nc".into()));
+        assert_eq!(m("a\nb", "A\nb", "a2\nB"), Err(1));
     }
 
     #[test]

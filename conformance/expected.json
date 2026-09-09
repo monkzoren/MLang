@@ -394,6 +394,61 @@
     "stderr": "✗ weave error at 1:1: lone ¯ — negatives are written like ¯5\n",
     "stdout": ""
   },
+  "loom-conflict": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 200 33\n⟡ v1: 1 definition rebound (Q)\n⟡ 409 155\n✗ patch conflicts with v1 (written against v0) — pull v1 and reapply your change:\n  v1 lines 1-1:\n    │ [∂×∂×]≔Q\n  yours:\n    │ [∂+]≔Q\n◁ 1 200 text/plain 2\n81\n"
+  },
+  "loom-dead-strand-restarts": {
+    "exit": 1,
+    "stderr": "✗ glitch in strand 1 (row 3) at 3:4: ÷ by zero\n  3│ 1 0÷⍞\n        ↑ 3:4\n  stack: (empty)\n",
+    "stdout": "◁ 1 200 text/plain 2\nok\n⟡ 200 107\n⟡ v1: 1 strand started, 1 strand retired\n  strand 2 started as row 3\n  strand 1 retires at its next seam\n◁ 2 200 text/plain 2\nok\n7\n"
+  },
+  "loom-glitch-in-patched-code-names-its-version": {
+    "exit": 1,
+    "stderr": "✗ glitch in strand 1 (row 5) at v1 5:5: + expects numbers, got str\n  v1 5│ «x»1+⍞\n            ↑ v1 5:5\n  stack: (empty)\n",
+    "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 53\n⟡ v1: 1 strand started\n  strand 1 started as row 5\n◁ 2 200 text/plain 1\n9\n"
+  },
+  "loom-merge-stale-base": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 200 33\n⟡ v1: 1 definition rebound (Q)\n⟡ 200 33\n⟡ v2: 1 definition rebound (W)\n◁ 1 200 text/plain 5\n81two\n"
+  },
+  "loom-no-change": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 200 18\n⟡ v1: no change\n◁ 1 200 text/plain 1\n9\n"
+  },
+  "loom-rebind-definition": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 33\n⟡ v1: 1 definition rebound (Q)\n◁ 2 200 text/plain 2\n81\n"
+  },
+  "loom-reject-boot-code": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 200\n✗ patch rejected: boot code changed at 1:14 — it ran once at start and cannot run again; only literal ≔ definitions and strands are hot\n  1│ [∂×]≔Q «boot»⍞\n                  ↑ 1:14\n◁ 1 200 text/plain 1\n9\n"
+  },
+  "loom-reject-std-sigil": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 78\n✗ patch rejected: ≔∑ at 1:11 — ∑ is defined by the standard library\n◁ 1 200 text/plain 1\n9\n"
+  },
+  "loom-reject-unknown-base": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 409 64\n✗ patch rejected: base v7 does not exist (live version is v0)\n◁ 1 200 text/plain 1\n9\n"
+  },
+  "loom-reject-weave-error": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "⟡ 422 70\n✗ weave error at 4:1: unclosed [ quotation\n  4│ [1 2\n     ↑ 4:1\n◁ 1 200 text/plain 1\n9\n"
+  },
+  "loom-strands-replace-start-retire": {
+    "exit": 0,
+    "stderr": "",
+    "stdout": "◁ 1 200 text/plain 1\n9\n⟡ 200 173\n⟡ v1: 1 strand replaced, 1 strand started, 1 strand retired\n  strand 0 continues as row 4 at its next seam\n  strand 2 started as row 3\n  strand 1 retires at its next seam\nnew\n◁ 2 200 text/plain 4\nhi 9\n"
+  },
   "loose-continuation": {
     "exit": 2,
     "stderr": "✗ weave error at 1:3: ⋮ continues a strand and must start a line\n",
