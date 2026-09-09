@@ -107,8 +107,19 @@ def main():
                          "example:oracle.ml,oracle)")
     ap.add_argument("--tag", default=None,
                     help="suffix for the results files, e.g. oracle")
+    ap.add_argument("--force", action="store_true",
+                    help="overwrite existing result files")
     args = ap.parse_args()
     cases_filter = set(args.cases.split(",")) if args.cases else None
+
+    outdir = os.path.join(common.BENCH, "results")
+    stem = "robustness" + (f"-{args.tag}" if args.tag else "")
+    if not args.force:
+        for ext in ("json", "md"):
+            path = os.path.join(outdir, f"{stem}.{ext}")
+            if os.path.exists(path):
+                raise SystemExit(f"refusing to overwrite {path} "
+                                 f"(pass --force, or use --tag)")
 
     common.ensure_mlang()
     results = {"meta": {"seeds_mlang": args.seeds_mlang,
@@ -132,9 +143,7 @@ def main():
     results["python"] = summarize(labeled_py)
     results["python"]["mutants"] = labeled_py
 
-    outdir = os.path.join(common.BENCH, "results")
     os.makedirs(outdir, exist_ok=True)
-    stem = "robustness" + (f"-{args.tag}" if args.tag else "")
     with open(os.path.join(outdir, f"{stem}.json"), "w") as f:
         json.dump(results, f, indent=1)
         f.write("\n")

@@ -9,10 +9,13 @@ import argparse
 import glob
 import json
 import os
+import re
 import statistics
 
 import common
 from robustness import BUCKET_OF, render as render_robustness
+
+HEAL_FILE = re.compile(r"^heal-(?P<arm>mlang|python)-(?P<slug>.+)\.json$")
 
 CLASS_LABELS = [
     ("before-run", "caught before running"),
@@ -80,7 +83,8 @@ def render_heal(pair):
         row("**healed (byte-exact output)**",
             lambda s: "{:.0f}%".format(s["pct"]), bold=True),
         row("healed in one round", lambda s: "{:.0f}%".format(s["r1pct"])),
-        row("median rounds to green", lambda s: "{:g}".format(s["median"])),
+        row("median rounds to green",
+            lambda s: "—" if s["median"] is None else "{:g}".format(s["median"])),
     ]
 
     cls_ml = by_class(ml) if ml else {}
@@ -109,10 +113,13 @@ def main():
     if args.model_slug:
         slugs = {args.model_slug}
     else:
-        for p in glob.glob(os.path.join(results_dir, "heal-*-*.json")):
-            base = os.path.basename(p)[len("heal-"):-len(".json")]
-            arm, slug = base.split("-", 1)
-            slugs.add(slug)
+        # File names are heal-<arm>-<slug>.json where the slug itself may
+        # contain dashes (a tag like oracle-v3diag-rep2 plus the model id),
+        # so anchor on the two known arm names rather than splitting.
+        for p in glob.glob(os.path.join(results_dir, "heal-*.json")):
+            m = HEAL_FILE.match(os.path.basename(p))
+            if m:
+                slugs.add(m.group("slug"))
 
     parts = []
     for slug in sorted(slugs):

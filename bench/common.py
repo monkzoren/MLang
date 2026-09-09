@@ -91,7 +91,10 @@ def run_program(argv, stdin_text, timeout=TIMEOUT, cwd=None):
     except subprocess.TimeoutExpired as t:
         out = (t.stdout or b"").decode("utf-8", "replace")
         err = (t.stderr or b"").decode("utf-8", "replace")
-        return {"exit": None, "stdout": out, "stderr": err, "hang": True}
+        # Remember the timeout that actually fired, so the failure report
+        # quotes the real number rather than the module default.
+        return {"exit": None, "stdout": out, "stderr": err, "hang": True,
+                "timeout": timeout}
 
 
 def run_mlang(source, stdin_text, timeout=TIMEOUT):
@@ -147,15 +150,20 @@ def classify_python(result, expected):
     return "wrong-output"
 
 
-def failure_report(result, expected=None):
+def failure_report(result, expected=None, timeout=None):
     """The failure exactly as the program announced it, for the repair prompt.
 
     When the golden is given, a first-divergence hint is appended for runs
     whose stdout is wrong — the same hint in both arms, since it is
-    computed by the harness, not the language.
+    computed by the harness, not the language. The hang note quotes the
+    timeout the run actually used (recorded by run_program), falling back
+    to `timeout` and then the module default.
     """
     if result["hang"]:
-        return (f"The program did not terminate (killed after {TIMEOUT:.0f}s).\n"
+        limit = result.get("timeout")
+        if limit is None:
+            limit = TIMEOUT if timeout is None else timeout
+        return (f"The program did not terminate (killed after {limit:g}s).\n"
                 f"stdout so far:\n{result['stdout'] or '(none)'}")
     parts = [f"exit code: {result['exit']}"]
     parts.append("stdout:\n" + (result["stdout"] if result["stdout"] else "(empty)"))
