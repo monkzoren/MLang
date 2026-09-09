@@ -173,7 +173,10 @@ impl Bus {
         };
         match crate::http::read_framed(&mut next)? {
             None => Ok(None),
-            Some((method, path, body)) => {
+            Some(crate::http::Frame::Patch { .. }) => {
+                Err("⟡ hot patches need the deterministic scheduler — drop --parallel".into())
+            }
+            Some(crate::http::Frame::Request(method, path, body)) => {
                 let mut web = self.replay_web.lock().unwrap();
                 let id = web.0;
                 web.0 += 1;

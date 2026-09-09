@@ -820,8 +820,8 @@ impl<'io> VM<'io> {
         }
     }
 
-    /// Replay-mode ⎆: read one request frame from this VM's own stdin.
-    fn read_request_frame(&mut self) -> Result<Option<(String, String, String)>, String> {
+    /// Replay-mode ⎆: read one frame from this VM's own stdin.
+    fn read_request_frame(&mut self) -> Result<Option<crate::http::Frame>, String> {
         let stdin = &mut *self.stdin;
         let mut next = move || {
             let buf = stdin.fill_buf().ok()?;
@@ -2671,25 +2671,59 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 return Err(Sig::Block(BlockOn::Stdin, pos));
             }
             let _ = vm.out.flush();
-            let accepted = if let Some(bridge) = &vm.http {
-                let bridge = bridge.clone();
-                Some(bridge.accept())
-            } else if let Some(bus) = &vm.bus {
-                let bus = bus.clone();
-                match bus.read_request() {
-                    Ok(r) => r,
-                    Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
-                }
-            } else {
-                match vm.read_request_frame() {
-                    Ok(Some((method, path, body))) => {
-                        let id = vm.next_request_id;
-                        vm.next_request_id += 1;
-                        vm.open_requests.insert(id);
-                        Some((id, method, path, body))
+            // Hot patches travel in the request stream (SPEC §4.7). The
+            // runtime applies each one as it is pulled and answers it
+            // itself; the program only ever sees requests.
+            let accepted = loop {
+                if let Some(bridge) = &vm.http {
+                    let bridge = bridge.clone();
+                    match bridge.accept() {
+                        crate::http::Incoming::Request(r) => break Some(r),
+                        crate::http::Incoming::Patch { id, base, text } => {
+                            let (status, body) = match vm.hot_patch(base, &text, Some(s)) {
+                                Ok(report) => (200, report),
+                                Err((status, why)) => (i64::from(status), why),
+                            };
+                            let _ = vm.err.write_all(body.as_bytes());
+                            let _ = vm.err.flush();
+                            bridge.respond(id, status, "text/plain; charset=utf-8", &body);
+                            if s.pending.is_some() {
+                                // The patch touches this very strand. ⎆ has
+                                // consumed nothing, so step back and let the
+                                // scheduler re-weave it before the next
+                                // request is served on the old code.
+                                return Err(Sig::Block(BlockOn::Stdin, pos));
+                            }
+                        }
                     }
-                    Ok(None) => None,
-                    Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
+                } else if let Some(bus) = &vm.bus {
+                    let bus = bus.clone();
+                    match bus.read_request() {
+                        Ok(r) => break r,
+                        Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
+                    }
+                } else {
+                    match vm.read_request_frame() {
+                        Ok(Some(crate::http::Frame::Request(method, path, body))) => {
+                            let id = vm.next_request_id;
+                            vm.next_request_id += 1;
+                            vm.open_requests.insert(id);
+                            break Some((id, method, path, body));
+                        }
+                        Ok(Some(crate::http::Frame::Patch { base, text })) => {
+                            let (status, body) = match vm.hot_patch(base, &text, Some(s)) {
+                                Ok(report) => (200, report),
+                                Err((status, why)) => (status, why),
+                            };
+                            let frame = crate::http::write_patch_framed(status, &body);
+                            let _ = vm.out.write_all(frame.as_bytes());
+                            if s.pending.is_some() {
+                                return Err(Sig::Block(BlockOn::Stdin, pos));
+                            }
+                        }
+                        Ok(None) => break None,
+                        Err(bad) => return glitch(format!("⎆ bad request frame «{bad}»"), pos),
+                    }
                 }
             };
             match accepted {
@@ -2719,6 +2753,9 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 return glitch("⍅ expects ⟨id status type body⟩", pos);
             }
             let (id, status) = (*id, *status);
+            if let Err(why) = crate::http::validate_response(status, ctype) {
+                return glitch(why, pos);
+            }
             if let Some(bridge) = &vm.http {
                 let bridge = bridge.clone();
                 if !bridge.respond(id, status, ctype, body) {

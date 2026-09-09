@@ -192,6 +192,16 @@ fn run_compiled(
     let code = {
         let mut machine = vm::VM::new(&mut reader, &mut out, &mut err);
         machine.args = prog_args;
+        // A served program opens its loom (SPEC §4.7) unless MLANG_LOOM=0:
+        // the bridge serves the version store, the VM patches it.
+        if let Some(bridge) = &http {
+            if !loom_disabled() {
+                let loom = mlang::loom::Loom::new(&(prog.source.join("\n") + "\n"));
+                bridge.attach_loom(loom.clone());
+                eprintln!("⟡ the loom is open at http://127.0.0.1:{}/.loom", bridge.port);
+                machine.loom = Some(loom);
+            }
+        }
         machine.http = http;
         machine.run_compiled(prog)
     };
@@ -204,6 +214,155 @@ fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     match vm::compile_text(text) {
         Ok(prog) => run_compiled(&prog, prog_args, parallel, None),
         Err(e) => weave_error(text, &e),
+    }
+}
+
+/// MLANG_LOOM=0 keeps a served program's source private: no /.loom routes.
+fn loom_disabled() -> bool {
+    std::env::var("MLANG_LOOM").map(|v| v == "0").unwrap_or(false)
+}
+
+/// Normalize what `pull`/`patch`/`loom` accept as a server: a full URL,
+/// `host:port`, or a bare port on the loopback.
+fn loom_url(arg: &str) -> String {
+    let base = if arg.starts_with("http://") || arg.starts_with("https://") {
+        arg.to_string()
+    } else if arg.chars().all(|c| c.is_ascii_digit()) {
+        format!("http://127.0.0.1:{arg}")
+    } else {
+        format!("http://{arg}")
+    };
+    format!("{}/.loom", base.trim_end_matches('/'))
+}
+
+fn loom_client() -> ureq::Agent {
+    ureq::AgentBuilder::new()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+}
+
+/// A loom answer: the body, whatever the status — the text is the report.
+fn loom_body(r: Result<ureq::Response, ureq::Error>) -> Result<(u16, String), String> {
+    match r {
+        Ok(resp) => {
+            let status = resp.status();
+            resp.into_string().map(|b| (status, b)).map_err(|e| e.to_string())
+        }
+        Err(ureq::Error::Status(code, resp)) => {
+            Ok((code, resp.into_string().unwrap_or_default()))
+        }
+        Err(ureq::Error::Transport(t)) => Err(t.to_string()),
+    }
+}
+
+/// `mlang pull <server>`: print the live source, stamped with its version
+/// and origin, ready to edit and `mlang patch` back.
+fn pull(server: &str) -> ExitCode {
+    let url = loom_url(server);
+    match loom_body(loom_client().get(&url).call()) {
+        Ok((200, body)) => {
+            let (v, _, _) = mlang::loom::unstamp(&body);
+            eprintln!("⟡ pulled v{} from {url}", v.unwrap_or(0));
+            emit(&body)
+        }
+        Ok((status, body)) => {
+            eprint!("✗ {url} answered {status}: {body}");
+            ExitCode::from(2)
+        }
+        Err(e) => {
+            eprintln!("✗ cannot reach {url}: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// `mlang patch <file> [server] [--base N]`: send a pulled-and-edited
+/// file back to the grid it came from. The stamp `pull` wrote names the
+/// server and the base version; both can be overridden. The server's
+/// report is printed; a rejected patch (merge conflict, weave error,
+/// or boot code changed) exits 1 with the reason.
+fn patch(rest: &[String]) -> ExitCode {
+    let mut file = None;
+    let mut server = None;
+    let mut base: Option<usize> = None;
+    let mut it = rest.iter();
+    while let Some(a) = it.next() {
+        if a == "--base" {
+            base = it.next().and_then(|n| n.parse().ok());
+            if base.is_none() {
+                eprintln!("✗ --base wants a version number");
+                return ExitCode::from(2);
+            }
+        } else if file.is_none() {
+            file = Some(a.clone());
+        } else {
+            server = Some(a.clone());
+        }
+    }
+    let Some(file) = file else {
+        eprintln!("✗ patch wants the form: mlang patch <file> [server] [--base N]");
+        return ExitCode::from(2);
+    };
+    let text = match read_source(&file) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("✗ {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let (stamped, origin, body) = mlang::loom::unstamp(&text);
+    let base = match base.or(stamped) {
+        Some(b) => b,
+        None => {
+            eprintln!("✗ {file} carries no loom stamp — pull it from the server first, or pass --base N");
+            return ExitCode::from(2);
+        }
+    };
+    let url = match server.as_deref().or(Some(origin).filter(|o| !o.is_empty())) {
+        Some(s) => loom_url(s),
+        None => {
+            eprintln!("✗ which grid? name the server: mlang patch {file} 4321");
+            return ExitCode::from(2);
+        }
+    };
+    if let Err(e) = vm::compile_text(body) {
+        // Weave locally first: a broken file never reaches the grid.
+        return weave_error(body, &e);
+    }
+    let stamped = mlang::loom::stamp(base, &url, body);
+    match loom_body(loom_client().post(&url).set("Content-Type", "text/plain; charset=utf-8").send_string(&stamped)) {
+        Ok((200, report)) => {
+            print!("{report}");
+            ExitCode::SUCCESS
+        }
+        Ok((status, why)) => {
+            eprint!("{why}");
+            if !why.ends_with('\n') {
+                eprintln!();
+            }
+            eprintln!("✗ patch not applied ({status})");
+            ExitCode::from(1)
+        }
+        Err(e) => {
+            eprintln!("✗ cannot reach {url}: {e}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// `mlang loom <server>`: the version log of a served grid.
+fn loom_log(server: &str) -> ExitCode {
+    let url = format!("{}/log", loom_url(server));
+    match loom_body(loom_client().get(&url).call()) {
+        Ok((200, body)) => emit(&body),
+        Ok((status, body)) => {
+            eprint!("✗ {url} answered {status}: {body}");
+            ExitCode::from(2)
+        }
+        Err(e) => {
+            eprintln!("✗ cannot reach {url}: {e}");
+            ExitCode::from(2)
+        }
     }
 }
 
@@ -273,6 +432,13 @@ usage:
                                   binary — without it, ⎆ replays request
                                   frames from stdin)
   mlang check <file|->            compile only; report weave errors
+  mlang pull <server>             print a served grid's live source, stamped
+                                  with its version (server: URL, host:port,
+                                  or a bare port on 127.0.0.1)
+  mlang patch <file> [server] [--base N]   weave an edited pull back into
+                                  the running grid — no restart (SPEC §4.7);
+                                  the stamp names the server and base version
+  mlang loom <server>             the served grid's version log
   mlang hub [--listen A:P] [--workers N] <file|-> [args…]
                                   run a program with its work channel (α)
                                   distributed over TCP to joined workers and
@@ -483,6 +649,9 @@ fn main() -> ExitCode {
         }
         ("hub", n) if n >= 3 => net_cmd(true, &args[2..]),
         ("worker", n) if n >= 3 => net_cmd(false, &args[2..]),
+        ("pull", 3) => pull(&args[2]),
+        ("patch", n) if n >= 3 => patch(&args[2..]),
+        ("loom", 3) => loom_log(&args[2]),
         ("check", 3) => match read_source(&args[2]) {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {

@@ -39,7 +39,10 @@ fn get_is_queued_and_answered() {
     let b = bridge();
     let mut s = connect(&b);
     s.write_all(b"get /hello?x=1 HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
-    let (id, method, path, body) = b.accept();
+    let (id, method, path, body) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert_eq!((id, method.as_str(), path.as_str(), body.as_str()), (1, "GET", "/hello?x=1", ""));
     assert!(b.respond(id, 200, "text/plain", "hi"));
     let r = reply(s);
@@ -60,7 +63,10 @@ fn post_body_reaches_the_program() {
     // "héllo" is six bytes of UTF-8 and five characters; the value
     // carries the characters
     s.write_all("POST /p HTTP/1.0\r\nContent-Length: 6\r\n\r\nhéllo".as_bytes()).unwrap();
-    let (id, method, path, body) = b.accept();
+    let (id, method, path, body) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert_eq!((method.as_str(), path.as_str(), body.as_str()), ("POST", "/p", "héllo"));
     assert!(b.respond(id, 201, "text/plain", ""));
     assert!(reply(s).starts_with("HTTP/1.1 201 "));
@@ -82,7 +88,10 @@ fn chunked_body_is_decoded() {
           5;ext=1\r\nhello\r\n1\r\n \r\n6\r\nworld!\r\n0\r\nTrailer: x\r\n\r\n",
     )
     .unwrap();
-    let (id, method, path, body) = b.accept();
+    let (id, method, path, body) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert_eq!((method.as_str(), path.as_str(), body.as_str()), ("POST", "/c", "hello world!"));
     assert!(b.respond(id, 200, "text/plain", "ok"));
     assert!(reply(s).starts_with("HTTP/1.1 200 "));
@@ -130,7 +139,10 @@ fn content_length_must_be_plain_digits_and_consistent() {
     // two that agree are fine
     let mut s = connect(&b);
     s.write_all(b"POST / HTTP/1.1\r\nContent-Length: 2\r\nContent-Length: 2\r\n\r\nhi").unwrap();
-    let (id, _, _, body) = b.accept();
+    let (id, _, _, body) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert_eq!(body, "hi");
     assert!(b.respond(id, 200, "text/plain", ""));
 }
@@ -159,7 +171,10 @@ fn expect_continue_is_answered_before_the_body() {
     s.read_exact(&mut interim).unwrap();
     assert_eq!(&interim, b"HTTP/1.1 100 Continue\r\n\r\n");
     s.write_all(b"ok").unwrap();
-    let (id, _, _, body) = b.accept();
+    let (id, _, _, body) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert_eq!(body, "ok");
     assert!(b.respond(id, 204, "text/plain", ""));
     assert!(reply(s).starts_with("HTTP/1.1 204 "));
@@ -192,7 +207,10 @@ fn respond_refuses_header_injection() {
     let s = connect(&b);
     let mut s2 = s.try_clone().unwrap();
     s2.write_all(b"GET / HTTP/1.1\r\n\r\n").unwrap();
-    let (id, _, _, _) = b.accept();
+    let (id, _, _, _) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert!(!b.respond(id, 200, "text/plain\r\nSet-Cookie: x=1", "hi"));
     let r = reply(s);
     assert!(r.starts_with("HTTP/1.1 500 "), "{r}");
@@ -204,7 +222,10 @@ fn respond_refuses_an_impossible_status() {
     let b = bridge();
     let mut s = connect(&b);
     s.write_all(b"GET / HTTP/1.1\r\n\r\n").unwrap();
-    let (id, _, _, _) = b.accept();
+    let (id, _, _, _) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     assert!(!b.respond(id, 99999, "text/plain", "hi"));
     assert!(reply(s).starts_with("HTTP/1.1 500 "));
     // unknown ids are still just false
@@ -231,7 +252,10 @@ fn a_client_that_never_reads_does_not_stall_respond() {
     let b = bridge();
     let mut s = connect(&b);
     s.write_all(b"GET / HTTP/1.1\r\n\r\n").unwrap();
-    let (id, _, _, _) = b.accept();
+    let (id, _, _, _) = match b.accept() {
+        mlang::http::Incoming::Request(r) => r,
+        _ => panic!("expected a request"),
+    };
     drop(s);
     let started = std::time::Instant::now();
     assert!(b.respond(id, 200, "text/plain", &"x".repeat(1 << 20)));

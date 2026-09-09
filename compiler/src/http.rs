@@ -56,8 +56,28 @@ const DEADLINE: Duration = Duration::from_secs(10);
 /// One parsed request, in the shape ⎆ pushes: id, method, path, body.
 pub type Request = (i64, String, String, String);
 
+/// What ⎆ pulls off the request stream: a request for the program, or a
+/// hot patch for the loom (SPEC §4.7), which the runtime applies and
+/// answers itself before the program sees the next request.
+pub enum Incoming {
+    Request(Request),
+    Patch { id: i64, base: usize, text: String },
+}
+
+/// One replay frame: `▷ METHOD PATH [nbytes]` or `⟡ base nbytes`.
+pub enum Frame {
+    Request(String, String, String),
+    Patch { base: usize, text: String },
+}
+
+/// The loom's own routes on a served program's port. Agents pull the
+/// live source from `GET /.loom` (stamped with its version), send a new
+/// version back with `POST /.loom`, and read the history at
+/// `GET /.loom/log`; `GET /.loom/vN` is one past version.
+pub const LOOM_PATH: &str = "/.loom";
+
 struct Queue {
-    items: VecDeque<Request>,
+    items: VecDeque<Incoming>,
     next_id: i64,
 }
 
@@ -71,6 +91,8 @@ pub struct HttpBridge {
     inflight: AtomicUsize,
     /// How long a request may take to arrive in full.
     deadline: Duration,
+    /// The version store the loom routes read; None answers them 404.
+    loom: Mutex<Option<Arc<crate::loom::Loom>>>,
     pub port: u16,
 }
 
@@ -103,6 +125,7 @@ impl HttpBridge {
             pending: Mutex::new(HashMap::new()),
             inflight: AtomicUsize::new(0),
             deadline,
+            loom: Mutex::new(None),
             port,
         });
         let accepting = bridge.clone();
@@ -129,6 +152,17 @@ impl HttpBridge {
             let _ = write_http_response(&stream, 400, "text/plain", b"bad request");
             return;
         };
+        let incoming = if path == LOOM_PATH || path.starts_with("/.loom/") {
+            match self.loom_route(&method, &path, &body) {
+                Ok(patch) => patch,
+                Err((status, text)) => {
+                    let _ = write_http_response(&stream, status, "text/plain; charset=utf-8", text.as_bytes());
+                    return;
+                }
+            }
+        } else {
+            None
+        };
         // The stream is registered as pending *before* the request is
         // visible to ⎆, so a fast ⍅ can never miss it. Both happen under
         // the queue lock; `respond` takes only the pending lock, so the
@@ -142,14 +176,65 @@ impl HttpBridge {
         let id = q.next_id;
         q.next_id += 1;
         self.pending.lock().unwrap().insert(id, stream);
-        q.items.push_back((id, method, path, body));
+        q.items.push_back(match incoming {
+            Some((base, text)) => Incoming::Patch { id, base, text },
+            None => Incoming::Request((id, method, path, body)),
+        });
         drop(q);
         self.cv.notify_all();
     }
 
+    /// Serve the loom: GETs are answered here, on the bridge's thread,
+    /// from the version store; a POST becomes a patch item for the VM
+    /// to apply (Ok(Some((base, text)))). Err is answered immediately.
+    fn loom_route(&self, method: &str, path: &str, body: &str) -> Result<Option<(usize, String)>, (i64, String)> {
+        let loom = self.loom.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let Some(loom) = loom else {
+            return Err((404, "the loom is not open on this program (MLANG_LOOM=0)\n".into()));
+        };
+        let url = format!("http://127.0.0.1:{}", self.port);
+        let (path, query) = path.split_once('?').unwrap_or((path, ""));
+        match (method, path) {
+            ("GET", p) if p == LOOM_PATH => {
+                let v = loom.current();
+                Err((200, crate::loom::stamp(v, &url, &loom.text(v).unwrap_or_default())))
+            }
+            ("GET", "/.loom/log") => Err((200, loom.log())),
+            ("GET", p) => {
+                let v = p.strip_prefix("/.loom/v").and_then(|n| n.parse::<usize>().ok());
+                match v.and_then(|v| loom.text(v).map(|t| (v, t))) {
+                    Some((v, text)) => Err((200, crate::loom::stamp(v, &url, &text))),
+                    None => Err((404, "no such version\n".into())),
+                }
+            }
+            ("POST", p) if p == LOOM_PATH => {
+                // The base version comes from the stamp `mlang pull`
+                // wrote, or from ?base=N for hand-made requests.
+                let (stamped, _, text) = crate::loom::unstamp(body);
+                let base = stamped.or_else(|| {
+                    query.split('&').find_map(|kv| kv.strip_prefix("base=")?.parse().ok())
+                });
+                match base {
+                    Some(base) => Ok(Some((base, text.to_string()))),
+                    None => Err((400, format!(
+                        "a patch must say which version it was written against: start the body with «{}N» (mlang pull writes it) or add ?base=N\n",
+                        crate::loom::STAMP
+                    ))),
+                }
+            }
+            _ => Err((405, "the loom answers GET /.loom, GET /.loom/log, GET /.loom/vN, and POST /.loom\n".into())),
+        }
+    }
+
+    /// Open the loom on this port: attach the version store the routes
+    /// read. Without it every /.loom request is answered 404.
+    pub fn attach_loom(&self, loom: Arc<crate::loom::Loom>) {
+        *self.loom.lock().unwrap_or_else(|e| e.into_inner()) = Some(loom);
+    }
+
     /// Park until the next request arrives. Live servers wait forever —
     /// there is no end-of-input on a listening port.
-    pub fn accept(&self) -> Request {
+    pub fn accept(&self) -> Incoming {
         let mut q = self.queue.lock().unwrap();
         loop {
             if let Some(r) = q.items.pop_front() {
@@ -459,13 +544,12 @@ fn write_http_response(
 }
 
 /// Parse one replay frame from a byte source:
-///     ▷ METHOD PATH [nbytes]
+///     ▷ METHOD PATH [nbytes]      a request
+///     ⟡ base nbytes               a hot patch written against version base
 /// followed, when nbytes is present, by exactly nbytes of body and an
 /// optional line ending. Blank lines between frames are skipped.
 /// Ok(None) is clean end of input; Err carries the offending line.
-pub fn read_framed(
-    next: &mut dyn FnMut() -> Option<u8>,
-) -> Result<Option<(String, String, String)>, String> {
+pub fn read_framed(next: &mut dyn FnMut() -> Option<u8>) -> Result<Option<Frame>, String> {
     let line = loop {
         let mut bytes: Vec<u8> = Vec::new();
         loop {
@@ -482,7 +566,27 @@ pub fn read_framed(
         }
     };
     let mut parts = line.split_ascii_whitespace();
-    if parts.next() != Some("▷") {
+    let kind = parts.next();
+    if kind == Some("⟡") {
+        let (Some(base), Some(n), None) = (parts.next(), parts.next(), parts.next()) else {
+            return Err(line.clone());
+        };
+        let (Ok(base), Ok(n)) = (base.parse::<usize>(), n.parse::<usize>()) else {
+            return Err(line.clone());
+        };
+        if n > MAX_BODY {
+            return Err(line.clone());
+        }
+        let mut bytes = Vec::with_capacity(n.min(1 << 20));
+        for _ in 0..n {
+            match next() {
+                Some(b) => bytes.push(b),
+                None => return Err(line.clone()),
+            }
+        }
+        return Ok(Some(Frame::Patch { base, text: String::from_utf8_lossy(&bytes).into_owned() }));
+    }
+    if kind != Some("▷") {
         return Err(line.clone());
     }
     let (Some(method), Some(path)) = (parts.next(), parts.next()) else {
@@ -507,7 +611,13 @@ pub fn read_framed(
             String::from_utf8_lossy(&bytes).into_owned()
         }
     };
-    Ok(Some((method.to_ascii_uppercase(), path.to_string(), body)))
+    Ok(Some(Frame::Request(method.to_ascii_uppercase(), path.to_string(), body)))
+}
+
+/// The replay counterpart of a loom response: `⟡ status nbytes` and the
+/// report, so a recorded session pins what every patch did.
+pub fn write_patch_framed(status: u16, report: &str) -> String {
+    format!("⟡ {} {}\n{}", status, report.len(), report)
 }
 
 /// Format one replay response frame, the ⍅ counterpart of ▷:
