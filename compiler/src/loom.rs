@@ -48,7 +48,13 @@ pub struct Version {
 /// bridge serves `GET /.loom` from it on its own thread.
 pub struct Loom {
     versions: Mutex<Vec<Version>>,
+    /// The fault reports the run has produced (glitches, deadlocks),
+    /// newest last, capped — an agent mending a grid over HTTP needs the
+    /// report the runtime wrote to stderr.
+    faults: Mutex<Vec<String>>,
 }
+
+const MAX_FAULTS: usize = 64;
 
 impl Loom {
     pub fn new(text: &str) -> Arc<Loom> {
@@ -57,6 +63,7 @@ impl Loom {
                 text: text.to_string(),
                 note: "as started".into(),
             }]),
+            faults: Mutex::new(Vec::new()),
         })
     }
 
@@ -80,6 +87,20 @@ impl Loom {
             out.push_str(&format!("v{i}  {}\n", v.note));
         }
         out
+    }
+
+    /// Keep a fault report for `GET /.loom/faults`.
+    pub fn record_fault(&self, report: String) {
+        let mut f = self.faults.lock().unwrap_or_else(|e| e.into_inner());
+        if f.len() >= MAX_FAULTS {
+            f.remove(0);
+        }
+        f.push(report);
+    }
+
+    /// Every kept fault report, oldest first, separated by blank lines.
+    pub fn faults(&self) -> String {
+        self.faults.lock().unwrap_or_else(|e| e.into_inner()).join("\n")
     }
 
     /// Record an accepted patch; returns its version number.

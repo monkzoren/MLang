@@ -1051,6 +1051,12 @@ impl<'io> VM<'io> {
         );
         let detail = fault_detail_in(&self.sources, *pos, &s.glitch_chain, s.stack_view());
         let _ = write!(self.err, "{detail}");
+        if let Some(loom) = &self.loom {
+            loom.record_fault(format!(
+                "✗ glitch in strand {} ({}) at {}: {}\n{detail}",
+                fmt_i64(s.sid), s.label, coords(*pos), fmt(v, false)
+            ));
+        }
     }
 
     fn report_deadlock(&mut self, blocked: &[usize]) {
@@ -1083,7 +1089,23 @@ impl<'io> VM<'io> {
                 _ => None,
             })
             .collect();
-        let _ = write!(self.err, "{}", channel_census(&self.chan_sites, &waited));
+        let census = channel_census(&self.chan_sites, &waited);
+        let _ = write!(self.err, "{census}");
+        if let Some(loom) = &self.loom {
+            let mut report = String::from("✗ deadlock — every remaining strand is blocked:\n");
+            for &i in blocked {
+                let s = &self.strands[i];
+                let (on, pos) = s.block.unwrap();
+                let what = match on {
+                    BlockOn::Chan(c) => format!("channel {c}"),
+                    BlockOn::Strand(id) => format!("strand {}", fmt_i64(id)),
+                    BlockOn::Stdin => "stdin".into(),
+                };
+                report.push_str(&format!("  strand {} ({}) waiting on {} at {}\n", fmt_i64(s.sid), s.label, what, coords(pos)));
+            }
+            report.push_str(&census);
+            loom.record_fault(report);
+        }
     }
 
     fn try_unblock(&mut self, i: usize) {

@@ -201,6 +201,7 @@ impl HttpBridge {
                 Err((200, crate::loom::stamp(v, &url, &loom.text(v).unwrap_or_default())))
             }
             ("GET", "/.loom/log") => Err((200, loom.log())),
+            ("GET", "/.loom/faults") => Err((200, loom.faults())),
             ("GET", p) => {
                 let v = p.strip_prefix("/.loom/v").and_then(|n| n.parse::<usize>().ok());
                 match v.and_then(|v| loom.text(v).map(|t| (v, t))) {
@@ -223,7 +224,7 @@ impl HttpBridge {
                     ))),
                 }
             }
-            _ => Err((405, "the loom answers GET /.loom, GET /.loom/log, GET /.loom/vN, and POST /.loom\n".into())),
+            _ => Err((405, "the loom answers GET /.loom, GET /.loom/log, GET /.loom/faults, GET /.loom/vN, and POST /.loom\n".into())),
         }
     }
 
