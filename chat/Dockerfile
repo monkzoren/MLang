@@ -5,7 +5,7 @@
 # web server, no sidecar: the program below is the whole application, and it
 # re-weaves itself with ⟐ and ⟡ (SPEC §4.7) rather than being patched from
 # outside.
-FROM rust:1-slim AS build
+FROM rust:1-slim-bookworm AS build
 WORKDIR /src
 # vm.rs welds std/*.ml into the binary with include_str!, so both are needed.
 COPY compiler/ compiler/
@@ -14,7 +14,9 @@ COPY std/ std/
 # server never opens.
 RUN cargo build --release --no-default-features --manifest-path compiler/Cargo.toml
 
-FROM debian:stable-slim
+# Pinned to the same Debian release as the builder: the binary is linked
+# against the builder's glibc and has to run on the runtime's.
+FROM debian:bookworm-slim
 RUN useradd -m grid && mkdir -p /data && chown grid:grid /data
 COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
 COPY chat/chat.ml /app/chat.ml

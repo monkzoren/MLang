@@ -43,6 +43,15 @@ one: the whole text is woven first, a text that does not weave is refused and
 **the running grid is untouched**, and the strand keeps its old code until its
 next seam. A bad lesson cannot half-land.
 
+## Checking it
+
+```sh
+sh chat/test.sh          # replay-mode checks: no network, no container
+```
+
+`⎆` reads `▷` frames from stdin, so the whole bot is a pure function of its
+input and the tests need nothing running.
+
 ## Running it
 
 ```sh
@@ -131,5 +140,13 @@ nobody judging them reproduces the ungated arm.
 * **Substring matching is dumb**, on purpose. It is legible, it is fast, and
   every rule it holds can be read in its source. Ranking or embeddings can be
   added later — as strands, which is the interesting way.
+
+  It is dumb in a way that will bite you, so know it up front: a short
+  pattern matches *inside* longer words. The seed rule `hi` answers
+  "anyt**hi**ng". Patterns are tried in table order and the newest is added
+  last, so an old short rule shadows a new specific one. Teach whole words.
+
+* **A reply cannot contain `|`**, which is the field separator `POST /teach`
+  splits on — such a body is refused as malformed.
 * **One scheduler.** The loom needs the deterministic one, so `--parallel` is
   out. For a personal bot that costs nothing.
