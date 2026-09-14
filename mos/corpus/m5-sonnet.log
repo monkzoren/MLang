@@ -1,0 +1,37 @@
+the machine with an inert unit spliced in: score 1300, fitness 1252
+M4's ceiling, with no unit at all: score 1300, fitness 1268
+
+round 1: [⇒i i« »⊆[⍎]∵⇒l l 0 @⇒x l 1 @⇒y l 2 @⇒g l 3 @⇒n l 4 @⇒e l 5 @⇒s l 6 @⇒w l 7 @⇒p l 8 @⇒q l 9 @⇒d l 10 @⇒h g[d h…
+         It ran. ticks=200 delivered=10 bumps=0 bad=0 slips=22 score=1000
+         Fitness 952 = score 1000 minus 48 upkeep for its structure.
+         (provider failed: TimeoutExpired)
+round 2: 0⇒L[⇒i i« »⊆[⍎]∵⇒l l 0 @⇒x l 1 @⇒y l 2 @⇒g l 3 @⇒n l 4 @⇒e l 5 @⇒s l 6 @⇒w l 7 @⇒p l 8 @⇒q l 9 @⇒d l 10 @⇒h g[…
+         The machine broke. The runtime said:
+         
+         ✗ weave error at 27:4: unclosed [ quotation
+           27│ 0⇒L[⇒i i« »⊆[⍎]∵⇒l l 0 @⇒x l 1 @⇒y l 2 @⇒g l 3 @⇒n l 4 @⇒e l …
+                  ↑ 27:4
+round 3: 0⇒L[⇒i i« »⊆[⍎]∵⇒l l 0 @⇒x l 1 @⇒y l 2 @⇒g l 3 @⇒n l 4 @⇒e l 5 @⇒s l 6 @⇒w l 7 @⇒p l 8 @⇒q l 9 @⇒d l 10 @⇒h g[…
+         It ran. ticks=200 delivered=3 bumps=0 bad=0 slips=3 score=300
+         Fitness 252 = score 300 minus 48 upkeep for its structure.
+round 4: [∂0<[±][]?]⇒Z ¯1⇒A ¯1⇒B 9999⇒M 0⇒C[⇒i i« »⊆[⍎]∵⇒l l 0 @⇒x l 1 @⇒y l 2 @⇒g l 3 @⇒n l 4 @⇒e l 5 @⇒s l 6 @⇒w l 7 …
+         The machine broke. The runtime said:
+         
+         ✗ glitch in strand 1 (row 27) at 27:162: ! expects a [quotation], got int
+           27│ … 10 @⇒h g[d h][p q]?⇒b⇒a x a-Z! y b-Z!+⇒N a A≠b B≠∨⇒T T[0][N …
+                                              ↑ 27:162
+           stack: (empty)
+         ✗ deadlock — every remaining strand is blocked:
+           strand 0 (row 26) waiting on channel β at 26:33
+           26│ …g[g][⎆∂∅=[⌫ ∅↥γ 0⇒g][⇒r r3@↥γ ↧β⇒a T a∈[a][«X»]?⇒a ⟨r0@ 200 «…
+                                              ↑ 26:33
+           strand 2 (row 28) waiting on channel α at 28:10
+           28│ «X»⇒l [P]⇉αβ
+                        ↑ 28:10
+round 5: []⇉γα
+         It ran. ticks=200 delivered=13 bumps=0 bad=0 slips=21 score=1300
+         That is exactly the score of the line that does nothing, []⇉γα, so whatever you computed did not change where the robot went.
+         Fitness 1252 = score 1300 minus 48 upkeep for its structure.
+
+best: score 1300 (matches M4's 1300), fitness 1252
+      []⇉γα

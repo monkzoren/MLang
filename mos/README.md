@@ -119,7 +119,7 @@ the same stream as sensation (SPEC §4.7: a patch is a `⟡` frame).
 | **M2** | the structural repertoire — prove by hand that the loom can express every kind of growth | **done** |
 | **M3** | the gate as the pruning rule — what a version must survive to be kept | **done** |
 | **M4** | variation and selection over that repertoire, many generations, no model | **done** |
-| **M5** | a model arm: not where structure goes, but what a new unit computes | next |
+| **M5** | a model arm: not where structure goes, but what a new unit computes | **run — negative, and not a clean test** |
 
 M1–M3 use no LLM at all. They are deterministic and cost nothing to run.
 They are finished. What they establish is below; where it leaves the
@@ -334,6 +334,89 @@ arm, and it also says what the model's job actually is — not choosing the
 topology, which selection handles better, but writing the body of a unit
 that the operators can only create empty.
 
+### M5 — a model writes what the unit computes
+
+M4 drew the line: selection discovers where structure goes and cannot invent
+what structure does. So the operator does the structural work exactly as in
+M4 — strand 0 is rewired to feed a fresh channel γ and a pump is spliced
+between it and the policy — and the model writes only that pump's line. It
+sees every sensor tick before the policy does and may rewrite it, and its
+strand-locals persist across ticks, so unlike the policy it can remember.
+The gate and the metabolic cost are M4's, so the number is comparable.
+
+**Result: nothing beat 1300.** Five runs, about 27 attempts, two models. The
+best line found in any run was `[]⇉γα` — the one that does nothing.
+
+`claude-haiku-4-5` never cleared the language. Every failure was a way of
+writing MLang as if it were infix:
+
+| written | needed |
+|---|---|
+| `⊆« »` | `« »⊆` |
+| `f@0` | `f 0 @` |
+| `↧q` to read a local | bare `q` |
+| `⇒pos` | `⇒q` — `⇒` swallows one glyph, so this binds `p` and leaves `o` and `s` as stray references |
+
+`claude-sonnet-5` cleared it. It wrote valid, running, stateful units that
+parsed the eleven fields, remembered the previous position and reconstructed
+the tick — and they scored exactly what the inert line scores. Invited to
+redirect the policy's target, it produced units that ran cleanly and made
+the machine *worse* (1000, then 300).
+
+### Why this is not a clean test
+
+Three things, stated because the number above is worth less than it looks:
+
+**A bug in the gate invalidated part of it.** M3's invariant corpus feeds
+336 single frames to one process in sequence. That is valid for a memoryless
+policy, where each answer depends only on its own frame. It is not valid once
+a unit with memory sits in front: the unit builds its state from 336
+teleporting positions, and how it behaves there says nothing about how it
+behaves in the world. **The corpus was sound exactly while the machine was
+memoryless, and stopped being sound at the moment the experiment became
+interesting.** It was also blind a second way — a unit that redirects the
+policy to a waypoint reads at the true pickup as "did not grip", though the
+robot grips a moment later having gone where it meant to — so the gate
+forbade the one strategy that could have worked. Fixed by measuring the
+invariants on the trajectory the world recorded (`gate.in_context`):
+narrower coverage, and sound. But the first three runs were judged by the
+broken rule, and their failures are partly the gate's, not the model's.
+
+**The harness was tuned five times against this one task.** Four prompt
+revisions and one gate fix, each in response to a failure. Two of the prompt
+changes were language documentation — SPEC §3.5 facts the model was never
+given — which is defensible. Two were closer to coaching. A fair version of
+this experiment is one frozen prompt, several seeds, several models, run
+once. This was developed and run at the same time, which is how you get a
+result you cannot fully trust.
+
+**Three of six rounds in the first sonnet run were lost to harness noise.**
+`claude -p` is an agentic CLI; with no tools available it still answered in
+tool-call syntax. Now re-asked rather than counted.
+
+### What it does and does not license
+
+It does **not** show that a model cannot grow an operating system. It shows
+that at this budget, through this interface, in a language absent from
+training, writing a single line of novel stateful code that must beat an
+already-tuned baseline is not reliably producible — and that most of the
+distance is spent on the language rather than on the problem.
+
+The substrate came out of it well. Every failure was named precisely: the
+exact glyph under a caret, the stack as the fault left it, the wait graph,
+and the channel census catching `↧pos` as *"channel c is received at 2 sites
+and never sent to"*. Nothing hung, nothing failed silently, and the machine
+never had to be stopped to try the next idea.
+
+### A finding for the language, not for mOS
+
+All four traps above are in SPEC §3.5 and **none of them are in
+`bench/heal.py`'s primer** — the primer behind this repository's headline
+99%-healed self-repair result. That result is likely depressed by their
+absence. `bench/` has deliberately **not** been touched here: changing the
+primer changes a published number, and re-running that benchmark is a
+separate decision.
+
 ## Files
 
 ```
@@ -345,6 +428,7 @@ topo.py     a version's wiring diagram; --diff shows what grew and what was prun
 m2.py       weaves all five into one running grid and pins the session
 gate.py     the selection rule: rollout + 336 invariants, ship or reject
 evolve.py   M4: the five moves as operators, three arms, many generations
+grow.py     M5: the model writes the spliced unit's line; the gate is M4's
 corpus/     recorded episodes: the machine's own conformance suite
 ```
 
