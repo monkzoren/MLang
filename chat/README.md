@@ -160,6 +160,69 @@ One other ceiling: a patch arriving over HTTP is subject to the 16 MiB
 request-body cap (§5.5). `⟡` does not go through HTTP, so the bot teaching
 itself is not subject to it.
 
+## Information, knowledge, and skill
+
+It is worth being exact about what `/teach` does, because it is easy to
+oversell.
+
+* **Information** is the bytes — what a file says, what a sensor reads.
+* **Knowledge** is a fact in the table: *when you hear `coolify`, say this*.
+  It answers exactly one input and nothing else.
+* **A skill** is a definition that *computes*. It answers an open set of
+  inputs, including ones that did not exist when it was taught.
+
+`POST /teach` writes knowledge. A thousand lessons leave the bot exactly as
+capable as it started — richer, not abler. That is the same distinction
+`mos/README.md` §M4 arrived at from the other end: a spliced pump adds
+topology and not function, and a row in a table adds a fact and not an
+ability.
+
+A skill is one small patch away, and **cannot** go through `/teach`, because
+`/teach` only writes data. You patch the program.
+[`skills/read-file.md`](skills/read-file.md) walks through giving the bot the
+ability to read a file — two pure definitions, woven while it serves. The
+test that separates the two:
+
+```
+read /tmp/made-after-the-lesson   → (its contents)   a skill generalises
+quagga                            → I do not know    a fact does not
+```
+
+This is the whole reason the medium is a program rather than a database. You
+can add a fact to a key-value store; you cannot add *the ability to read a
+file* to one.
+
+## The co-development storm
+
+`codev.py` puts the loom's headline claim under load: many agents rewriting
+one running grid, with readers chatting throughout against a program being
+rewritten under them. 12 writers, 6 readers, 180 seconds each:
+
+| agents insert | rules gained | conflicts | memory |
+|---|---|---|---|
+| at a shared end | 1,789 | **90.8%** | 31 MB |
+| each in its own block | **3,750** | **1.2%** | 56 MB |
+
+Not one reply was wrong in either arm, across 12,000 of them, and not one
+patch was lost — every 409 was retried and landed.
+
+**The contention was this program's, not the loom's.** When every agent
+inserts before the same `⟩≔R`, `diff3` sees both sides changing the same
+region and refuses the loser every time. Give each agent its own block and
+conflicts fall to near nothing and throughput doubles. Concurrency here
+scales with the number of distinct *lines* being edited, not with the number
+of agents — which is exactly what `docs/loom.md` claims, now measured.
+
+[`grown.ml`](grown.ml) is what the grid became: 3,788 lines, 3,750 rules
+learned from twelve agents at once. Serve it like any other program —
+
+```sh
+mlang serve chat/grown.ml 8080 "$TOKEN" /tmp/grown.ml
+curl -XPOST --data 'w03r00100' localhost:8080/say   # → agent 3 rule 100
+```
+
+— and it keeps learning from there.
+
 ## Where a model would go, and why there isn't one
 
 Not in the hot path, ever: a turn is a substring match and costs nothing.
