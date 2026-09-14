@@ -93,7 +93,11 @@ sigil  name          effect              description
                                          A header value holding a newline or a
                                          non-ASCII character is refused by name,
                                          before the socket: the usual cause is a key
-                                         pasted with the newline it was copied with
+                                         pasted with the newline it was copied with.
+                                         A response that arrives and is unusable says
+                                         so distinctly — «answered, then stopped
+                                         sending», «more than 16 MB», «bytes that are
+                                         not text» — never as failing to reach
 ⎆      accept        → ⟨id m path body⟩  the next HTTP request this program is serving, ∅ at end of input
                                          (lowest priority, like ⌨). Replay mode (default): ▷ frames on stdin;
                                          live mode (mlang serve / MLANG_PORT): a real listener

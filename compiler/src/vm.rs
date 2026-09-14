@@ -3072,8 +3072,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
             match http_call(url, Some((&headers, body)), std::time::Duration::from_secs(60)) {
                 Ok(out) => s.push(Value::str(out)),
-                Err(Some(status)) => return glitch(format!("⍄ «{url}» answered {status}"), pos),
-                Err(None) => return glitch(format!("⍄ cannot reach «{url}»"), pos),
+                Err(e) => return glitch(http_fail_msg('⍄', url, e), pos),
             }
         }
 
@@ -3146,10 +3145,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             }
             match fetch_url(url) {
                 Ok(body) => s.push(Value::str(body)),
-                Err(Some(status)) => {
-                    return glitch(format!("⍆ «{url}» answered {status}"), pos)
-                }
-                Err(None) => return glitch(format!("⍆ cannot fetch «{url}»"), pos),
+                Err(e) => return glitch(http_fail_msg('⍆', url, e), pos),
             }
         }
         '⎆' => {
@@ -3357,7 +3353,40 @@ fn clock_env() -> Option<i64> {
 /// forever. Proxies come from the standard HTTPS_PROXY / HTTP_PROXY
 /// environment variables; trust roots from the platform store (and
 /// SSL_CERT_FILE), so corporate middleboxes work without configuration.
-fn fetch_url(url: &str) -> Result<String, Option<u16>> {
+/// What to say about it. `⍆` keeps its own word for the unreachable case,
+/// because "cannot fetch" is what its documentation has always promised.
+fn http_fail_msg(op: char, url: &str, e: HttpFail) -> String {
+    match e {
+        HttpFail::Status(code) => format!("{op} «{url}» answered {code}"),
+        HttpFail::Unreachable if op == '⍆' => format!("⍆ cannot fetch «{url}»"),
+        HttpFail::Unreachable => format!("{op} cannot reach «{url}»"),
+        HttpFail::Cut => format!("{op} «{url}» answered, then stopped sending"),
+        HttpFail::TooBig => format!("{op} «{url}» answered with more than 16 MB"),
+        HttpFail::NotText => format!("{op} «{url}» answered with bytes that are not text"),
+    }
+}
+
+/// Why an HTTP call did not produce a body.
+///
+/// These were one variant for a long time, and every one of them printed
+/// "cannot reach". That is true of exactly one of them, and the other three
+/// send you looking at firewalls while the real fault is a response you did
+/// receive. None carries an operating-system string: a run that named one
+/// could not be replayed on another machine.
+pub enum HttpFail {
+    /// The far end answered, with this status.
+    Status(u16),
+    /// Nothing answered: DNS, TLS, a refused connection, a bad header.
+    Unreachable,
+    /// It answered, then the body stopped arriving — or the deadline hit.
+    Cut,
+    /// It answered with more than ⍆/⍄ will hold.
+    TooBig,
+    /// It answered with bytes that are not text.
+    NotText,
+}
+
+fn fetch_url(url: &str) -> Result<String, HttpFail> {
     http_call(url, None, std::time::Duration::from_secs(10))
 }
 
@@ -3369,7 +3398,7 @@ fn http_call(
     url: &str,
     post: Option<(&[(String, String)], &str)>,
     deadline: std::time::Duration,
-) -> Result<String, Option<u16>> {
+) -> Result<String, HttpFail> {
     const MAX_BODY: u64 = 16 * 1024 * 1024;
     let mut builder = ureq::AgentBuilder::new().timeout(deadline);
     if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"]
@@ -3388,12 +3417,12 @@ fn http_call(
     // the network, so MLANG_HTTP_DEBUG puts it on stderr, which is outside
     // the frame protocol and off unless asked for by name.
     let to_status = |e| match e {
-        ureq::Error::Status(code, _) => Some(code),
+        ureq::Error::Status(code, _) => HttpFail::Status(code),
         ureq::Error::Transport(t) => {
             if std::env::var("MLANG_HTTP_DEBUG").is_ok_and(|v| v != "0") {
                 eprintln!("⍆⍄ transport failure for {url}: {t}");
             }
-            None
+            HttpFail::Unreachable
         }
     };
     let response = match post {
@@ -3412,11 +3441,11 @@ fn http_call(
         .into_reader()
         .take(MAX_BODY + 1)
         .read_to_end(&mut body)
-        .map_err(|_| None)?;
+        .map_err(|_| HttpFail::Cut)?;
     if body.len() as u64 > MAX_BODY {
-        return Err(None);
+        return Err(HttpFail::TooBig);
     }
-    String::from_utf8(body).map_err(|_| None)
+    String::from_utf8(body).map_err(|_| HttpFail::NotText)
 }
 
 use num_traits::FromPrimitive;

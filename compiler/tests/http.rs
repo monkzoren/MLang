@@ -295,7 +295,13 @@ fn send_carries_its_headers_and_body_and_returns_the_answer() {
          ⟨⟨«X-Api-Key» «sk-test»⟩ ⟨«Content-Type» «application/json»⟩⟩ \
          «{{\"q\":\"hello\"}}»⟩⍄⍞\n"
     );
-    let dir = std::env::temp_dir().join("mlang-send-test");
+    // A path of its own: a fixed one is shared with every other run of this
+    // suite on the machine, and two of them racing on the same file fails in
+    // a way that says nothing about HTTP.
+    let dir = std::env::temp_dir().join(format!(
+        "mlang-send-{}-{port}",
+        std::process::id()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("send.ml");
     std::fs::write(&path, src).unwrap();
@@ -313,8 +319,17 @@ fn send_carries_its_headers_and_body_and_returns_the_answer() {
     assert!(seen.starts_with("POST /v1/messages"), "{seen}");
     assert!(seen.contains("X-Api-Key: sk-test"), "{seen}");
     assert!(seen.contains("Content-Type: application/json"), "{seen}");
-    // and the response body comes back to the program
-    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), r#"{"q":"hello"}"#);
+    // and the response body comes back to the program. On failure say what
+    // the program actually did: an empty stdout alone names no cause, which
+    // is how this test once failed unexplained.
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout).trim(),
+        r#"{"q":"hello"}"#,
+        "exit {:?}, stderr: {}",
+        out.status.code(),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 /// A header value that cannot go on the wire is a fault in the program, and
@@ -360,4 +375,62 @@ fn a_header_that_cannot_be_sent_is_named_not_blamed_on_the_network() {
         !e.contains("header «X»"),
         "a tab and a space are legal in a header value: {e}"
     );
+}
+
+/// Serve one response of raw bytes, then hang up.
+fn serve_raw(bytes: &'static [u8]) -> u16 {
+    use std::io::Write;
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    std::thread::spawn(move || {
+        if let Ok((mut sock, _)) = listener.accept() {
+            let mut junk = [0u8; 4096];
+            let _ = std::io::Read::read(&mut sock, &mut junk);
+            let _ = sock.write_all(bytes);
+        }
+    });
+    port
+}
+
+/// Run one flat-form line and return what it put on stderr.
+///
+/// Through the binary rather than in-process: the transport honours proxy
+/// variables, one set for outbound traffic would answer instead of the
+/// server under test, and unsetting them per-test is not possible inside a
+/// process running tests in parallel.
+fn err_of(src: &str) -> String {
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_mlang"))
+        .args(["eval", src])
+        .env_remove("HTTP_PROXY").env_remove("http_proxy")
+        .env_remove("HTTPS_PROXY").env_remove("https_proxy")
+        .output()
+        .unwrap();
+    String::from_utf8_lossy(&out.stderr).to_string()
+}
+
+/// A response that arrives and is unusable is not the same as no response.
+///
+/// These four failures shared one message — "cannot reach" — for long enough
+/// to cost a real afternoon: a deployed grid was reported as having no
+/// network, while the far end was answering perfectly well. Only one of them
+/// is about reaching anything.
+#[test]
+fn each_way_an_http_call_fails_says_which() {
+    // Promises 100 bytes, sends 5, hangs up: answered, then stopped.
+    let cut = serve_raw(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n12345");
+    let e = err_of(&format!("«http://127.0.0.1:{cut}/»⍆⌫"));
+    assert!(e.contains("answered, then stopped sending"), "{e}");
+
+    // A body that is not text — gzip, an image, anything binary.
+    let bin = serve_raw(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n\x1f\x8b\xff\xfe");
+    let e = err_of(&format!("«http://127.0.0.1:{bin}/»⍆⌫"));
+    assert!(e.contains("not text"), "{e}");
+
+    // And a status still reads as a status, on both ops.
+    let s404 = serve_raw(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+    let e = err_of(&format!("«http://127.0.0.1:{s404}/»⍆⌫"));
+    assert!(e.contains("answered 404"), "{e}");
+    let s404 = serve_raw(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+    let e = err_of(&format!("⟨«http://127.0.0.1:{s404}/» ⟨⟩ «x»⟩⍄⌫"));
+    assert!(e.contains("answered 404"), "{e}");
 }
