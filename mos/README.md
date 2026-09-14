@@ -117,9 +117,11 @@ the same stream as sensation (SPEC §4.7: a patch is a `⟡` frame).
 |---|---|---|
 | **M1** | the grid drives the world; an episode records and replays byte-exact; the wiring diagram is computable | **done** |
 | **M2** | the structural repertoire — prove by hand that the loom can express every kind of growth | **done** |
-| **M3** | the replay gate as the pruning rule; retention curves from `/.loom/vN` | next |
+| **M3** | the gate as the pruning rule — what a version must survive to be kept | **done** |
 
 M1–M3 use no LLM at all. They are deterministic and cost nothing to run.
+They are finished. What they establish is below; where it leaves the
+machine is at the end.
 
 ### M2 — the structural repertoire
 
@@ -185,14 +187,89 @@ from outside — through `/.loom` and `topo.py` — which means the selection
 step of M3 is necessarily external. That is a real architectural limit of
 the substrate, not of the experiment.
 
+### M3 — the gate
+
+Growth without selection is bloat, so this is the selection. A candidate
+faces two tests, deliberately different in kind:
+
+* **The rollout** — a fresh episode in the world. The world is
+  deterministic, so this is exact and repeatable: no seeds, no averaging,
+  no judge model. A candidate must not lose score.
+* **The invariant corpus** — 336 single-frame goldens (28 reachable cells
+  × carrying or not × 6 jobs), each checked against a property that holds
+  whatever the policy is: never step into a wall, grip when standing on
+  the pickup, drop on the dropoff, answer inside the alphabet.
+
+**Why the two are split, and why byte-exact replay is not the gate.** A
+recorded episode is only valid for the policy that produced it. A better
+policy takes different actions, so the sensor frames that follow are no
+longer the ones it would meet — replaying a recorded stream against a
+changed policy is off-policy, and demanding byte-identity there would
+forbid every improvement. Byte-exact replay is the right tool for
+*reproducing* a run (M1, M2) and the wrong tool for *judging* a policy.
+So behaviour is judged by rollout, and only the invariants — single-step,
+and therefore order-free — are pinned exactly. This is the one place the
+plan as first written was wrong, and it is worth saying so: the gate of
+`docs/mOS.md` §4 works, but not by the mechanism that section assumes.
+
+The gate refuses three deliberately broken candidates for three different
+reasons:
+
+```
+REJECT bad-grip   score    0   breaks 12/336 invariants (won't grip, won't drop); score 1000 → 0
+REJECT bad-wall   score -199   breaks 117/336 invariants (walks into a wall); score 1000 → -199
+REJECT bloat      score 1100   +3 strands +6 channels; exits 1 (dangling: γ δ ε ζ η θ)
+```
+
+`bloat` is the one that matters for the thesis. It is *pure growth*: three
+new units, six new channels, behaviour untouched. Nothing about it is a
+bug — it simply earns nothing, and the gate prices it as what it is.
+
+**The gate overruled its author.** A fourth candidate was written to be
+bad — the axis preference pinned to vertical — and the gate shipped it:
+336/336 invariants clean, score 1100 → 1300. It was wrong to call it bad,
+so it is kept as `versions/v6.ml`. Being overruled by the rollout is the
+entire reason to have one. Judgement proposes; selection decides.
+
+### Where the machine stands
+
+| | score | |
+|---|---|---|
+| `os0.ml` | 1000 | the starting OS |
+| v1 | 1100 | one glyph rebound in `P`, on a running grid |
+| v2–v5 | 1100 | structure changes, behaviour held constant |
+| v6 | **1300** | the gate's own find |
+| shortest path, slip not modelled | 1300 | |
+| shortest path, slip exploited | **1500** | |
+
+The machine has reached the ceiling of what its senses can reach. The
+remaining 200 points are the slip tiles, and nothing in a sensor frame
+reveals a slip tile — it can only be inferred by noticing that a step
+moved two cells, which means remembering the step before. **The last of
+the headroom is exactly the part that cannot be reached by tuning what is
+there, only by growing something that is not.** That is the handoff to M4
+and M5, and it is a better setup than one that could be designed on
+purpose.
+
+### What M3 does not yet show
+
+The retention curve is mechanism, not result. `gate.py --retention` tracks
+which pathways formed at each version survive to later ones, but across a
+hand-written chain of six versions it has nothing interesting to say. A
+retention curve worth reading needs many generations of proposals, which
+is M5. The prediction it will test is stated at the top: pathway count
+should rise and then *fall* while score keeps improving.
+
 ## Files
 
 ```
 os0.ml      the starting OS: strand 0 is the body, strand 1 is the policy pump
-versions/   v1..v5, the five structural moves of M2, one file each
+versions/   v1..v5, the five structural moves of M2; v6, the gate's own find
+candidates/ deliberately broken versions, to check that the gate says no
 world.py    the gridworld, the driver, the recorder, the replay check
 topo.py     a version's wiring diagram; --diff shows what grew and what was pruned
 m2.py       weaves all five into one running grid and pins the session
+gate.py     the selection rule: rollout + 336 invariants, ship or reject
 corpus/     recorded episodes: the machine's own conformance suite
 ```
 
@@ -203,6 +280,7 @@ python3 mos/world.py --verify mos/corpus     # drive an episode, then prove it r
 python3 mos/topo.py mos/os0.ml               # the wiring diagram
 python3 mos/topo.py a.ml b.ml --diff         # what grew between two versions
 python3 mos/m2.py --record mos/corpus        # the five structural moves, on a running grid
+python3 mos/gate.py mos/candidates/*.ml      # the gate, refusing what should be refused
 ```
 
 ## Honest notes
