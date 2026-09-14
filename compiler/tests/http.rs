@@ -261,3 +261,57 @@ fn a_client_that_never_reads_does_not_stall_respond() {
     assert!(b.respond(id, 200, "text/plain", &"x".repeat(1 << 20)));
     assert!(started.elapsed() < Duration::from_secs(3));
 }
+
+// ── ⍄ : saying something first ────────────────────────────────────────
+
+/// A one-shot server that records what it was sent and answers with it.
+fn echo_once() -> (u16, std::sync::mpsc::Receiver<String>) {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let (mut sock, _) = listener.accept().unwrap();
+        let mut buf = vec![0u8; 8192];
+        let n = sock.read(&mut buf).unwrap();
+        let req = String::from_utf8_lossy(&buf[..n]).to_string();
+        let body = req.split("\r\n\r\n").nth(1).unwrap_or("").to_string();
+        tx.send(req).unwrap();
+        let out = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+            body.len(), body
+        );
+        sock.write_all(out.as_bytes()).unwrap();
+    });
+    (port, rx)
+}
+
+#[test]
+fn send_carries_its_headers_and_body_and_returns_the_answer() {
+    let (port, rx) = echo_once();
+    let src = format!(
+        "⇊\n⟨«http://127.0.0.1:{port}/v1/messages» \
+         ⟨⟨«X-Api-Key» «sk-test»⟩ ⟨«Content-Type» «application/json»⟩⟩ \
+         «{{\"q\":\"hello\"}}»⟩⍄⍞\n"
+    );
+    let dir = std::env::temp_dir().join("mlang-send-test");
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("send.ml");
+    std::fs::write(&path, src).unwrap();
+
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_mlang"))
+        .args(["run", path.to_str().unwrap()])
+        // the transport honours proxy variables, and one set for outbound
+        // traffic would answer this instead of the server under test
+        .env_remove("HTTP_PROXY").env_remove("http_proxy")
+        .env_remove("HTTPS_PROXY").env_remove("https_proxy")
+        .output()
+        .unwrap();
+
+    let seen = rx.recv_timeout(std::time::Duration::from_secs(10)).unwrap();
+    assert!(seen.starts_with("POST /v1/messages"), "{seen}");
+    assert!(seen.contains("X-Api-Key: sk-test"), "{seen}");
+    assert!(seen.contains("Content-Type: application/json"), "{seen}");
+    // and the response body comes back to the program
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), r#"{"q":"hello"}"#);
+}

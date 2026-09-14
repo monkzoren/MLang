@@ -3014,6 +3014,48 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 return glitch(format!("⍈ cannot write «{path}»"), pos);
             }
         }
+        // ⍄ — send something, and read what comes back. ⍆ can only ask for
+        // what is already there; a program that has to say something first —
+        // any API that takes a request body, which is most of them — needs
+        // this. The deadline is longer than ⍆'s because the things worth
+        // saying something to are slower than a file server, and it is still
+        // a deadline: this delivers or glitches, never hangs.
+        '⍄' => {
+            let v = s.pop(pos, "a ⟨url headers body⟩ request")?;
+            let bad = |what: &str| -> R<()> {
+                glitch(format!("⍄ expects ⟨url headers body⟩, {what}"), pos)
+            };
+            let Value::List(parts) = &v else {
+                return bad(&format!("got {}", type_name(&v)));
+            };
+            if parts.len() != 3 {
+                return bad(&format!("got {} parts", parts.len()));
+            }
+            let (Value::Str(url), Value::List(hs), Value::Str(body)) =
+                (&parts[0], &parts[1], &parts[2])
+            else {
+                return bad("and the parts must be a string, a list, and a string");
+            };
+            let mut headers: Vec<(String, String)> = Vec::new();
+            for h in hs.iter() {
+                let Value::List(kv) = h else {
+                    return bad("and each header must be ⟨name value⟩");
+                };
+                let [Value::Str(k), Value::Str(val)] = &kv[..] else {
+                    return bad("and each header must be ⟨name value⟩ of strings");
+                };
+                headers.push((k.to_string(), val.to_string()));
+            }
+            if !(url.starts_with("http://") || url.starts_with("https://")) {
+                return glitch(format!("⍄ cannot reach «{url}»"), pos);
+            }
+            match http_call(url, Some((&headers, body)), std::time::Duration::from_secs(60)) {
+                Ok(out) => s.push(Value::str(out)),
+                Err(Some(status)) => return glitch(format!("⍄ «{url}» answered {status}"), pos),
+                Err(None) => return glitch(format!("⍄ cannot reach «{url}»"), pos),
+            }
+        }
+
         // ── the loom, from the inside ──
         //
         // A grid could always be re-woven; until these two it could only be
@@ -3295,9 +3337,20 @@ fn clock_env() -> Option<i64> {
 /// environment variables; trust roots from the platform store (and
 /// SSL_CERT_FILE), so corporate middleboxes work without configuration.
 fn fetch_url(url: &str) -> Result<String, Option<u16>> {
-    const DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+    http_call(url, None, std::time::Duration::from_secs(10))
+}
+
+/// `⍆` and `⍄` over one transport: a GET when `post` is None, otherwise a
+/// POST carrying those headers and that body. Both carry a hard deadline —
+/// they deliver or glitch, never hang — and neither ever reports an
+/// operating-system error string, only the url and the HTTP status.
+fn http_call(
+    url: &str,
+    post: Option<(&[(String, String)], &str)>,
+    deadline: std::time::Duration,
+) -> Result<String, Option<u16>> {
     const MAX_BODY: u64 = 16 * 1024 * 1024;
-    let mut builder = ureq::AgentBuilder::new().timeout(DEADLINE);
+    let mut builder = ureq::AgentBuilder::new().timeout(deadline);
     if let Some(proxy) = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"]
         .iter()
         .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
@@ -3306,15 +3359,21 @@ fn fetch_url(url: &str) -> Result<String, Option<u16>> {
             builder = builder.proxy(p);
         }
     }
-    let response = builder
-        .build()
-        .get(url)
-        .set("User-Agent", "mlang/0.1")
-        .call()
-        .map_err(|e| match e {
-            ureq::Error::Status(code, _) => Some(code),
-            ureq::Error::Transport(_) => None,
-        })?;
+    let agent = builder.build();
+    let to_status = |e| match e {
+        ureq::Error::Status(code, _) => Some(code),
+        ureq::Error::Transport(_) => None,
+    };
+    let response = match post {
+        None => agent.get(url).set("User-Agent", "mlang/0.1").call().map_err(to_status)?,
+        Some((headers, body)) => {
+            let mut req = agent.post(url).set("User-Agent", "mlang/0.1");
+            for (k, v) in headers {
+                req = req.set(k, v);
+            }
+            req.send_string(body).map_err(to_status)?
+        }
+    };
     let mut body = Vec::new();
     use std::io::Read;
     response

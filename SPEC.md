@@ -511,6 +511,7 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍇` | `path → s` | read a whole file as a string; failure glitches `⍇ cannot read «path»` |
 | `⍈` | `s path →` | write string `s` to a file; failure glitches `⍈ cannot write «path»` |
 | `⍆` | `url → s` | HTTP(S) GET, the response body as a string (§5.2); failure glitches `⍆ cannot fetch «url»`, an error status glitches `⍆ «url» answered 404` |
+| `⍄` | `⟨url headers body⟩ → s` | HTTP(S) POST (§5.2): `headers` is a list of `⟨name value⟩`, `body` is sent unchanged, the response body is returned. Failure glitches `⍄ cannot reach «url»`, an error status `⍄ «url» answered 404` |
 | `⎆` | `→ ⟨id method path body⟩ \| ∅` | accept the next HTTP request this program is serving (§5.5); `∅` at end of input; lowest scheduling priority, like `⌨` |
 | `⍅` | `⟨id status type body⟩ →` | answer request `id` with an HTTP status, content type, and body (§5.5); an unknown or already-answered id glitches |
 | `⟐` | `→ s` | the program this grid is currently running, as text (§4.7) |
@@ -546,6 +547,12 @@ The clock is part of a run's input too: `⌚` answers the wall clock in
 Unix milliseconds, and the `MLANG_CLOCK` environment variable pins it
 to a fixed value for reproducible runs. The conformance corpus records
 every `⌚` at `922838400000` — the premiere of The Matrix.
+
+`⍄` carries a 60-second deadline rather than `⍆`'s ten: what is worth
+sending something to is generally slower than a file server. It is still a
+deadline — the operation delivers or glitches, and never hangs. Note what it
+grants that `⍆` does not: `⍆` can only ask for what is already published,
+while `⍄` sends whatever the program chooses to a host of its choosing.
 
 The network is part of a run's input the same way: identical responses
 produce identical runs. `⍆` carries a hard 10-second deadline — it
