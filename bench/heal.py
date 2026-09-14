@@ -171,8 +171,20 @@ def complete_anthropic(model, prompt):
 
 
 def complete_openai(model, prompt):
+    """Any endpoint that speaks OpenAI's /chat/completions.
+
+    OPENAI_BASE_URL points this somewhere else, which is how DeepSeek,
+    Together, Groq, OpenRouter, vLLM and Ollama are reached — they all serve
+    the same request and response shape. The variable name is the one the
+    official SDK uses, so an environment already set up for one of them
+    needs nothing added:
+
+        OPENAI_BASE_URL=https://api.deepseek.com OPENAI_API_KEY=... \
+          python3 bench/heal.py --provider openai --model deepseek-chat
+    """
+    base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     data = http_json(
-        "https://api.openai.com/v1/chat/completions",
+        base + "/chat/completions",
         {"authorization": "Bearer " + os.environ["OPENAI_API_KEY"]},
         {"model": model,
          "messages": [{"role": "user", "content": prompt}]})

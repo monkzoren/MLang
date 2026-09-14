@@ -104,7 +104,22 @@ python3 bench/report.py
 Providers for `heal.py`: `claude-cli` (headless `claude -p`, uses your
 Claude Code login), `anthropic` (`ANTHROPIC_API_KEY`), `openai`
 (`OPENAI_API_KEY`), or `cmd:<shell-command>` (prompt on stdin, completion
-on stdout — plug in anything). The `claude-cli` provider passes
+on stdout — plug in anything).
+
+`openai` is not only OpenAI. `OPENAI_BASE_URL` points it at any endpoint
+that speaks the same `/chat/completions` shape — DeepSeek, Together, Groq,
+OpenRouter, a local vLLM or Ollama:
+
+```sh
+OPENAI_BASE_URL=https://api.deepseek.com OPENAI_API_KEY=… \
+  python3 bench/heal.py --arm mlang --provider openai --model deepseek-chat
+```
+
+The variable name is the one the official SDK uses, so an environment
+already configured for one of them needs nothing added. Check the
+provider's own documentation for the exact base URL and model names —
+some want the `/v1` suffix and some do not. `cmd:` remains the way in for
+anything that does not speak that shape at all. The `claude-cli` provider passes
 `--tools ""` when the installed CLI advertises that flag (or denies the
 file and shell tools via `--disallowedTools` on an older CLI that only
 knows that one), so the model answers from the prompt alone and cannot
