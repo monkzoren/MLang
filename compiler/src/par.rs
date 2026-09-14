@@ -24,7 +24,7 @@ use crate::values::{fmt, fmt_i64, Instr, Pos, Value};
 use crate::vm::{run_burst, CompiledProgram, Status, Strand, VM};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{BufRead, Write};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
 /// A network tap on an exported channel: `mlang hub`/`mlang worker`
@@ -87,6 +87,15 @@ pub struct Bus {
     /// Channels bridged outward by net.rs: a send goes to the tap, not
     /// the local queue. Empty except under `mlang hub` / `mlang worker`.
     exports: HashMap<char, ExportTap>,
+    /// The grid's version store. Per-VM would give every thread its own
+    /// history and its own idea of what is running, so it lives here and
+    /// every strand patches the same one.
+    loom: Mutex<Option<Arc<crate::loom::Loom>>>,
+    /// Bumped whenever the loom rebinds a definition. Every VM caches
+    /// globals locally (they are single-assignment, so a cache is sound),
+    /// and the loom is the one thing that breaks that assumption — so the
+    /// cache is keyed on this and dropped when it moves.
+    global_gen: AtomicU64,
     /// Whether this grid is spread over machines — a hub exports channels
     /// and a worker imports them, and `--parallel` alone does neither. The
     /// loom refuses both, and needs to say which one it is looking at.
@@ -138,6 +147,46 @@ impl Bus {
         self.distributed
     }
 
+    /// The grid's source, as the program was started. `⟐` falls back to it
+    /// before the first patch, when there is no version store yet.
+    pub(crate) fn source_text(&self) -> String {
+        if self.source.is_empty() { String::new() } else { self.source.join("\n") + "\n" }
+    }
+
+    /// The shared version store, created on first use from the source above.
+    pub(crate) fn loom(&self) -> Arc<crate::loom::Loom> {
+        let mut slot = lock(&self.loom);
+        if let Some(l) = slot.as_ref() {
+            return l.clone();
+        }
+        let l = crate::loom::Loom::new(&self.source_text());
+        *slot = Some(l.clone());
+        l
+    }
+
+    pub(crate) fn global_gen(&self) -> u64 {
+        self.global_gen.load(Ordering::Acquire)
+    }
+
+    /// Rebind definitions on a running parallel grid, as one step: every
+    /// reader takes the same lock, so no strand can see half a patch. The
+    /// generation bump afterwards is what invalidates the per-VM caches.
+    pub(crate) fn rebind_globals(&self, changes: Vec<(char, Option<Value>)>) {
+        let mut st = lock(&self.state);
+        for (c, v) in changes {
+            match v {
+                Some(v) => {
+                    st.globals.insert(c, v);
+                }
+                None => {
+                    st.globals.remove(&c);
+                }
+            }
+        }
+        drop(st);
+        self.global_gen.fetch_add(1, Ordering::AcqRel);
+    }
+
     /// A Bus with network bridging: sends to an exported channel go to
     /// its tap, and imported channels stay deadlock-exempt until the
     /// wire delivers their ∅ (close_import).
@@ -153,6 +202,8 @@ impl Bus {
         let distributed = !exports.is_empty() || !imports.is_empty();
         Bus {
             distributed,
+            loom: Mutex::new(None),
+            global_gen: AtomicU64::new(0),
             state: Mutex::new(State {
                 chans: HashMap::new(),
                 globals: HashMap::new(),

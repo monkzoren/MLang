@@ -239,3 +239,66 @@ fn welded_binary_honors_mlang_par() {
     assert_eq!(seq.0, Some(0));
     assert_eq!(seq, par, "welded MLANG_PAR=1 output diverged");
 }
+
+// ── the loom on threads ───────────────────────────────────────────────
+//
+// A seam is a point in a deterministic schedule, and a strand running on
+// its own OS thread has none the runtime can observe. Definitions need no
+// seam — they are shared state, resolved at call time, and the bus rebinds
+// them all under one lock — so a patch that only rebinds definitions is hot
+// under --parallel as well. One that moves a strand is refused, and says so.
+
+/// Only the definition changes: the marker the program splits on is built
+/// at runtime, so the strand line does not contain it and stays put.
+const DEF_ONLY: &str = concat!(
+    "«alpha»≔G\n«al»«pha»⧺≔P\n«be»«ta»⧺≔Q\n⇊\n",
+    "1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/grow»=[⟐P⊆Q⊇⟡0@⍕][G]?⇒a",
+    " ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+);
+
+/// Replacing «one» everywhere rewrites the strand line too.
+const MOVES_A_STRAND: &str = concat!(
+    "«one»≔G\n⇊\n",
+    "1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/grow»=[⟐«one»⊆«two»⊇⟡0@⍕][G]?⇒a",
+    " ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+);
+
+const FRAMES: &str = "▷ GET /\n▷ GET /grow\n▷ GET /\n";
+
+fn body_lines(out: &str) -> Vec<String> {
+    out.lines().filter(|l| !l.starts_with('◁')).map(String::from).collect()
+}
+
+#[test]
+fn a_definition_rebind_is_hot_on_threads_too() {
+    let src = scratch("par-loom-def", DEF_ONLY);
+    let seq = run(&["run", &src], FRAMES, &[]);
+    let par = run(&["run", "--parallel", &src], FRAMES, &[]);
+    assert_eq!(seq.0, Some(0));
+    assert_eq!(par.0, Some(0));
+    // Identical either way: accepted, and the next answer comes from the new
+    // definition rather than the cached old one.
+    assert_eq!(body_lines(&seq.1), vec!["alpha", "200", "beta"]);
+    assert_eq!(body_lines(&par.1), vec!["alpha", "200", "beta"]);
+}
+
+#[test]
+fn moving_a_strand_is_refused_on_threads_and_the_grid_runs_on() {
+    let src = scratch("par-loom-strand", MOVES_A_STRAND);
+    let seq = run(&["run", &src], FRAMES, &[]);
+    let par = run(&["run", "--parallel", &src], FRAMES, &[]);
+    // The deterministic engine re-weaves the strand at its seam.
+    assert_eq!(body_lines(&seq.1), vec!["one", "200", "two"]);
+    // On threads it is refused, and nothing else changes: the grid keeps
+    // answering on the code it already had, and exits cleanly.
+    assert_eq!(body_lines(&par.1), vec!["one", "422", "one"]);
+    assert_eq!(par.0, Some(0));
+}
+
+fn scratch(name: &str, src: &str) -> String {
+    let dir = std::env::temp_dir().join("mlang-parallel-tests");
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join(format!("{name}.ml"));
+    std::fs::write(&path, src).unwrap();
+    path.to_string_lossy().into_owned()
+}

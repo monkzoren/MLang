@@ -355,14 +355,22 @@ takes a stamped file back (or `?base=N` for an unstamped one),
 `mlang loom` are those routes from the command line; `MLANG_LOOM=0`
 closes them.
 
-**The loom requires the deterministic scheduler.** A seam is a point in a
-deterministic schedule, and there is no such point when the strands are
-running at once, so anything that puts them on real threads is out of the
-loom's reach: under `--parallel`, and equally under `mlang hub` /
-`mlang worker` (§6.2), a patch is refused with 422 — an arriving one and
-`⟡` alike. The refusal names which of the two it is looking at, because
-the remedies differ: drop `--parallel`, or patch each machine's own
-program and restart it.
+**On threads.** A seam is a point in a deterministic schedule, and a strand
+running on its own OS thread has none the runtime can observe. Definitions
+need no seam: they are shared state, they resolve at call time, and the
+runtime rebinds them all under one lock, so no strand can observe half a
+patch. So under `--parallel` and under `mlang hub` / `mlang worker` (§6.2):
+
+* a patch that **only rebinds, adds or removes definitions** is applied,
+  exactly as it is under the deterministic scheduler, and reports the same;
+* a patch that **replaces, starts or retires a strand** is refused with 422,
+  naming which of the two schedulers it is looking at, because the remedies
+  differ — drop `--parallel`, or patch each machine's own program and
+  restart it.
+
+Both hold for `⟡` as much as for a patch arriving on `/.loom`. The version
+store is shared by every strand, so a grid on threads has one history and
+one current version, not one per thread.
 
 **A served grid never exits.** When every strand has finished, died,
 or deadlocked, a live program with its loom open holds its port: each

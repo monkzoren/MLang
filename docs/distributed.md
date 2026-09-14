@@ -125,12 +125,15 @@ to join — the hub is a server.
 
 Traded, and worth knowing before you design around it:
 
-* **A distributed grid cannot be re-woven while it runs.** The loom needs
-  the deterministic scheduler (SPEC §4.7) and a hub or worker runs its
-  strands on threads, so a patch — arriving on `/.loom` or raised from
-  inside with `⟡` — is refused with 422. Patch each machine's own program
-  and restart it. A single-process grid keeps hot patching; spreading it
-  over machines is the thing you give up to get it.
+* **A distributed grid can be re-bound but not re-shaped.** A hub or worker
+  runs its strands on threads, where there is no seam for the runtime to
+  re-weave one at (SPEC §4.7). Definitions need no seam, so a patch that
+  rebinds, adds or removes them — arriving on `/.loom` or raised from inside
+  with `⟡` — applies here exactly as it does under the deterministic
+  scheduler. A patch that replaces, starts or retires a strand is refused
+  with 422: patch each machine's own program and restart it. What you give
+  up by spreading a grid over machines is changing its shape while it runs,
+  not changing what it knows.
 
 Preserved, and covered by `compiler/tests/net.rs`:
 

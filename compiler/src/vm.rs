@@ -558,6 +558,8 @@ pub struct VM<'io> {
     /// Parallel-mode substrate. None = the deterministic sequential
     /// scheduler (the language default, pinned by the conformance corpus).
     pub bus: Option<Arc<crate::par::Bus>>,
+    /// The bus generation this VM's `globals` cache was filled at.
+    globals_gen: u64,
     /// Bytes pushed back by the ⌥ event parser (an ESC that turned out
     /// not to open a CSI sequence hands its follower back).
     pushback: VecDeque<u8>,
@@ -817,6 +819,7 @@ impl<'io> VM<'io> {
             err,
             args: Vec::new(),
             bus: None,
+            globals_gen: 0,
             pushback: VecDeque::new(),
             http: None,
             next_request_id: 1,
@@ -1020,6 +1023,17 @@ impl<'io> VM<'io> {
     /// Resolve a global, consulting the shared table in parallel mode.
     /// Globals are single-assignment, so caching a hit locally is sound.
     fn global_lookup(&mut self, c: char) -> Option<Value> {
+        // Globals are single-assignment, so caching one is sound — except
+        // that the loom rebinds them across versions, which is the one thing
+        // that breaks the assumption. Under a bus the cache is keyed on the
+        // bus's generation and dropped whole when a patch moves it.
+        if let Some(bus) = &self.bus {
+            let now = bus.global_gen();
+            if now != self.globals_gen {
+                self.globals.clear();
+                self.globals_gen = now;
+            }
+        }
         if let Some(v) = self.globals.get(&c) {
             return Some(v.clone());
         }
@@ -1405,23 +1419,12 @@ impl VM<'_> {
         text: &str,
         mut me: Option<&mut Strand>,
     ) -> Result<String, (u16, String)> {
-        // Anything that runs strands on real threads is out of the loom's
-        // reach: a seam is a point in a deterministic schedule, and there is
-        // no such point when the strands are running at once. `--parallel`
-        // and `mlang hub`/`mlang worker` both land here, and they have
-        // different remedies, so the refusal names the one it is looking at.
-        if let Some(bus) = &self.bus {
-            return Err((422, if bus.is_distributed() {
-                "✗ patch rejected: hot patching needs the deterministic scheduler, and a \
-                 distributed grid (mlang hub / mlang worker) runs its strands on threads — \
-                 patch each machine's own program and restart it\n".into()
-            } else {
-                "✗ patch rejected: hot patching needs the deterministic scheduler — drop --parallel\n".to_string()
-            }));
-        }
-        let loom = match &self.loom {
-            Some(l) => l.clone(),
-            None => {
+        let loom = match (&self.loom, &self.bus) {
+            // One store for the whole grid: a per-thread loom would give every
+            // strand its own history and its own idea of what is running.
+            (_, Some(bus)) => bus.loom(),
+            (Some(l), None) => l.clone(),
+            (None, None) => {
                 let text = self.sources.first().map(|l| l.join("\n") + "\n").unwrap_or_default();
                 let l = Loom::new(&text);
                 self.loom = Some(l.clone());
@@ -1464,12 +1467,26 @@ impl VM<'_> {
         // The boot section: literal definitions may change; code may not.
         let mut new_boot = program_boot(&prog.boot);
         offset_rows(&mut new_boot, off);
-        let old_shape = match self.boot_shape.take() {
-            Some(shape) => shape,
-            None => {
-                let boot_code = self.boot_code.clone();
-                self.shape_of(&boot_code)
+        // Under a bus each thread has its own VM, so a cached boot_shape is
+        // one thread's view and may be several versions behind. The loom's
+        // current version is what every thread shares, so start from that.
+        let old_prog = match &self.bus {
+            Some(_) => loom.text(cur).and_then(|t| compile_text(&t).ok()),
+            None => None,
+        };
+        let old_shape = match &old_prog {
+            Some(p) => {
+                let mut b = program_boot(&p.boot);
+                offset_rows(&mut b, cur as u32 * ROW_STRIDE);
+                self.shape_of(&b)
             }
+            None => match self.boot_shape.take() {
+                Some(shape) => shape,
+                None => {
+                    let boot_code = self.boot_code.clone();
+                    self.shape_of(&boot_code)
+                }
+            },
         };
         let new_shape = self.shape_of(&new_boot);
         if !loom::instrs_eq(&old_shape.code, &new_shape.code) {
@@ -1517,6 +1534,65 @@ impl VM<'_> {
             if !new_shape.defs.iter().any(|(n, _, _)| n == c) {
                 removed.push(*c);
             }
+        }
+
+        // ── strands on their own threads ──
+        //
+        // A seam is a point in a deterministic schedule, and a strand running
+        // on an OS thread has none the runtime can observe. Definitions need
+        // no seam: they are shared state, they resolve at call time, and the
+        // bus rebinds them all under one lock, so no strand can see half a
+        // patch. A patch that only rebinds definitions is therefore hot under
+        // --parallel and under mlang hub/worker as well; one that moves a
+        // strand is not, and says so.
+        if let Some(bus) = self.bus.clone() {
+            let strands_unchanged = match &old_prog {
+                Some(o) => {
+                    o.strands.len() == prog.strands.len()
+                        && o.strands
+                            .iter()
+                            .zip(prog.strands.iter())
+                            .all(|((_, a), (_, b))| loom::instrs_eq(a, b))
+                }
+                None => false,
+            };
+            if !strands_unchanged {
+                let where_ = if bus.is_distributed() {
+                    "a distributed grid (mlang hub / mlang worker) runs its strands on \
+                     threads; patch each machine's own program and restart it"
+                } else {
+                    "--parallel runs strands on their own threads; drop it to move a strand"
+                };
+                return Err((422, format!(
+                    "✗ patch rejected: this patch moves a strand, and {where_}. \
+                     Definition rebinds are hot here; strands are not.\n"
+                )));
+            }
+            let mut changes: Vec<(char, Option<Value>)> = Vec::new();
+            for c in rebound.iter().chain(added.iter()) {
+                if let Some((_, v, _)) = new_shape.defs.iter().find(|(d, _, _)| d == c) {
+                    changes.push((*c, Some(v.clone())));
+                }
+            }
+            for c in &removed {
+                changes.push((*c, None));
+            }
+            bus.rebind_globals(changes);
+            let sigils = |v: &[char]| v.iter().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
+            let mut parts = Vec::new();
+            if !rebound.is_empty() {
+                parts.push(format!("{} rebound ({})", plural(rebound.len(), "definition"), sigils(&rebound)));
+            }
+            if !added.is_empty() {
+                parts.push(format!("{} added ({})", plural(added.len(), "definition"), sigils(&added)));
+            }
+            if !removed.is_empty() {
+                parts.push(format!("{} removed ({})", plural(removed.len(), "definition"), sigils(&removed)));
+            }
+            let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
+            let report = format!("⟡ v{version}: {note}\n");
+            loom.push(merged, note);
+            return Ok(report);
         }
 
         // The strands: match the live slots against the patched grid.
@@ -2875,9 +2951,13 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         // and its input, so a replayed run produces the same versions in the
         // same order without the patches having to travel in the stream.
         '⟐' => {
-            let text = match &vm.loom {
-                Some(l) => l.text(l.current()).unwrap_or_default(),
-                None => vm.sources.first().map(|l| l.join("\n") + "\n").unwrap_or_default(),
+            let text = match (&vm.loom, &vm.bus) {
+                (_, Some(bus)) => {
+                    let l = bus.loom();
+                    l.text(l.current()).unwrap_or_else(|| bus.source_text())
+                }
+                (Some(l), None) => l.text(l.current()).unwrap_or_default(),
+                (None, None) => vm.sources.first().map(|l| l.join("\n") + "\n").unwrap_or_default(),
             };
             s.push(Value::str(text));
         }
