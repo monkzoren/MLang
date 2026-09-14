@@ -147,27 +147,63 @@ class World:
                 % (self.ticks, self.delivered, self.bumps, self.bad, self.slips, self.score()))
 
 
-def read_response(out):
+def read_frame(out):
+    """Read one frame off the grid's stdout.
+
+    Two kinds arrive on the same stream, which is the point: an action
+    (`◁ id status type nbytes`, the body, a newline) and the loom's verdict
+    on a patch (`⟡ status nbytes`, the report). Sensation and plasticity
+    share a channel.
+    """
     line = out.readline()
     if not line:
-        return None
+        return None, None
     parts = line.decode().split()
+    if parts and parts[0] == "⟡":                      # a patch verdict
+        n = int(parts[2])
+        return "patch", (int(parts[1]), out.read(n).decode())
     if len(parts) < 5 or parts[0] != "◁":
         raise SystemExit("bad response frame: %r" % line)
     n = int(parts[4])
     body = out.read(n)
-    out.read(1)                      # the newline after the body
-    return body.decode()
+    out.read(1)                                        # the newline after the body
+    return "act", body.decode()
 
 
-def episode(program, ticks, slip=True, record=None):
-    """Drive `program` through one episode, returning (world, frames, stdout)."""
+def read_response(out):
+    kind, v = read_frame(out)
+    return None if kind is None else v
+
+
+def episode(program, ticks, slip=True, record=None, patches=()):
+    """Drive `program` through one episode.
+
+    `patches` is a sequence of (tick, path): just before that tick the whole
+    file at `path` is woven into the running grid as a \u27e1 frame, stamped with
+    the version it was written against. The grid is never stopped.
+    """
     p = subprocess.Popen([MLANG, "run", program], stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     w = World(slip=slip)
     frames = bytearray()
+    pending = {t: path for t, path in patches}
+    base = 0
+    w.versions = []
     try:
-        for _ in range(ticks):
+        for t in range(ticks):
+            if t in pending:
+                src = open(pending[t], "rb").read()
+                frame = b"\xe2\x9f\xa1 %d %d\n%s" % (base, len(src), src)
+                frames += frame
+                p.stdin.write(frame)
+                p.stdin.flush()
+                kind, v = read_frame(p.stdout)
+                if kind != "patch":
+                    raise SystemExit("expected a patch verdict, got %r" % (v,))
+                status, report = v
+                w.versions.append((t, status, report.strip()))
+                if status == 200:
+                    base += 1
             body = w.sense().encode()
             frame = b"\xe2\x96\xb7 POST /tick %d\n%s\n" % (len(body), body)
             frames += frame

@@ -116,43 +116,83 @@ the same stream as sensation (SPEC §4.7: a patch is a `⟡` frame).
 | | | status |
 |---|---|---|
 | **M1** | the grid drives the world; an episode records and replays byte-exact; the wiring diagram is computable | **done** |
-| **M2** | the structural repertoire — prove by hand that the loom can express every kind of growth | next |
-| **M3** | the replay gate as the pruning rule; retention curves from `/.loom/vN` | |
+| **M2** | the structural repertoire — prove by hand that the loom can express every kind of growth | **done** |
+| **M3** | the replay gate as the pruning rule; retention curves from `/.loom/vN` | next |
 
 M1–M3 use no LLM at all. They are deterministic and cost nothing to run.
 
 ### M2 — the structural repertoire
 
-The open question is not whether a model can propose growth, but whether
-the substrate can *express* it. Each row gets one conformance-pinned case,
-written by hand, before any model is asked to produce one:
+The open question was not whether a model can propose growth, but whether
+the substrate can *express* it. Five patches, written by hand, woven into
+one running grid in one episode, without stopping it (`python3 mos/m2.py`):
 
-| | change | |
+| | change | what the loom reported |
 |---|---|---|
-| v1 | rebind a definition | known-good (`docs/loom.md` §1) |
-| v2 | add a strand | spec'd, unverified |
-| v3 | **add a channel between two existing strands** | the interesting one |
-| v4 | retire a strand (prune) | spec'd, unverified |
-| v5 | hoist shared code into a definition two strands call | the "shared weight" move |
+| v1 | rebind a definition | `1 definition rebound (P)` |
+| v2 | add a strand | `1 strand started` |
+| v3 | form the pathway | `2 strands replaced`, each at its own seam |
+| v4 | retire a strand | `2 strands replaced, 1 strand retired` |
+| v5 | hoist shared substructure | `1 definition rebound, 1 definition added, 1 strand replaced` |
 
-Two unknowns worth naming, both surfacing here:
+All five applied. The whole session — the machine living, being
+restructured five times, and living on — is one deterministic byte stream
+that replays byte-identical offline (`corpus/m2.frames`, `corpus/m2.out`).
 
-* **What does `≣` read after growth?** §4.1 calls it the count of main
-  strands; §4.7 says started strands get a fresh id and "`≣` and existing
-  ids are unchanged". Either a bug or a deliberate stability guarantee.
-* **Asymmetric seams when a channel is born.** v3 edits two strand lines,
-  and each takes the patch at *its own* seam. If the sender is re-woven
-  first, it sends into a channel nobody reads yet — but sends never block
-  and channels are unbounded, so the values should queue until the
-  receiver arrives. If that holds, a **half-grown pathway buffers instead
-  of breaking**, which is worth proving rather than assuming.
+**Behaviour and structure move independently.** v1 changes what flows
+through the grid without touching its shape (score 1000 → 1100, which is
+the proof that a hot rebind reaches a strand already running). v2–v5 then
+change the shape while holding behaviour at 1100:
+
+```
+os0 → v1   no structural change                    2 strands, 2 channels, 2 pathways
+v1  → v2   strands +1; channels formed: γ δ        3 strands, 4 channels, 2 pathways  ⚠ γ δ dangling
+v2  → v3   channels pruned: α                      3 strands, 3 channels, 3 pathways
+v3  → v4   strands −1; channels pruned: γ δ        2 strands, 2 channels, 2 pathways
+v4  → v5   definitions added: T (fan-in 2)         2 strands, 2 channels, 2 pathways
+```
+
+### What M2 settled
+
+**A dangling pathway is inert while the machine lives, and named the moment
+it stops.** v2 adds a unit whose channels have no partner. It costs nothing
+during the episode — same score — and at shutdown the runtime proves the
+deadlock and names both channels itself:
+
+```
+⚠ channel γ is received at 1 site and never sent to — check for a misspelled channel name
+⚠ channel δ is sent to at 1 site and never received — check for a misspelled channel name
+```
+
+which is the same census `topo.py` computes statically. Incomplete
+structure is impossible to ignore here.
+
+**A half-grown pathway buffers instead of breaking.** Three values were
+sent into a channel with no reader at all; a reader strand was then grown;
+all three arrived, in order, along with everything after. Sends never block
+and channels are unbounded, so **the axon may arrive before the dendrite**
+and nothing in flight is lost. This is what makes the two-step — grow the
+unit, then form the connection — safe to do on a machine that is running.
+
+**`≣` does not track growth, by design.** It read `1` before and after a
+strand was started. §4.7 is explicit that a started strand leaves `≣` and
+existing ids unchanged, so this is a stability guarantee rather than a bug:
+code that indexes by strand id keeps working across growth. The
+consequence is worth stating plainly, because it constrains everything
+above: **the grid cannot perceive its own topology from inside.** A machine
+here can grow and cannot know that it grew. Structure is observable only
+from outside — through `/.loom` and `topo.py` — which means the selection
+step of M3 is necessarily external. That is a real architectural limit of
+the substrate, not of the experiment.
 
 ## Files
 
 ```
 os0.ml      the starting OS: strand 0 is the body, strand 1 is the policy pump
+versions/   v1..v5, the five structural moves of M2, one file each
 world.py    the gridworld, the driver, the recorder, the replay check
 topo.py     a version's wiring diagram; --diff shows what grew and what was pruned
+m2.py       weaves all five into one running grid and pins the session
 corpus/     recorded episodes: the machine's own conformance suite
 ```
 
@@ -162,6 +202,7 @@ corpus/     recorded episodes: the machine's own conformance suite
 python3 mos/world.py --verify mos/corpus     # drive an episode, then prove it replays
 python3 mos/topo.py mos/os0.ml               # the wiring diagram
 python3 mos/topo.py a.ml b.ml --diff         # what grew between two versions
+python3 mos/m2.py --record mos/corpus        # the five structural moves, on a running grid
 ```
 
 ## Honest notes
