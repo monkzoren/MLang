@@ -17,7 +17,12 @@ RUN cargo build --release --no-default-features --manifest-path compiler/Cargo.t
 # Pinned to the same Debian release as the builder: the binary is linked
 # against the builder's glibc and has to run on the runtime's.
 FROM debian:bookworm-slim
-RUN useradd -m grid && mkdir -p /data && chown grid:grid /data
+# ca-certificates: ⍄ speaks TLS through rustls with the *platform* trust
+# store, and debian-slim ships none. Without this the learner's call to the
+# model fails the handshake and the bot silently never learns anything.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && useradd -m grid && mkdir -p /data && chown grid:grid /data
 COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
 COPY chat/chat.ml /app/chat.ml
 USER grid
@@ -31,4 +36,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
   CMD env -u HTTP_PROXY -u http_proxy mlang eval '«http://127.0.0.1:8080/»⍆⌫'
 # The one line here that is not MLang: seed the volume on first boot, because
 # /data is mounted over whatever the image put there.
-CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; exec mlang serve /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml"]
+# Two things this start line has to get right, both measured in chat/README.md:
+#   --parallel  the learner blocks for the whole model call. On one thread that
+#               stalls every other conversation for ~6 s; on threads, 1 ms.
+#   the key     passed as ⌂2@, and only when it is set: with no key the learner
+#               is inert by construction rather than posting a keyless request.
+CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml; if [ -n \"$ANTHROPIC_API_KEY\" ]; then set -- \"$@\" \"$ANTHROPIC_API_KEY\"; fi; exec mlang \"$@\""]

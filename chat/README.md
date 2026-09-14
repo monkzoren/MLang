@@ -113,7 +113,10 @@ you do not publish a port on the host.
    certificate cannot be issued.
 5. **Persistent volume** at `/data`. Skip it and the bot forgets everything
    it was taught on every redeploy.
-6. **Environment** → `TEACH_TOKEN` = a long random string.
+6. **Environment** → `TEACH_TOKEN` = a long random string. Optionally
+   `ANTHROPIC_API_KEY` too: with it, the learner strand goes and finds out
+   what the bot doesn't know; without it the bot still answers everything it
+   has been taught and simply never learns on its own.
 
 The image is two stages: `rust:1-slim` builds the toolchain, and the runtime
 is `debian:stable-slim` carrying one ~4 MB binary and one `.ml` file. Even the
@@ -329,5 +332,6 @@ nobody judging them reproduces the ungated arm.
 
 * **A reply cannot contain `|`**, which is the field separator `POST /teach`
   splits on — such a body is refused as malformed.
-* **One scheduler.** The loom needs the deterministic one, so `--parallel` is
-  out. For a personal bot that costs nothing.
+* **Run it on threads.** `--parallel` is not optional here: the learner
+  blocks for the length of a model call, and on the deterministic scheduler
+  that stalls every other conversation with it. The loom works on either.
