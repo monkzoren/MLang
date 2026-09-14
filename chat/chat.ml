@@ -40,9 +40,19 @@
 [⇩⇒s R[⇒p s p0@∈]⌿⇒m m#0>[m0@1@][∅]?]≔A          ※ message → reply, ∅ when it does not know
 [L⊆«»⊇Y⊆«»⊇«⏎»⊆« »⊇]≔Z                          ※ scrub: a rule is one line, and holds no guillemets
 [⇒w⇒p « ⟨»L⧺p⧺Y⧺« »⧺L⧺w⧺Y⧺«⟩⏎»⧺M⧺⇒c ⟐M⊆c⊇⟡]≔W   ※ pattern reply → ⟨status report⟩
-⟨«https://api.anthropic.com/v1/messages» «claude-opus-5» «2023-06-01»⟩≔E   ※ where to ask
+※ Where to ask, and in whose dialect: ⟨url model version dialect⟩. Two wire
+※ formats are spoken. «openai» covers DeepSeek and everything else that
+※ copied that shape; «anthropic» covers Claude, which wants its own header,
+※ its own body and its own place to keep the answer. E is a definition, so
+※ a running bot can be re-pointed at another provider through the loom
+※ without a restart — the version field is unused by «openai».
+⟨«https://api.deepseek.com/chat/completions» «deepseek-flash» «» «openai»⟩≔E
+※ ⟨«https://api.anthropic.com/v1/messages» «claude-opus-5» «2023-06-01» «anthropic»⟩
 «Answer in one short plain sentence. No preamble, no markdown, no newlines.»≔I
-[⇒q ⌂#3<[∅][⟨E0@ ⟨⟨«x-api-key» ⌂2@⟩ ⟨«anthropic-version» E2@⟩ ⟨«content-type» «application/json»⟩⟩ ⟨⟨«model» E1@⟩ ⟨«max_tokens» 512⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩⒮⟩⇒b [b⍄⒥⟨«content» 0 «text»⟩⒫][⌫∅]⍥]?]≔K   ※ question → an answer, or ∅
+[⇒q ⌂#3<[∅][E3@«openai»=⇒o
+ o[⟨⟨«Authorization» «Bearer »⌂2@⧺⟩ ⟨«content-type» «application/json»⟩⟩][⟨⟨«x-api-key» ⌂2@⟩ ⟨«anthropic-version» E2@⟩ ⟨«content-type» «application/json»⟩⟩]?⇒x
+ o[⟨⟨«model» E1@⟩ ⟨«max_tokens» 512⟩ ⟨«messages» ⟨⟨⟨«role» «system»⟩ ⟨«content» I⟩⟩ ⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩][⟨⟨«model» E1@⟩ ⟨«max_tokens» 512⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩]?⒮⇒d
+ ⟨E0@ x d⟩⇒b [b⍄⒥ o[⟨«choices» 0 «message» «content»⟩][⟨«content» 0 «text»⟩]?⒫][⌫∅]⍥]?]≔K   ※ question → an answer, or ∅   ※ question → an answer, or ∅
 [«|»⊆⇒f ⌂#2<[«teaching is not configured here.⏎»][
   ⌂0@#0=[«teaching is not configured here.⏎»][   ※ an unset TEACH_TOKEN is not a blank one
    f#3≠[«expected token|pattern|reply⏎»][

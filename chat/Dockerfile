@@ -41,4 +41,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
 #               stalls every other conversation for ~6 s; on threads, 1 ms.
 #   the key     passed as ⌂2@, and only when it is set: with no key the learner
 #               is inert by construction rather than posting a keyless request.
-CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml; if [ -n \"$ANTHROPIC_API_KEY\" ]; then set -- \"$@\" \"$ANTHROPIC_API_KEY\"; fi; exec mlang \"$@\""]
+#               Which provider it belongs to is decided by E inside chat.ml,
+#               not here, so the variable is named after its job. The two
+#               older provider-specific names still work.
+CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml; K=\"${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-$ANTHROPIC_API_KEY}}\"; if [ -n \"$K\" ]; then set -- \"$@\" \"$K\"; fi; exec mlang \"$@\""]

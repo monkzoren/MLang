@@ -17,10 +17,11 @@ services:
       # Reaches the grid as ⌂0@, the token POST /teach must carry. Without
       # it the bot serves and refuses to learn, which is the safe default.
       TEACH_TOKEN: ${TEACH_TOKEN}
-      # ⌂2@, the key the learner strand asks the model with. Leave it unset
-      # and the bot still answers everything it knows — it just never goes
-      # and finds out what it doesn't.
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # ⌂2@, the key the learner strand asks the model with. Which provider
+      # that is comes from E in chat.ml, not from here. Leave it unset and the
+      # bot still answers everything it knows, says so plainly when it does
+      # not, and never talks to anything outside this server.
+      MODEL_API_KEY: ${MODEL_API_KEY:-}
     volumes:
       # The bot's memory. Without this a redeploy resets it to the seed.
       - grid-data:/data

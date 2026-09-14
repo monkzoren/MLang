@@ -113,10 +113,12 @@ you do not publish a port on the host.
    certificate cannot be issued.
 5. **Persistent volume** at `/data`. Skip it and the bot forgets everything
    it was taught on every redeploy.
-6. **Environment** → `TEACH_TOKEN` = a long random string. Optionally
-   `ANTHROPIC_API_KEY` too: with it, the learner strand goes and finds out
-   what the bot doesn't know; without it the bot still answers everything it
-   has been taught, says so plainly when it doesn't, and never talks to
+6. **Environment** → `TEACH_TOKEN` = a long random string you invent. It is
+   the password for `POST /teach` and has nothing to do with any model; it is
+   the whole thing standing between your bot and anyone who finds the URL.
+   Optionally `MODEL_API_KEY` too: with it, the learner strand goes and finds
+   out what the bot doesn't know; without it the bot still answers everything
+   it has been taught, says so plainly when it doesn't, and never talks to
    anything outside your server.
 
 The image is two stages: `rust:1-slim` builds the toolchain, and the runtime
@@ -222,8 +224,22 @@ the whole reason the two-strand split exists, and the whole reason the loom
 had to be made to work on threads: the learner patches the grid from its own
 thread while the body keeps answering.
 
-Where it asks is `E`, a definition — so the endpoint and the model are
-re-pointable through the loom on a running bot, without a restart.
+Where it asks is `E`, a definition — `⟨url model version dialect⟩` — so the
+provider is re-pointable through the loom on a running bot, without a
+restart. Two dialects are spoken, because the key alone is not enough: a
+provider is an endpoint, a header, a body shape and a place to look for the
+answer, and the two families disagree on all four.
+
+| `E3@` | endpoint | auth header | answer at |
+|---|---|---|---|
+| `«openai»` | `api.deepseek.com/chat/completions` | `Authorization: Bearer` | `choices[0].message.content` |
+| `«anthropic»` | `api.anthropic.com/v1/messages` | `x-api-key` + `anthropic-version` | `content[0].text` |
+
+The default is DeepSeek (`deepseek-flash` — note that `DeepSeek-V4.1-Flash`
+is the *version* name and will 400 if you send it as the model). The
+Anthropic line is in `chat.ml` directly above, commented out. `«openai»`
+is not only DeepSeek: it is the shape most providers copied, so a base URL
+and a model name are usually all a different one needs.
 
 ### The gate, and the absence of one
 
