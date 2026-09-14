@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
   && useradd -m grid && mkdir -p /data && chown grid:grid /data
 COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
 COPY chat/chat.ml /app/chat.ml
+COPY chat/boot.sh /usr/local/bin/boot
 USER grid
 # Reachable from off the machine — which is why the loom's HTTP routes stay
 # shut here (SPEC §5.5). The bot still re-weaves itself; nobody else can.
@@ -41,13 +42,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
   CMD env -u HTTP_PROXY -u http_proxy mlang eval "«http://127.0.0.1:$PORT/»⍆⌫"
 # The one line here that is not MLang: seed the volume on first boot, because
 # /data is mounted over whatever the image put there.
-# Two things this start line has to get right, both measured in chat/README.md:
-#   --parallel  the learner blocks for the whole model call. On one thread that
-#               stalls every other conversation for ~6 s; on threads, 1 ms.
-#   the key     passed as ⌂2@, and only when it is set: with no key the learner
-#               is inert by construction rather than posting a keyless request.
-#               The two older provider-specific names still work. MODEL_NAME,
-#               MODEL_URL, MODEL_DIALECT and MODEL_VERSION ride along with
-#               it; each is optional, and blank means "keep the default",
-#               so they are always passed and never have to be counted.
-CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml \"${PORT:-8080}\" \"$TEACH_TOKEN\" /data/chat.ml; K=\"${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-$ANTHROPIC_API_KEY}}\"; if [ -n \"$K\" ]; then set -- \"$@\" \"$K\" \"$MODEL_NAME\" \"$MODEL_URL\" \"$MODEL_DIALECT\" \"$MODEL_VERSION\"; fi; exec mlang \"$@\""]
+# /data outlives the image, and here the program is the memory — so a new
+# image cannot simply overwrite what the bot became, and must not be
+# ignored by it either. boot merges the two with the loom's own diff3.
+CMD ["/usr/local/bin/boot"]

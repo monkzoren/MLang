@@ -206,6 +206,7 @@ pub fn unstamp(text: &str) -> (Option<usize>, &str, &str) {
 
 // ── three-way merge ────────────────────────────────────────────────────
 
+#[derive(Debug)]
 pub struct Conflict {
     /// Where in `ours` the conflicting region starts (0-based line).
     pub at: usize,

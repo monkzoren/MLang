@@ -86,7 +86,10 @@ sigil  name          effect              description
 ⍄      send          ⟨url hs body⟩ ⍄ → s   HTTP(S) POST: hs is a list of ⟨name value⟩ headers, body is
                                          sent as-is, the response body comes back. A hard 60s deadline —
                                          it delivers or glitches, never hangs. ⍆ can only ask for what is
-                                         already there; this says something first
+                                         already there; this says something first.
+                                         Neither names an OS error — a run that did
+                                         could not replay elsewhere; MLANG_HTTP_DEBUG
+                                         puts the reason on stderr when you need it
 ⎆      accept        → ⟨id m path body⟩  the next HTTP request this program is serving, ∅ at end of input
                                          (lowest priority, like ⌨). Replay mode (default): ▷ frames on stdin;
                                          live mode (mlang serve / MLANG_PORT): a real listener

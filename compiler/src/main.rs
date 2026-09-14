@@ -246,6 +246,56 @@ fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     }
 }
 
+/// Three-way merge, the loom's own, over three files instead of a live grid.
+///
+/// A deployment has the same problem a patch does: the program in the new
+/// image and the program the bot became are both descended from a seed, and
+/// neither is simply right. `mlang merge base ours theirs` answers it with
+/// diff3 — the code the image brings and the lines the grid learned, or an
+/// account of what genuinely collides. Merged text goes to stdout, so it
+/// composes; the report goes to stderr.
+fn merge_files(base: &str, ours: &str, theirs: &str) -> ExitCode {
+    let (b, o, t) = match (read_source(base), read_source(ours), read_source(theirs)) {
+        (Ok(b), Ok(o), Ok(t)) => (b, o, t),
+        (b, o, t) => {
+            for e in [b, o, t].iter().filter_map(|r| r.as_ref().err()) {
+                eprintln!("✗ {e}");
+            }
+            return ExitCode::from(1);
+        }
+    };
+    let bl: Vec<&str> = b.lines().collect();
+    let ol: Vec<&str> = o.lines().collect();
+    let tl: Vec<&str> = t.lines().collect();
+    match mlang::loom::merge3(&bl, &ol, &tl) {
+        Ok(lines) => {
+            let text = lines.join("\n") + "\n";
+            // A merge that does not weave is not a merge worth writing: the
+            // caller is about to run this, and a broken program on the volume
+            // is a bot that never comes back up.
+            if let Err(e) = vm::compile_text(&text) {
+                eprintln!("✗ the merge does not weave — the volume keeps what it had:");
+                return weave_error(&text, &e);
+            }
+            print!("{text}");
+            ExitCode::SUCCESS
+        }
+        Err(conflicts) => {
+            eprintln!("✗ {} conflict(s) between {ours} and {theirs}:", conflicts.len());
+            for c in &conflicts {
+                eprintln!("  line {}:", c.at + 1);
+                for l in &c.ours {
+                    eprintln!("    ours   │ {l}");
+                }
+                for l in &c.theirs {
+                    eprintln!("    theirs │ {l}");
+                }
+            }
+            ExitCode::from(3)
+        }
+    }
+}
+
 /// MLANG_HOST chooses the interface `mlang serve` (and MLANG_PORT for a
 /// welded binary) listens on. The default is the loopback, as §5.5 says: a
 /// grid is not reachable from off the machine unless somebody says so.
@@ -483,6 +533,9 @@ usage:
                                   binary — without it, ⎆ replays request
                                   frames from stdin)
   mlang check <file|->            compile only; report weave errors
+  mlang merge <base> <ours> <theirs>   three-way merge (the loom's diff3)
+                                  of three files; merged program to stdout,
+                                  conflicts to stderr (exit 3)
   mlang pull <server>             print a served grid's live source, stamped
                                   with its version (server: URL, host:port,
                                   or a bare port on 127.0.0.1)
@@ -703,6 +756,7 @@ fn main() -> ExitCode {
         ("pull", 3) => pull(&args[2]),
         ("patch", n) if n >= 3 => patch(&args[2..]),
         ("loom", 3) => loom_log(&args[2]),
+        ("merge", 5) => merge_files(&args[2], &args[3], &args[4]),
         ("check", 3) => match read_source(&args[2]) {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {

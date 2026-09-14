@@ -3360,9 +3360,20 @@ fn http_call(
         }
     }
     let agent = builder.build();
+    // A transport failure — DNS, TLS, a refused connection — is deliberately
+    // not in the glitch: an operating-system error string differs between
+    // machines and would make a recorded run unreplayable elsewhere. It is
+    // also the only thing that tells you *why* a deployed grid cannot reach
+    // the network, so MLANG_HTTP_DEBUG puts it on stderr, which is outside
+    // the frame protocol and off unless asked for by name.
     let to_status = |e| match e {
         ureq::Error::Status(code, _) => Some(code),
-        ureq::Error::Transport(_) => None,
+        ureq::Error::Transport(t) => {
+            if std::env::var("MLANG_HTTP_DEBUG").is_ok_and(|v| v != "0") {
+                eprintln!("⍆⍄ transport failure for {url}: {t}");
+            }
+            None
+        }
     };
     let response = match post {
         None => agent.get(url).set("User-Agent", "mlang/0.1").call().map_err(to_status)?,

@@ -236,3 +236,46 @@ fn old_versions_keep_their_note_and_lose_their_source() {
     assert!(err.contains("no longer kept"), "{err}");
     assert!(err.contains("pull the live program"), "{err}");
 }
+
+/// The deployment's three-way merge: `mlang merge base ours theirs`.
+///
+/// A volume outlives the image it was seeded from, and here the program *is*
+/// the memory — so a redeploy has exactly the loom's question to answer. The
+/// code the image brings and the lines the grid learned must both survive, a
+/// genuine collision must be refused rather than guessed at, and a refusal
+/// must leave the grid running on what it had.
+#[test]
+fn merge_carries_lessons_across_a_new_image() {
+    let base = "⟨\n ⟨«hi» «Hello.»⟩\n⟩≔R\n«old»≔V\n⇊\nR⍕⍞\n";
+    // What the bot became: the seed, plus a rule it learned at runtime.
+    let ours = "⟨\n ⟨«hi» «Hello.»⟩\n ⟨«pangolin» «A scaly anteater.»⟩\n⟩≔R\n«old»≔V\n⇊\nR⍕⍞\n";
+    // What the new image brings: the same seed, with the code changed.
+    let theirs = "⟨\n ⟨«hi» «Hello.»⟩\n⟩≔R\n«new»≔V\n⇊\nR⍕⍞\n";
+
+    let merged = loom::merge3(
+        &base.lines().collect::<Vec<_>>(),
+        &ours.lines().collect::<Vec<_>>(),
+        &theirs.lines().collect::<Vec<_>>(),
+    )
+    .expect("a lesson and a code change do not collide")
+    .join("\n");
+    assert!(merged.contains("pangolin"), "the lesson must survive: {merged}");
+    assert!(merged.contains("«new»≔V"), "the new code must land: {merged}");
+    assert!(!merged.contains("«old»≔V"), "the old code must go: {merged}");
+    // And what comes out has to run — the container is about to serve it.
+    vm::compile_text(&(merged + "\n")).expect("the merge weaves");
+
+    // Both sides rewriting the same line is a real conflict, and is reported
+    // rather than resolved: boot then keeps the volume exactly as it was.
+    let ours2 = base.replace("«Hello.»", "«Hi there.»");
+    let theirs2 = base.replace("«Hello.»", "«Greetings.»");
+    let conflicts = loom::merge3(
+        &base.lines().collect::<Vec<_>>(),
+        &ours2.lines().collect::<Vec<_>>(),
+        &theirs2.lines().collect::<Vec<_>>(),
+    )
+    .expect_err("two rewrites of one line collide");
+    assert_eq!(conflicts.len(), 1);
+    assert!(conflicts[0].ours[0].contains("Hi there."));
+    assert!(conflicts[0].theirs[0].contains("Greetings."));
+}

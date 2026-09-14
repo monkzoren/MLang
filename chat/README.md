@@ -116,6 +116,22 @@ you do not publish a port on the host.
    certificate cannot be issued.
 5. **Persistent volume** at `/data`. Skip it and the bot forgets everything
    it was taught on every redeploy.
+
+   The volume holds two files, and the second one is the point. `chat.ml` is
+   what the bot has become; `seed.ml` is the image's program as it stood when
+   that began. Because a lesson here is *a line of source*, persisting what
+   the bot learned necessarily persists the code it learned in — so seeding
+   only when the file is absent, which is the obvious thing to write, pins
+   the bot to whatever version first landed on the volume and silently
+   ignores every image after it.
+
+   When a new image brings a different seed, those three files are exactly a
+   three-way merge, and the loom already knows how to do that: `mlang merge
+   base ours theirs` is the same `diff3` a patch goes through. New code
+   lands, learned rules survive, and a genuine collision is reported rather
+   than guessed at — in which case the volume is left exactly as it was and
+   `seed.ml` is not advanced, so the next boot tries again. A bot still
+   answering on slightly old code beats a bot that does not come up.
 6. **Environment** → `TEACH_TOKEN` = a long random string you invent. It is
    the password for `POST /teach` and has nothing to do with any model; it is
    the whole thing standing between your bot and anyone who finds the URL.
@@ -127,6 +143,7 @@ you do not publish a port on the host.
    | variable | default | |
    |---|---|---|
    | `PORT` | `8080` | the grid, the healthcheck and the proxy all follow it |
+   | `MLANG_HTTP_DEBUG` | unset | put the reason `⍆`/`⍄` could not connect on stderr |
    | `TEACH_TOKEN` | — | the password for `POST /teach`. Not a model key |
    | `MODEL_API_KEY` | — | unset ⇒ the learner is inert, by design |
    | `MODEL_NAME` | `deepseek-flash` | |
@@ -163,7 +180,9 @@ What still needs care:
   (`localStorage`) — the trade that makes teaching from a phone practical.
   Use a private device, or teach with `curl`.
 * **No rate limiting.** If the URL leaks somewhere noisy, put Coolify's proxy
-  authentication or a Cloudflare Access policy in front.
+  authentication or a Cloudflare Access policy in front. With a model key set
+  this is also a bill: every question the bot does not recognise is one API
+  call, and every answer is a new rule welded into the program.
 
 ## Is it *entirely* MLang?
 

@@ -393,6 +393,13 @@ live program and reapply. Nothing the program *knows* is lost when a version
 is dropped — that lives in the current source; only the record of what it used
 to be is bounded.
 
+A transport failure — DNS, TLS, a refused connection — never reaches the
+program: `⍆` and `⍄` glitch with the url alone, because an operating-system
+error string differs between machines and a run that names one cannot be
+replayed elsewhere. It is also the only thing that says *why* a deployed
+grid cannot reach the network, so `MLANG_HTTP_DEBUG` puts it on stderr,
+which is outside the frame protocol and silent unless asked for by name.
+
 **A served grid never exits.** When every strand has finished, died,
 or deadlocked, a live program with its loom open holds its port: each
 request is answered 503 naming the dead strands, and the runtime waits
