@@ -196,3 +196,43 @@ fn shared_loom_arc_is_the_same_store() {
     assert_eq!(loom.current(), 1);
     assert_eq!(loom.text(1).as_deref(), Some("2⍞\n"));
 }
+
+// ── the retained window ───────────────────────────────────────────────
+//
+// A program that grows by a line per patch, kept once per patch, costs
+// memory quadratic in the number of patches. What a version *was* is only
+// needed to merge a patch written against it and to excerpt a fault in code
+// that came from it, and both are recent concerns — so only a window keeps
+// its source. The lineage itself is kept forever.
+
+#[test]
+fn old_versions_keep_their_note_and_lose_their_source() {
+    let dir = std::env::temp_dir().join("mlang-loom-keep");
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("keep.ml");
+    std::fs::write(&path, "«a»≔G\n⇊\nG⍞\n").unwrap();
+
+    // The window is read from the environment on every push, so setting it
+    // here is enough — no server needed to exercise the store itself.
+    unsafe { std::env::set_var("MLANG_LOOM_KEEP", "4") };
+    let loom = Loom::new("«a»≔G\n⇊\nG⍞\n");
+    for i in 1..=10 {
+        loom.push(format!("«a{i}»≔G\n⇊\nG⍞\n"), format!("v{i}"));
+    }
+    unsafe { std::env::remove_var("MLANG_LOOM_KEEP") };
+
+    assert_eq!(loom.current(), 10);
+    // The whole lineage is still readable, every version of it.
+    assert_eq!(loom.log().lines().count(), 11);
+    // The last four keep their source; everything before it does not.
+    for v in 7..=10 {
+        assert!(loom.text(v).is_some(), "v{v} should still be kept");
+    }
+    for v in 0..=6 {
+        assert!(loom.text(v).is_none(), "v{v} should have been dropped");
+    }
+    // And a patch written against one that is gone is told so, plainly.
+    let err = loom.merge(2, "«z»≔G\n⇊\nG⍞\n").unwrap_err();
+    assert!(err.contains("no longer kept"), "{err}");
+    assert!(err.contains("pull the live program"), "{err}");
+}

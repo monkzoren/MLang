@@ -40,7 +40,13 @@ use std::sync::{Arc, Mutex};
 pub const STAMP: &str = "※ loom v";
 
 pub struct Version {
-    pub text: String,
+    /// The whole program at this version, while it is still kept. Dropped
+    /// once the version falls out of the retained window: what a version
+    /// *was* is only needed to merge a patch written against it and to
+    /// excerpt a fault in code that came from it, and both are recent
+    /// concerns. The note below is kept for every version, forever, so the
+    /// lineage in `/.loom/log` stays complete.
+    pub text: Option<String>,
     pub note: String,
 }
 
@@ -56,11 +62,22 @@ pub struct Loom {
 
 const MAX_FAULTS: usize = 64;
 
+/// How many versions keep their source. The whole history would be
+/// quadratic in a program that grows by a line per patch — a grid rewritten
+/// a few thousand times spends hundreds of megabytes remembering what it
+/// used to be. `MLANG_LOOM_KEEP` changes it; 0 keeps everything.
+pub fn keep_versions() -> usize {
+    std::env::var("MLANG_LOOM_KEEP")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(64)
+}
+
 impl Loom {
     pub fn new(text: &str) -> Arc<Loom> {
         Arc::new(Loom {
             versions: Mutex::new(vec![Version {
-                text: text.to_string(),
+                text: Some(text.to_string()),
                 note: "as started".into(),
             }]),
             faults: Mutex::new(Vec::new()),
@@ -76,8 +93,9 @@ impl Loom {
         self.lock().len() - 1
     }
 
+    /// The program at version `v`, if that version is still kept.
     pub fn text(&self, v: usize) -> Option<String> {
-        self.lock().get(v).map(|x| x.text.clone())
+        self.lock().get(v).and_then(|x| x.text.clone())
     }
 
     /// One line per version: `v3  +1 definition, 1 strand replaced`.
@@ -106,7 +124,15 @@ impl Loom {
     /// Record an accepted patch; returns its version number.
     pub fn push(&self, text: String, note: String) -> usize {
         let mut vs = self.lock();
-        vs.push(Version { text, note });
+        vs.push(Version { text: Some(text), note });
+        let keep = keep_versions();
+        if keep > 0 && vs.len() > keep {
+            // Forget what the grid used to be, not that it was.
+            let cut = vs.len() - keep;
+            for v in vs.iter_mut().take(cut) {
+                v.text = None;
+            }
+        }
         vs.len() - 1
     }
 
@@ -123,8 +149,17 @@ impl Loom {
         if base == cur {
             return Ok(text.to_string());
         }
-        let base_lines: Vec<&str> = base_v.text.lines().collect();
-        let ours: Vec<&str> = vs[cur].text.lines().collect();
+        let Some(base_text) = base_v.text.as_deref() else {
+            return Err(format!(
+                "✗ patch rejected: v{base} is no longer kept (live version is v{cur}) \
+                 — pull the live program and reapply your change\n"
+            ));
+        };
+        let Some(cur_text) = vs[cur].text.as_deref() else {
+            return Err("✗ patch rejected: the live version is not available\n".into());
+        };
+        let base_lines: Vec<&str> = base_text.lines().collect();
+        let ours: Vec<&str> = cur_text.lines().collect();
         let theirs: Vec<&str> = text.lines().collect();
         match merge3(&base_lines, &ours, &theirs) {
             Ok(lines) => Ok(lines.join("\n") + "\n"),

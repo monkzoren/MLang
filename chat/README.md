@@ -136,21 +136,25 @@ capped at 64, versions are not — and time is not the limit either. Teaching
 A reply stays about a millisecond with 1600 rules, and a lesson lands in
 single-digit milliseconds. The source grows linearly, ~36 bytes a rule.
 
-**Memory is the limit, and it grows with the square of the lessons.** Every
-version is kept whole, twice over: once as text, so `GET /.loom/vN` can
-still answer, and once as lines, so a fault in code that arrived with
-version 3 can excerpt *version 3's* line. Both are the loom working as
-specified (§4.7). But a program that grows by a line per patch, kept once
-per patch, is quadratic — 190 MB at 1600 lessons, and something like
-2 GB by 5000.
+Memory used to be the limit and used to grow with the square of the lessons,
+because every version was kept whole. Only a window of recent versions keeps
+its source now (`MLANG_LOOM_KEEP`, default 64), which makes it linear:
 
-**A restart is the compaction, and it costs nothing.** The bot boots from
-the program it has become, which is the new `v0`: every rule is kept, the
-version history is dropped, and memory returns to a few megabytes. For a
-bot taught a handful of things a day this never comes up; if you are
-teaching it thousands, redeploy occasionally and it stays small. What you
-lose is the ability to read old versions back — the rules themselves are
-all in the source.
+| lessons | before | after |
+|---|---|---|
+| 400 | 21 MB | 10 MB |
+| 800 | 57 MB | 15 MB |
+| 1600 | 190 MB | **26 MB** |
+
+Nothing the bot *knows* is lost by that — its rules are in its current
+source. What is bounded is reading back what it used to be: `GET /.loom/log`
+still lists every version it has ever been, but `GET /.loom/vN` outside the
+window answers 404, and a patch written against a version that old is
+refused with a note to pull and reapply.
+
+**A restart still compacts it completely.** The bot boots from the program
+it has become, which is the new `v0`: every rule kept, the version log
+dropped, memory back to a few megabytes.
 
 One other ceiling: a patch arriving over HTTP is subject to the 16 MiB
 request-body cap (§5.5). `⟡` does not go through HTTP, so the bot teaching

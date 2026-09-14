@@ -380,6 +380,19 @@ different programs, so `⟡` and `/.loom` reach the grid on the machine they
 are addressed to and no other: there is no cross-machine version, no
 ordering between machines, and no coordination.
 
+**What is kept.** Every accepted version keeps its note, so `GET /.loom/log`
+shows the whole lineage for the life of the run. Only a window of recent
+versions keeps its *source*: a program that grows by a line per patch, stored
+once per patch, costs memory quadratic in the number of patches, and what a
+version was is only needed to merge a patch written against it or to excerpt
+a fault in code that came from it — both recent concerns. `MLANG_LOOM_KEEP`
+sets the window (default 64; 0 keeps everything). Outside it, `GET /.loom/vN`
+answers 404, a fault in that version's code reports its coordinates without an
+excerpt, and a patch written against it is refused with a note to pull the
+live program and reapply. Nothing the program *knows* is lost when a version
+is dropped — that lives in the current source; only the record of what it used
+to be is bounded.
+
 **A served grid never exits.** When every strand has finished, died,
 or deadlocked, a live program with its loom open holds its port: each
 request is answered 503 naming the dead strands, and the runtime waits

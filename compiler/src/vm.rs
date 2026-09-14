@@ -1664,7 +1664,21 @@ impl VM<'_> {
         let plan = loom::plan_strands(&old, &new_codes);
 
         // ── commit ──
+        // Source lines are kept for the same window the loom keeps texts
+        // for, and for the same reason: a fault in code from twenty versions
+        // ago excerpts that version's line, and nothing older ever will.
+        // This is the larger of the two copies — one String per line rather
+        // than one per version — so it is the one that matters.
         self.sources.push(merged_lines);
+        let keep = crate::loom::keep_versions();
+        if keep > 0 && self.sources.len() > keep {
+            let cut = self.sources.len() - keep;
+            for old in self.sources.iter_mut().take(cut) {
+                if !old.is_empty() {
+                    *old = Vec::new();
+                }
+            }
+        }
         for c in &removed {
             self.globals.remove(c);
         }
