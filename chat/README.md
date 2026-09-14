@@ -189,6 +189,55 @@ One other ceiling: a patch arriving over HTTP is subject to the 16 MiB
 request-body cap (§5.5). `⟡` does not go through HTTP, so the bot teaching
 itself is not subject to it.
 
+## Asking when it does not know
+
+The bot has two strands. The body serves; the **learner** waits on a channel:
+
+```
+body     ⎆ → dispatch → ⍅ ;  nothing matched → ↥λ the question
+learner  [↧λ … ⍄ the model … ⟡ weave the answer in …]⟳
+```
+
+Ask it something it has never heard and it answers *at once* — "I am finding
+out, ask me again shortly" — hands the question to the learner over `λ`, and
+goes back to talking. The learner asks the model with `⍄`, scrubs the answer,
+and weaves it in as a new rule. Ask again and it knows.
+
+```
+what is a pangolin   → I do not know that yet. I am finding out.      4 ms
+  (meanwhile)  hello → Hello. I am a grid…                            1 ms
+  (meanwhile)  hello → Hello. I am a grid…                            1 ms
+what is a pangolin   → (the answer, now woven in)                     1 ms
+```
+
+**Run it on threads or that table is a lie.** Under the deterministic
+scheduler every strand shares one thread, so the learner's blocking call
+stalls the grid: the same experiment shows the first "meanwhile" reply taking
+**6003 ms** — exactly the model's latency. On threads it takes 1 ms. This is
+the whole reason the two-strand split exists, and the whole reason the loom
+had to be made to work on threads: the learner patches the grid from its own
+thread while the body keeps answering.
+
+Where it asks is `E`, a definition — so the endpoint and the model are
+re-pointable through the loom on a running bot, without a restart.
+
+### The gate, and the absence of one
+
+The API key reaches the bot as `⌂2@`. **Without it the learner is inert** —
+that is the off switch, and the default.
+
+With it, the bot asks a model and writes the answer into itself with nobody
+judging the answer. Be clear-eyed about what that is: **the ungated arm of
+`mos/README.md` §M4**, the one that drifted, with text in place of strands.
+Two cheap gates, if you want one:
+
+* require confirmation — the learner replies but does not weave until a
+  person says so through `/teach`, which exists and already has a token;
+* keep answers from a model in their own block of the table, so they can be
+  pruned as a group and never shadow a rule a person wrote.
+
+Neither is built. What is built is the off switch.
+
 ## Information, knowledge, and skill
 
 It is worth being exact about what `/teach` does, because it is easy to

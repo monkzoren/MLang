@@ -34,7 +34,7 @@ out=$(run tok "$(frame /say hello)")
 check "answers a known pattern" "Hello. I am a grid" "$out"
 
 out=$(run tok "$(frame /say 'what is xyzzy')")
-check "falls back when it does not know" "I do not know that one yet" "$out"
+check "falls back when it does not know" "I am finding out" "$out"
 
 out=$(run tok "$(frame /teach 'tok|xyzzy|A magic word.')$(frame /say 'say xyzzy')")
 check "learns, and answers on the new rule" "A magic word." "$out"
@@ -57,5 +57,11 @@ check "refuses a malformed body" "expected token" "$out"
 # break the program changes nothing and the grid keeps answering.
 out=$(run tok "$(frame /teach 'tok|brace|a ] bracket')$(frame /say hello)")
 check "survives a rule that would not weave" "Hello. I am a grid" "$out"
+
+# The learner is a second strand. With no API key it must be inert — asking it
+# something unknown answers at once and the grid still exits cleanly.
+out=$(run tok "$(frame /say 'qwx zzt vurp')$(frame /say hello)")
+check "an unknown question does not stop the conversation" "Hello. I am a grid" "$out"
+check "and is answered immediately" "finding out" "$out"
 
 exit $fail
