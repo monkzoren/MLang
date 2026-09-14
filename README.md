@@ -778,7 +778,8 @@ conformance/      cases.json + expected.json: 199 recorded goldens (177 inline
                   ground truth (RECORD=1 to re-record)
 bench/            the self-repair benchmark — the conformance corpus doubles
                   as a labeled bug generator (see bench/README.md)
-docs/             loom.md (hot patching, walked through), the deadlock demo (animated SVG + the Python twin) and
+docs/             loom.md (hot patching, walked through), mOS.md (the grid as a learning machine's OS),
+                  the deadlock demo (animated SVG + the Python twin) and
                   distributed.md — the hub/worker design and its trade-offs
 examples/         runnable programs (mandelbrot, calc, editor, oracle, …)
 SPEC.md           the full language specification
