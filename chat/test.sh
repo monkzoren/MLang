@@ -34,7 +34,10 @@ out=$(run tok "$(frame /say hello)")
 check "answers a known pattern" "Hello. I am a grid" "$out"
 
 out=$(run tok "$(frame /say 'what is xyzzy')")
-check "falls back when it does not know" "I am finding out" "$out"
+# No key is passed here, so the learner cannot ask anyone — and the fallback
+# has to say that rather than promise an answer that will never come. With a
+# key configured the same path replies D ("I am finding out") instead.
+check "falls back when it does not know" "nobody has taught me" "$out"
 
 out=$(run tok "$(frame /teach 'tok|xyzzy|A magic word.')$(frame /say 'say xyzzy')")
 check "learns, and answers on the new rule" "A magic word." "$out"
@@ -62,6 +65,6 @@ check "survives a rule that would not weave" "Hello. I am a grid" "$out"
 # something unknown answers at once and the grid still exits cleanly.
 out=$(run tok "$(frame /say 'qwx zzt vurp')$(frame /say hello)")
 check "an unknown question does not stop the conversation" "Hello. I am a grid" "$out"
-check "and is answered immediately" "finding out" "$out"
+check "and is answered immediately" "nobody has taught me" "$out"
 
 exit $fail

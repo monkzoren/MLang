@@ -116,7 +116,8 @@ you do not publish a port on the host.
 6. **Environment** → `TEACH_TOKEN` = a long random string. Optionally
    `ANTHROPIC_API_KEY` too: with it, the learner strand goes and finds out
    what the bot doesn't know; without it the bot still answers everything it
-   has been taught and simply never learns on its own.
+   has been taught, says so plainly when it doesn't, and never talks to
+   anything outside your server.
 
 The image is two stages: `rust:1-slim` builds the toolchain, and the runtime
 is `debian:stable-slim` carrying one ~4 MB binary and one `.ml` file. Even the
