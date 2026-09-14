@@ -28,7 +28,6 @@ new one in (SPEC §4.7). So teaching is four steps, all of them MLang:
 « ⟨»L⧺p⧺Y⧺« »⧺L⧺w⧺Y⧺«⟩⏎»⧺M⧺⇒c      the new rule, as a line of me
 ⟐M⊆c⊇⇒n                             my source with it spliced in
 n⟡⇒v                                weave it — ⟨status report⟩ back
-v0@200=[[n⌂1@⍈][⌫]⍥][]?             and, if it took, remember it
 ```
 
 Two details are the whole trick. `L` and `Y` are `171⍘` and `187⍘`, because a
@@ -42,6 +41,36 @@ Everything the loom does to a patch arriving from outside it does to this
 one: the whole text is woven first, a text that does not weave is refused and
 **the running grid is untouched**, and the strand keeps its old code until its
 next seam. A bad lesson cannot half-land.
+
+## Remembering
+
+After every answer the bot compares what it *is* to what it last wrote down,
+and writes itself to `⌂1@` if they differ:
+
+```
+⌂#2≥[⟐∂[y][⌫«»]⍥≠[∂⌂1@⍈⇒y][⌫]?][]?
+```
+
+**That file is its memory.** A restart boots from what the bot has become,
+and that becomes the new `v0`.
+
+It checks after every request rather than only when taught, because a rule
+can arrive from another agent on `/.loom` and the bot is never told. Before
+this, every one of the 3,750 rules from the co-development storm went
+unpersisted.
+
+The local is read through `⍥` for a reason worth knowing before you patch
+anything: **a strand woven into a running grid resumes *inside* its outermost
+loop, so its prelude never runs again.** Initialising the bookkeeping local
+before the loop killed the strand with `undefined sigil` the moment the patch
+landed. `⟲` migrations exist for exactly that; `⍥` avoids needing one, by
+giving the local its first value where it is read.
+
+The other way to lose a grid is quieter. **A patch is a whole-file statement
+of intent.** Build one from a stale copy while stamping it with a recent
+base, and `diff3` reads it as deleting every line added since — one rule
+vanished that way, with no conflict and no error, because the loom did
+exactly what it was told. The stamp has to match the text you edited.
 
 ## Checking it
 
