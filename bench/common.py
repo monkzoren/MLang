@@ -79,10 +79,20 @@ def load_python_corpus():
     return corpus
 
 
+# The clock is part of a run's input (SPEC 5.2), and the conformance corpus
+# records every ⌚ at the premiere of The Matrix. The Rust harness pins it
+# when it records and checks; a benchmark that shells out must pin it too, or
+# every mutant of a ⌚ case is unhealable by construction — the model restores
+# the original source exactly and is still scored a failure, because the
+# golden was made with a pinned clock and the rerun reads the real one.
+PINNED_CLOCK = "922838400000"
+
+
 def run_program(argv, stdin_text, timeout=TIMEOUT, cwd=None):
     """Run a program, return {exit, stdout, stderr, hang}."""
+    env = dict(os.environ, MLANG_CLOCK=PINNED_CLOCK)
     try:
-        p = subprocess.run(argv, input=stdin_text.encode(),
+        p = subprocess.run(argv, input=stdin_text.encode(), env=env,
                            capture_output=True, timeout=timeout, cwd=cwd)
         return {"exit": p.returncode,
                 "stdout": p.stdout.decode("utf-8", "replace"),
