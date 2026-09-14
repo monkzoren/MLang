@@ -118,6 +118,8 @@ the same stream as sensation (SPEC §4.7: a patch is a `⟡` frame).
 | **M1** | the grid drives the world; an episode records and replays byte-exact; the wiring diagram is computable | **done** |
 | **M2** | the structural repertoire — prove by hand that the loom can express every kind of growth | **done** |
 | **M3** | the gate as the pruning rule — what a version must survive to be kept | **done** |
+| **M4** | variation and selection over that repertoire, many generations, no model | **done** |
+| **M5** | a model arm: not where structure goes, but what a new unit computes | next |
 
 M1–M3 use no LLM at all. They are deterministic and cost nothing to run.
 They are finished. What they establish is below; where it leaves the
@@ -260,6 +262,78 @@ retention curve worth reading needs many generations of proposals, which
 is M5. The prediction it will test is stated at the top: pathway count
 should rise and then *fall* while score keeps improving.
 
+### M4 — variation and selection, with no model
+
+M2 showed the loom can express five structural changes. M4 makes them an
+operator set — `grow` (append an unwired pump on two fresh channels),
+`splice` (wire an unwired pump into an existing pathway), `prune`, `tune` —
+and lets selection run over it. No model, so it is deterministic given a
+seed, costs nothing, and runs for many generations across many seeds.
+
+Fitness is the rollout score minus a **metabolic cost** of 8 per strand and
+per channel. Structure is not forbidden; it is charged for. Pruning is then
+something selection discovers rather than something the rule mandates,
+which is how brains do it: tissue is expensive.
+
+60 generations × 5 seeds, from `v5.ml` (score 1100):
+
+| arm | score | fitness | strands | channels | dangling | peak (s+c) | formed | retained |
+|---|---|---|---|---|---|---|---|---|
+| gated | **1300** | **1268** | 2.0 | 2.0 | **0.0** | 4.0 | 0.0 | — |
+| neutral | **1300** | 1242 | 3.6 | 3.6 | **0.0** | 8.2 | 3.2 | 81% |
+| ungated | 1180 | 969 | 10.6 | 15.8 | **10.4** | 27.6 | 15.8 | 94% |
+
+**Ungated self-modification degrades.** Three of five ungated seeds fell
+back to 1100 and every one of them accumulated pathways that go nowhere —
+10.4 dangling channels on average, against zero in both selected arms. The
+gated arms held 1300 in 5/5.
+
+**Strict selection cannot grow at all.** This is the finding that made the
+middle arm necessary. `grow` costs upkeep and earns nothing, so it is always
+refused — and `splice` can then never fire, because it needs an unwired unit
+to exist first. **The unit must arrive before its connections, and the unit
+alone never pays for itself.** The strict arm formed exactly zero pathways
+in 300 generations. Crossing that valley requires tolerating neutral
+intermediates, which is the whole reason neutral drift matters in evolution;
+the `neutral` arm allows a variant to carry unproven structural debt (32,
+enough for one `grow`) while it is still unproven.
+
+With that band open, growth happens **and stays wired**: the neutral arm
+forms 3.2 pathways per run, overproduces to a peak of 8.2 strands+channels,
+settles back to 7.2, and ends with **zero** dangling. Tolerating neutral
+variation bought innovation without buying junk, because the upkeep pressure
+still prunes whatever never gets connected.
+
+### Where the predictions stand
+
+The three curves the top of this file said could come out wrong:
+
+1. **Overproduction then pruning** — *weakly confirmed.* The neutral arm
+   peaks at 8.2 and settles at 7.2. Real, and smaller than the biology
+   would suggest. It is one operator set on one task; do not read more
+   into it than that.
+2. **Selection makes structure durable** — *the prediction was wrong as
+   stated, and the correction is the interesting part.* Raw retention does
+   not separate the arms the way it was supposed to: the ungated arm retains
+   **more** (94% vs 81%), because it never rejects anything. Retention only
+   means something where rejection is possible. The metric that actually
+   separates them is **what kind** of structure survives — dangling at the
+   end: 0.0 in both selected arms, 10.4 ungated.
+3. **Critical period** — not tested.
+
+### The ceiling M4 hit, and what it hands to M5
+
+No arm exceeded 1300. Growth never *paid*, and the reason is precise: a
+spliced `[]` pump is a **relay**. It adds topology, not function. Beating
+1300 needs a unit that notices a step moved two cells and remembers which
+tile did it, and no random structural operator will ever write one.
+
+So M4 draws the line cleanly: **selection can discover where structure
+goes; it cannot invent what structure does.** That is the case for a model
+arm, and it also says what the model's job actually is — not choosing the
+topology, which selection handles better, but writing the body of a unit
+that the operators can only create empty.
+
 ## Files
 
 ```
@@ -270,6 +344,7 @@ world.py    the gridworld, the driver, the recorder, the replay check
 topo.py     a version's wiring diagram; --diff shows what grew and what was pruned
 m2.py       weaves all five into one running grid and pins the session
 gate.py     the selection rule: rollout + 336 invariants, ship or reject
+evolve.py   M4: the five moves as operators, three arms, many generations
 corpus/     recorded episodes: the machine's own conformance suite
 ```
 
@@ -281,6 +356,7 @@ python3 mos/topo.py mos/os0.ml               # the wiring diagram
 python3 mos/topo.py a.ml b.ml --diff         # what grew between two versions
 python3 mos/m2.py --record mos/corpus        # the five structural moves, on a running grid
 python3 mos/gate.py mos/candidates/*.ml      # the gate, refusing what should be refused
+python3 mos/evolve.py --start mos/versions/v5.ml   # M4: drift vs ratchet, 3 arms
 ```
 
 ## Honest notes
