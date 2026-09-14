@@ -22,6 +22,12 @@ services:
       # bot still answers everything it knows, says so plainly when it does
       # not, and never talks to anything outside this server.
       MODEL_API_KEY: ${MODEL_API_KEY:-}
+      # Any of these that is blank keeps chat.ml's default, so setting the
+      # model alone does not mean restating the endpoint it belongs to.
+      MODEL_NAME: ${MODEL_NAME:-}
+      MODEL_URL: ${MODEL_URL:-}
+      MODEL_DIALECT: ${MODEL_DIALECT:-}
+      MODEL_VERSION: ${MODEL_VERSION:-}
     volumes:
       # The bot's memory. Without this a redeploy resets it to the seed.
       - grid-data:/data

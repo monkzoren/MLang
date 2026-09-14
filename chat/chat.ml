@@ -7,6 +7,10 @@
 ※   mlang serve chat.ml 8080 TOKEN /data/chat.ml
 ※      ⌂0@  the token POST /teach must carry
 ※      ⌂1@  where to save the program it becomes, so a restart remembers
+※      ⌂2@  the key the learner asks with; without it the learner is inert
+※      ⌂3@ ⌂4@ ⌂5@ ⌂6@  model, url, dialect, version — each falling back to G
+※                        when blank, so a deployment overrides one without
+※                        having to know the other three
 ※
 ※   GET  /        the chat page
 ※   POST /say     a message in, a reply out
@@ -46,8 +50,10 @@
 ※ its own body and its own place to keep the answer. E is a definition, so
 ※ a running bot can be re-pointed at another provider through the loom
 ※ without a restart — the version field is unused by «openai».
-⟨«https://api.deepseek.com/chat/completions» «deepseek-flash» «» «openai»⟩≔E
-※ ⟨«https://api.anthropic.com/v1/messages» «claude-opus-5» «2023-06-01» «anthropic»⟩
+⟨«https://api.deepseek.com/chat/completions» «deepseek-flash» «» «openai»⟩≔G
+※ for Claude: ⟨«https://api.anthropic.com/v1/messages» «claude-opus-5» «2023-06-01» «anthropic»⟩
+[⇒i⇒v ⌂#i>[⌂i@⇒t t#0>[t][v]?][v]?]≔O            ※ default index → the argument, if given and not blank
+⟨G0@ 4 O  G1@ 3 O  G2@ 6 O  G3@ 5 O⟩≔E          ※ so the deployment can say, without a rebuild
 «Answer in one short plain sentence. No preamble, no markdown, no newlines.»≔I
 [⇒q ⌂#3<[∅][E3@«openai»=⇒o
  o[⟨⟨«Authorization» «Bearer »⌂2@⧺⟩ ⟨«content-type» «application/json»⟩⟩][⟨⟨«x-api-key» ⌂2@⟩ ⟨«anthropic-version» E2@⟩ ⟨«content-type» «application/json»⟩⟩]?⇒x

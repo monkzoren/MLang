@@ -121,6 +121,20 @@ you do not publish a port on the host.
    it has been taught, says so plainly when it doesn't, and never talks to
    anything outside your server.
 
+   | variable | default | |
+   |---|---|---|
+   | `TEACH_TOKEN` | — | the password for `POST /teach`. Not a model key |
+   | `MODEL_API_KEY` | — | unset ⇒ the learner is inert, by design |
+   | `MODEL_NAME` | `deepseek-flash` | |
+   | `MODEL_URL` | `api.deepseek.com/chat/completions` | |
+   | `MODEL_DIALECT` | `openai` | or `anthropic` |
+   | `MODEL_VERSION` | — | `anthropic` only |
+
+   Each of the four model variables falls back on its own, so setting the
+   model does not mean restating the endpoint it belongs to. To move to
+   Claude, all four: `claude-opus-5`,
+   `https://api.anthropic.com/v1/messages`, `anthropic`, `2023-06-01`.
+
 The image is two stages: `rust:1-slim` builds the toolchain, and the runtime
 is `debian:stable-slim` carrying one ~4 MB binary and one `.ml` file. Even the
 healthcheck is MLang (`mlang eval '«http://127.0.0.1:8080/»⍆⌫'`).
@@ -236,8 +250,10 @@ answer, and the two families disagree on all four.
 | `«anthropic»` | `api.anthropic.com/v1/messages` | `x-api-key` + `anthropic-version` | `content[0].text` |
 
 The default is DeepSeek (`deepseek-flash` — note that `DeepSeek-V4.1-Flash`
-is the *version* name and will 400 if you send it as the model). The
-Anthropic line is in `chat.ml` directly above, commented out. `«openai»`
+is the *version* name and will 400 if you send it as the model). `E` is
+built at weave time from `G`, the defaults in `chat.ml`, overlaid with
+whichever of `⌂3@`–`⌂6@` the deployment passed — so the four environment
+variables above change the provider without touching the program. `«openai»`
 is not only DeepSeek: it is the shape most providers copied, so a base URL
 and a model name are usually all a different one needs.
 
