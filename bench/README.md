@@ -52,6 +52,35 @@ thread traceback), while MLang converts that entire class of bug into
 proven deadlock reports with a wait graph — see the app-scale tables in
 the top-level README.
 
+## A primer change that did not move the numbers
+
+The sigil reference (`mlang ops`, which this harness appends to its own
+notes to build the primer) gained a header stating two rules it had always
+assumed but never said: operands are pushed before their glyph, and the
+sigil-consuming ops take exactly one glyph as a name. Both are SPEC §3.5,
+and both were found the hard way — a model writing MLang from scratch in
+`mos/` lost most of its attempts to `⊆« »` for `« »⊆`, `f@0` for `f 0 @`,
+and `⇒pos`, which binds the local `p` and then references `o` and `s`.
+
+The obvious guess was that the same gap depressed this benchmark. Measured
+over the same 30 mutants, before and after, it does not:
+
+| | healed | in one round | mean rounds |
+|---|---|---|---|
+| before | 29/30 | 20 | 1.31 |
+| after | 28/30 | 23 | 1.21 |
+
+One mutant flipped each way and three moved from two rounds to one — noise
+at this sample size. The reading that fits is that **the traps bite when
+authoring, not when repairing.** A self-repair mutant hands the model a
+working program with one token changed plus the exact failure; undoing one
+edit rarely requires knowing how to spell a split or a local. Writing a new
+stateful strand does, which is where the cost actually showed up.
+
+So the reference is better and the numbers below stand as recorded. Note
+that they predate the `MLANG_CLOCK` fix in `common.py`, which should
+recover any `⌚` mutant that was previously unhealable by construction.
+
 ## Running it
 
 ```sh
