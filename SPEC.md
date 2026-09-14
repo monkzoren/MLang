@@ -355,22 +355,30 @@ takes a stamped file back (or `?base=N` for an unstamped one),
 `mlang loom` are those routes from the command line; `MLANG_LOOM=0`
 closes them.
 
-**On threads.** A seam is a point in a deterministic schedule, and a strand
-running on its own OS thread has none the runtime can observe. Definitions
-need no seam: they are shared state, they resolve at call time, and the
-runtime rebinds them all under one lock, so no strand can observe half a
-patch. So under `--parallel` and under `mlang hub` / `mlang worker` (§6.2):
+**On threads.** A seam is a property of a strand's *own* frames — the
+boundary between two iterations of its outermost loop — so a strand running
+on its own OS thread finds its own, without the scheduler walking it. Under
+`--parallel` and under `mlang hub` / `mlang worker` (§6.2) the loom therefore
+does everything it does under the deterministic scheduler: definitions are
+rebound, added and removed, and strands are replaced, started and retired,
+with the same reports and the same strand ids. The text is woven in full
+first and refused whole if it does not weave, exactly as elsewhere, and the
+version store belongs to the grid rather than to a thread, so there is one
+history and one current version. All of this holds for `⟡` as much as for a
+patch arriving on `/.loom`.
 
-* a patch that **only rebinds, adds or removes definitions** is applied,
-  exactly as it is under the deterministic scheduler, and reports the same;
-* a patch that **replaces, starts or retires a strand** is refused with 422,
-  naming which of the two schedulers it is looking at, because the remedies
-  differ — drop `--parallel`, or patch each machine's own program and
-  restart it.
+Two things differ, and both are the parallel scheduler's existing bargain
+(§4.2) rather than anything the loom adds. *When* a strand reaches its seam
+is thread timing, so which values it handles on the old code and which on
+the new varies from run to run — it is still taken at a seam, never
+mid-iteration. And definitions are rebound under one lock, so no strand
+observes half a patch, but when each first observes the new binding is
+likewise timing.
 
-Both hold for `⟡` as much as for a patch arriving on `/.loom`. The version
-store is shared by every strand, so a grid on threads has one history and
-one current version, not one per thread.
+A distributed grid is re-woven **per machine**. A hub and its workers run
+different programs, so `⟡` and `/.loom` reach the grid on the machine they
+are addressed to and no other: there is no cross-machine version, no
+ordering between machines, and no coordination.
 
 **A served grid never exits.** When every strand has finished, died,
 or deadlocked, a live program with its loom open holds its port: each

@@ -283,16 +283,69 @@ fn a_definition_rebind_is_hot_on_threads_too() {
 }
 
 #[test]
-fn moving_a_strand_is_refused_on_threads_and_the_grid_runs_on() {
+fn replacing_a_strand_is_hot_on_threads_too() {
+    // A seam is a property of a strand's own frames, so a strand on a thread
+    // can see its own: the patch is parked on the bus and each strand swaps
+    // itself at its next iteration boundary.
     let src = scratch("par-loom-strand", MOVES_A_STRAND);
     let seq = run(&["run", &src], FRAMES, &[]);
     let par = run(&["run", "--parallel", &src], FRAMES, &[]);
-    // The deterministic engine re-weaves the strand at its seam.
-    assert_eq!(body_lines(&seq.1), vec!["one", "200", "two"]);
-    // On threads it is refused, and nothing else changes: the grid keeps
-    // answering on the code it already had, and exits cleanly.
-    assert_eq!(body_lines(&par.1), vec!["one", "422", "one"]);
+    assert_eq!(seq.0, Some(0));
     assert_eq!(par.0, Some(0));
+    assert_eq!(body_lines(&seq.1), vec!["one", "200", "two"]);
+    assert_eq!(body_lines(&par.1), vec!["one", "200", "two"]);
+}
+
+/// Appending a line to the grid starts a strand.
+const STARTS_A_STRAND: &str = concat!(
+    "«x»≔G\n⇊\n",
+    "1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/grow»=[⟐«⏎0⌫»⧺⟡1@][G]?⇒a",
+    " ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+);
+
+/// Removing one retires it. The marker is built at runtime so the line that
+/// searches for it does not contain it.
+const RETIRES_A_STRAND: &str = concat!(
+    "«x»≔G\n«0»«⌫»⧺≔K\n⇊\n",
+    "1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/shrink»=[⟐K⊆«»⊇⟡1@][G]?⇒a",
+    " ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n0⌫\n",
+);
+
+#[test]
+fn starting_and_retiring_strands_report_the_same_on_threads() {
+    for (name, src, path, want) in [
+        ("par-loom-start", STARTS_A_STRAND, "/grow", "1 strand started"),
+        ("par-loom-retire", RETIRES_A_STRAND, "/shrink", "1 strand retired"),
+    ] {
+        let file = scratch(name, src);
+        let frames = format!("▷ GET {path}\n");
+        let seq = run(&["run", &file], &frames, &[]);
+        let par = run(&["run", "--parallel", &file], &frames, &[]);
+        assert!(seq.1.contains(want), "{name} sequential: {}", seq.1);
+        // Byte-identical, strand ids included — the grid's shape changes the
+        // same way whichever scheduler is walking it.
+        assert_eq!(body_lines(&seq.1), body_lines(&par.1), "{name}");
+    }
+}
+
+/// Two patches in a row. The second is written against the first, so a
+/// version read from the wrong place makes it conflict with itself.
+const PATCHES_TWICE: &str = concat!(
+    "⟨1⟩≔R\n«⟩»«≔R»⧺≔M\n⇊\n",
+    "1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/grow»=[⟐M⊆« 2»M⧺⊇⟡0@⍕][R⍕]?⇒a",
+    " ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+);
+
+#[test]
+fn consecutive_self_patches_build_on_each_other_on_threads() {
+    // The version store lives on the bus when there is one, and ⟡ has to read
+    // its base from there: reading this VM's (which is empty on threads) made
+    // every patch after the first claim v0 and be refused as a conflict.
+    let src = scratch("par-loom-twice", PATCHES_TWICE);
+    let frames = "▷ GET /\n▷ GET /grow\n▷ GET /\n▷ GET /grow\n▷ GET /\n";
+    let want = vec!["⟨1⟩", "200", "⟨1 2⟩", "200", "⟨1 2 2⟩"];
+    assert_eq!(body_lines(&run(&["run", &src], frames, &[]).1), want);
+    assert_eq!(body_lines(&run(&["run", "--parallel", &src], frames, &[]).1), want);
 }
 
 fn scratch(name: &str, src: &str) -> String {

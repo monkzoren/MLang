@@ -125,15 +125,15 @@ to join — the hub is a server.
 
 Traded, and worth knowing before you design around it:
 
-* **A distributed grid can be re-bound but not re-shaped.** A hub or worker
-  runs its strands on threads, where there is no seam for the runtime to
-  re-weave one at (SPEC §4.7). Definitions need no seam, so a patch that
-  rebinds, adds or removes them — arriving on `/.loom` or raised from inside
-  with `⟡` — applies here exactly as it does under the deterministic
-  scheduler. A patch that replaces, starts or retires a strand is refused
-  with 422: patch each machine's own program and restart it. What you give
-  up by spreading a grid over machines is changing its shape while it runs,
-  not changing what it knows.
+* **Re-weaving is per machine.** The loom works under `mlang hub` and
+  `mlang worker` exactly as it does elsewhere (SPEC §4.7) — a strand finds
+  its own seam on its own thread — so a patch arriving on `/.loom`, or
+  raised from inside with `⟡`, rebinds definitions and replaces, starts and
+  retires strands on *that machine's* grid. A hub and its workers run
+  different programs, so nothing propagates: there is no cross-machine
+  version, no ordering between them, and no coordination. Patching a hub
+  leaves its workers exactly as they were, which is usually what you want
+  and never what you should assume.
 
 Preserved, and covered by `compiler/tests/net.rs`:
 

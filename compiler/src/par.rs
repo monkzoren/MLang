@@ -87,6 +87,18 @@ pub struct Bus {
     /// Channels bridged outward by net.rs: a send goes to the tap, not
     /// the local queue. Empty except under `mlang hub` / `mlang worker`.
     exports: HashMap<char, ExportTap>,
+    /// Re-weavings waiting to be collected. A strand on its own thread is
+    /// the only thing that can see its own seam, so the patcher leaves the
+    /// new code here and each strand picks its own up and swaps itself.
+    swaps: Mutex<HashMap<i64, crate::vm::Swap>>,
+    /// Bumped when swaps are parked, so a running strand can tell in one
+    /// relaxed load whether there is anything for it — the common case is
+    /// that there is not.
+    swap_gen: AtomicU64,
+    /// The live main strands, in grid order. Slot i is the i-th line of the
+    /// grid; a strand keeps its id across patches, so this is how the plan
+    /// maps an old slot to the thread that is running it.
+    slots: Mutex<Vec<i64>>,
     /// The grid's version store. Per-VM would give every thread its own
     /// history and its own idea of what is running, so it lives here and
     /// every strand patches the same one.
@@ -164,6 +176,62 @@ impl Bus {
         l
     }
 
+    pub(crate) fn swap_gen(&self) -> u64 {
+        self.swap_gen.load(Ordering::Acquire)
+    }
+
+    /// Whatever this strand has been asked to become, if anything.
+    pub(crate) fn take_swap(&self, sid: i64) -> Option<crate::vm::Swap> {
+        lock(&self.swaps).remove(&sid)
+    }
+
+    /// Leave each strand its new code. The generation bump is last, so a
+    /// strand that sees it will find its swap already parked.
+    pub(crate) fn park_swaps(&self, swaps: Vec<(i64, crate::vm::Swap)>) {
+        if swaps.is_empty() {
+            return;
+        }
+        let mut slot = lock(&self.swaps);
+        for (sid, sw) in swaps {
+            slot.insert(sid, sw);
+        }
+        drop(slot);
+        self.swap_gen.fetch_add(1, Ordering::AcqRel);
+    }
+
+    /// The live main strands, defaulting to the grid as it started.
+    pub(crate) fn slots(&self, width: usize) -> Vec<i64> {
+        let mut s = lock(&self.slots);
+        if s.is_empty() {
+            *s = (0..width as i64).collect();
+        }
+        s.clone()
+    }
+
+    pub(crate) fn set_slots(&self, v: Vec<i64>) {
+        *lock(&self.slots) = v;
+    }
+
+    /// Start a strand the patch added, on its own thread, running its
+    /// migration first if it has one.
+    pub(crate) fn start_strand(
+        self: &Arc<Self>,
+        label: String,
+        code: Arc<Vec<crate::values::Instr>>,
+        migrate: Option<Arc<Vec<crate::values::Instr>>>,
+    ) -> i64 {
+        let sid = {
+            let mut st = lock(&self.state);
+            let sid = st.next_spawn_sid;
+            st.next_spawn_sid += 1;
+            st.live += 1;
+            sid
+        };
+        let bus = self.clone();
+        std::thread::spawn(move || drive_with(bus, sid, label, code, Vec::new(), migrate));
+        sid
+    }
+
     pub(crate) fn global_gen(&self) -> u64 {
         self.global_gen.load(Ordering::Acquire)
     }
@@ -203,6 +271,9 @@ impl Bus {
         Bus {
             distributed,
             loom: Mutex::new(None),
+            swaps: Mutex::new(HashMap::new()),
+            swap_gen: AtomicU64::new(0),
+            slots: Mutex::new(Vec::new()),
             global_gen: AtomicU64::new(0),
             state: Mutex::new(State {
                 chans: HashMap::new(),
@@ -532,6 +603,17 @@ impl Drop for SharedWriter {
 /// detection would be disabled for the rest of the run. It is reported
 /// and treated as the strand's death, through the same finish path.
 fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: Vec<(char, Value)>) {
+    drive_with(bus, sid, label, code, locals, None)
+}
+
+fn drive_with(
+    bus: Arc<Bus>,
+    sid: i64,
+    label: String,
+    code: Arc<Vec<Instr>>,
+    locals: Vec<(char, Value)>,
+    migrate: Option<Arc<Vec<Instr>>>,
+) {
     let shown = format!("{} ({})", fmt_i64(sid), label);
     let body = std::panic::AssertUnwindSafe(|| {
         let mut stdin = std::io::empty();
@@ -544,6 +626,9 @@ fn drive(bus: Arc<Bus>, sid: i64, label: String, code: Arc<Vec<Instr>>, locals: 
             vm.args = bus.args.clone();
             vm.http = bus.http.clone();
             let mut s = Strand::new(sid, label, code, locals);
+            if let Some(m) = migrate {
+                s.push_migration(m);
+            }
             loop {
                 run_burst(&mut vm, &mut s, usize::MAX);
                 match s.status {

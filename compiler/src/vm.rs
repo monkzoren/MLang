@@ -166,6 +166,9 @@ pub struct Strand {
     origin: Arc<Vec<Instr>>,
     /// A hot patch waiting for this strand's next seam.
     pending: Option<Swap>,
+    /// The bus swap generation this strand has already checked. On threads
+    /// nobody else can reach into this strand, so it collects its own.
+    swap_seen: u64,
 }
 
 /// What a hot patch asks of a running strand.
@@ -193,6 +196,7 @@ impl Strand {
             marks: Vec::new(),
             origin: code,
             pending: None,
+            swap_seen: 0,
         }
     }
 
@@ -211,6 +215,7 @@ impl Strand {
             marks: Vec::new(),
             origin: Arc::new(Vec::new()),
             pending: None,
+            swap_seen: 0,
         }
     }
 
@@ -221,6 +226,12 @@ impl Strand {
     /// instruction of the body or condition — which is how a server
     /// waits for its next request), a pump between two values, a strand
     /// that has not started, and a strand that died.
+    /// Run `m` before the strand's own code — how a started strand gets its
+    /// ⟲ migration, the same way a replaced one does at its seam.
+    pub fn push_migration(&mut self, m: Arc<Vec<Instr>>) {
+        self.frames.push(cf(m));
+    }
+
     fn at_seam(&self) -> bool {
         match self.status {
             Status::Dead => return true,
@@ -1536,65 +1547,6 @@ impl VM<'_> {
             }
         }
 
-        // ── strands on their own threads ──
-        //
-        // A seam is a point in a deterministic schedule, and a strand running
-        // on an OS thread has none the runtime can observe. Definitions need
-        // no seam: they are shared state, they resolve at call time, and the
-        // bus rebinds them all under one lock, so no strand can see half a
-        // patch. A patch that only rebinds definitions is therefore hot under
-        // --parallel and under mlang hub/worker as well; one that moves a
-        // strand is not, and says so.
-        if let Some(bus) = self.bus.clone() {
-            let strands_unchanged = match &old_prog {
-                Some(o) => {
-                    o.strands.len() == prog.strands.len()
-                        && o.strands
-                            .iter()
-                            .zip(prog.strands.iter())
-                            .all(|((_, a), (_, b))| loom::instrs_eq(a, b))
-                }
-                None => false,
-            };
-            if !strands_unchanged {
-                let where_ = if bus.is_distributed() {
-                    "a distributed grid (mlang hub / mlang worker) runs its strands on \
-                     threads; patch each machine's own program and restart it"
-                } else {
-                    "--parallel runs strands on their own threads; drop it to move a strand"
-                };
-                return Err((422, format!(
-                    "✗ patch rejected: this patch moves a strand, and {where_}. \
-                     Definition rebinds are hot here; strands are not.\n"
-                )));
-            }
-            let mut changes: Vec<(char, Option<Value>)> = Vec::new();
-            for c in rebound.iter().chain(added.iter()) {
-                if let Some((_, v, _)) = new_shape.defs.iter().find(|(d, _, _)| d == c) {
-                    changes.push((*c, Some(v.clone())));
-                }
-            }
-            for c in &removed {
-                changes.push((*c, None));
-            }
-            bus.rebind_globals(changes);
-            let sigils = |v: &[char]| v.iter().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
-            let mut parts = Vec::new();
-            if !rebound.is_empty() {
-                parts.push(format!("{} rebound ({})", plural(rebound.len(), "definition"), sigils(&rebound)));
-            }
-            if !added.is_empty() {
-                parts.push(format!("{} added ({})", plural(added.len(), "definition"), sigils(&added)));
-            }
-            if !removed.is_empty() {
-                parts.push(format!("{} removed ({})", plural(removed.len(), "definition"), sigils(&removed)));
-            }
-            let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
-            let report = format!("⟡ v{version}: {note}\n");
-            loom.push(merged, note);
-            return Ok(report);
-        }
-
         // The strands: match the live slots against the patched grid.
         let mut new_strands: Vec<(String, Vec<Instr>)> = prog.strands.clone();
         for (_, code) in new_strands.iter_mut() {
@@ -1627,6 +1579,79 @@ impl VM<'_> {
             offset_rows(&mut lexed, off);
             migrate_of[n] = Some(Arc::new(lexed));
         }
+        // ── strands on their own threads ──
+        //
+        // A seam is a point in a deterministic schedule, and here the
+        // scheduler is not the one walking the strands. But a seam is a
+        // property of a strand's *own* frames, so the strand can see its own:
+        // the patcher leaves each one its new code on the bus, and each picks
+        // it up and swaps itself at its next iteration boundary. Nothing is
+        // coordinated, nothing is stopped, and no strand is re-woven mid-step.
+        if let Some(bus) = self.bus.clone() {
+            let Some(old_prog) = old_prog.as_ref() else {
+                return Err((422, "✗ patch rejected: the running program could not be read back\n".into()));
+            };
+            let old: Vec<Arc<Vec<Instr>>> =
+                old_prog.strands.iter().map(|(_, c)| Arc::new(c.clone())).collect();
+            let slots = bus.slots(old.len());
+            if slots.len() != old.len() {
+                return Err((422, "✗ patch rejected: the grid's strands and the loom's disagree\n".into()));
+            }
+            let new_codes: Vec<Vec<Instr>> = new_strands.iter().map(|(_, c)| c.clone()).collect();
+            let plan = loom::plan_strands(&old, &new_codes);
+
+            let mut changes: Vec<(char, Option<Value>)> = Vec::new();
+            for c in rebound.iter().chain(added.iter()) {
+                if let Some((_, v, _)) = new_shape.defs.iter().find(|(d, _, _)| d == c) {
+                    changes.push((*c, Some(v.clone())));
+                }
+            }
+            for c in &removed {
+                changes.push((*c, None));
+            }
+            bus.rebind_globals(changes);
+
+            let mut parked: Vec<(i64, Swap)> = Vec::new();
+            let mut next_slots: Vec<i64> = Vec::new();
+            let (mut replaced, mut started, mut retired) = (Vec::new(), Vec::new(), Vec::new());
+            for action in plan {
+                match action {
+                    StrandAction::Keep(o, _) => next_slots.push(slots[o]),
+                    StrandAction::Replace(o, n) => {
+                        let sid = slots[o];
+                        let (label, code) = &new_strands[n];
+                        parked.push((
+                            sid,
+                            Swap::Replace(Arc::new(code.clone()), label.clone(), migrate_of[n].clone()),
+                        ));
+                        replaced.push((sid, label.clone(), migrate_of[n].is_some()));
+                        next_slots.push(sid);
+                    }
+                    StrandAction::Retire(o) => {
+                        parked.push((slots[o], Swap::Retire));
+                        retired.push(slots[o]);
+                    }
+                    StrandAction::Start(n) => {
+                        let (label, code) = &new_strands[n];
+                        let sid = bus.start_strand(
+                            label.clone(),
+                            Arc::new(code.clone()),
+                            migrate_of[n].clone(),
+                        );
+                        started.push((sid, label.clone()));
+                        next_slots.push(sid);
+                    }
+                }
+            }
+            bus.set_slots(next_slots);
+            // Last, so a strand that notices the generation finds its swap.
+            bus.park_swaps(parked);
+            let (report, note) =
+                patch_report(version, &rebound, &added, &removed, &replaced, &started, &retired);
+            loom.push(merged, note);
+            return Ok(report);
+        }
+
         let origin_of = |vm: &VM, me: &Option<&mut Strand>, sid: i64| -> Arc<Vec<Instr>> {
             match me {
                 Some(m) if m.sid == sid => m.origin.clone(),
@@ -1695,45 +1720,70 @@ impl VM<'_> {
         }
 
         // ── the report ──
-        let sigils = |v: &[char]| v.iter().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
-        let mut parts = Vec::new();
-        if !rebound.is_empty() {
-            parts.push(format!("{} rebound ({})", plural(rebound.len(), "definition"), sigils(&rebound)));
-        }
-        if !added.is_empty() {
-            parts.push(format!("{} added ({})", plural(added.len(), "definition"), sigils(&added)));
-        }
-        if !removed.is_empty() {
-            parts.push(format!("{} removed ({})", plural(removed.len(), "definition"), sigils(&removed)));
-        }
-        if !replaced.is_empty() {
-            parts.push(format!("{} replaced", plural(replaced.len(), "strand")));
-        }
-        if !started.is_empty() {
-            parts.push(format!("{} started", plural(started.len(), "strand")));
-        }
-        if !retired.is_empty() {
-            parts.push(format!("{} retired", plural(retired.len(), "strand")));
-        }
-        let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
-        let mut report = format!("⟡ v{version}: {note}\n");
-        for (sid, label) in &replaced {
-            let migrated = new_strands.iter().position(|(l, _)| l == label).and_then(|n| migrate_of[n].as_ref());
-            report.push_str(&format!(
-                "  strand {} continues as {label} at its next seam{}\n",
-                fmt_i64(*sid),
-                if migrated.is_some() { ", after its ⟲ migration" } else { "" }
-            ));
-        }
-        for (sid, label) in &started {
-            report.push_str(&format!("  strand {} started as {label}\n", fmt_i64(*sid)));
-        }
-        for sid in &retired {
-            report.push_str(&format!("  strand {} retires at its next seam\n", fmt_i64(*sid)));
-        }
+        let replaced: Vec<(i64, String, bool)> = replaced
+            .into_iter()
+            .map(|(sid, label)| {
+                let migrated = new_strands
+                    .iter()
+                    .position(|(l, _)| *l == label)
+                    .and_then(|n| migrate_of[n].as_ref())
+                    .is_some();
+                (sid, label, migrated)
+            })
+            .collect();
+        let (report, note) = patch_report(version, &rebound, &added, &removed, &replaced, &started, &retired);
         loom.push(merged, note);
         Ok(report)
     }
+}
+
+/// The loom's report for one accepted patch, and the one-line note the
+/// version log keeps. Both schedulers build it here so they cannot drift.
+fn patch_report(
+    version: usize,
+    rebound: &[char],
+    added: &[char],
+    removed: &[char],
+    replaced: &[(i64, String, bool)],
+    started: &[(i64, String)],
+    retired: &[i64],
+) -> (String, String) {
+    let sigils = |v: &[char]| v.iter().map(|c| c.to_string()).collect::<Vec<_>>().join(" ");
+    let mut parts = Vec::new();
+    if !rebound.is_empty() {
+        parts.push(format!("{} rebound ({})", plural(rebound.len(), "definition"), sigils(rebound)));
+    }
+    if !added.is_empty() {
+        parts.push(format!("{} added ({})", plural(added.len(), "definition"), sigils(added)));
+    }
+    if !removed.is_empty() {
+        parts.push(format!("{} removed ({})", plural(removed.len(), "definition"), sigils(removed)));
+    }
+    if !replaced.is_empty() {
+        parts.push(format!("{} replaced", plural(replaced.len(), "strand")));
+    }
+    if !started.is_empty() {
+        parts.push(format!("{} started", plural(started.len(), "strand")));
+    }
+    if !retired.is_empty() {
+        parts.push(format!("{} retired", plural(retired.len(), "strand")));
+    }
+    let note = if parts.is_empty() { "no change".to_string() } else { parts.join(", ") };
+    let mut report = format!("⟡ v{version}: {note}\n");
+    for (sid, label, migrated) in replaced {
+        report.push_str(&format!(
+            "  strand {} continues as {label} at its next seam{}\n",
+            fmt_i64(*sid),
+            if *migrated { ", after its ⟲ migration" } else { "" }
+        ));
+    }
+    for (sid, label) in started {
+        report.push_str(&format!("  strand {} started as {label}\n", fmt_i64(*sid)));
+    }
+    for sid in retired {
+        report.push_str(&format!("  strand {} retires at its next seam\n", fmt_i64(*sid)));
+    }
+    (report, note)
 }
 
 fn plural(n: usize, what: &str) -> String {
@@ -1885,6 +1935,22 @@ fn std_code() -> Vec<Instr> {
 pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
     let mut executed = 0;
     'outer: while executed < limit {
+        // On threads the scheduler is not walking the strands, so each one
+        // looks for its own re-weaving and takes it at its own seam. The
+        // common case is one relaxed load that changes nothing.
+        if let Some(bus) = &vm.bus {
+            let now = bus.swap_gen();
+            if now != s.swap_seen {
+                s.swap_seen = now;
+                if let Some(sw) = bus.take_swap(s.sid) {
+                    s.pending = Some(sw);
+                }
+            }
+            if s.pending.is_some() && s.at_seam() {
+                s.swap_in();
+                continue 'outer;
+            }
+        }
         if s.frames.is_empty() {
             // An unfinished ⟨ at the end of a strand is a fault, not a
             // silently successful run with a stray mark on the stack.
@@ -2966,7 +3032,15 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             let Value::Str(text) = &v else {
                 return glitch(format!("⟡ expects a program string, got {}", type_name(&v)), pos);
             };
-            let base = vm.loom.as_ref().map(|l| l.current()).unwrap_or(0);
+            // A self-patch is always written against what is running now, and
+            // on threads that is the bus's store, not this VM's — which is
+            // None there. Reading it from the wrong place made every patch
+            // after the first claim base v0 and conflict with itself.
+            let base = match (&vm.loom, &vm.bus) {
+                (_, Some(bus)) => bus.loom().current(),
+                (Some(l), None) => l.current(),
+                (None, None) => 0,
+            };
             let text = text.to_string();
             let (status, report) = match vm.hot_patch(base, &text, Some(s)) {
                 Ok(report) => (200i64, report),
