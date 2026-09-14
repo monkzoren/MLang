@@ -120,6 +120,42 @@ the image put there. A program cannot seed the file it is about to be started
 from. Everything after that first copy — serving, answering, validating,
 rewriting itself, persisting — happens in `chat.ml`.
 
+## How much can it learn?
+
+There is no cap on how many times a grid can be re-woven — faults are
+capped at 64, versions are not — and time is not the limit either. Teaching
+400 rules and then 1600, measured on the live bot:
+
+| lessons | source | memory | weave | reply |
+|---|---|---|---|---|
+| 100 | 8 KB | 6 MB | 1.6 ms | 0.5 ms |
+| 400 | 19 KB | 21 MB | 2.3 ms | 0.8 ms |
+| 800 | 33 KB | 57 MB | 2.8 ms | 1.0 ms |
+| 1600 | 61 KB | 190 MB | 6.1 ms | 1.3 ms |
+
+A reply stays about a millisecond with 1600 rules, and a lesson lands in
+single-digit milliseconds. The source grows linearly, ~36 bytes a rule.
+
+**Memory is the limit, and it grows with the square of the lessons.** Every
+version is kept whole, twice over: once as text, so `GET /.loom/vN` can
+still answer, and once as lines, so a fault in code that arrived with
+version 3 can excerpt *version 3's* line. Both are the loom working as
+specified (§4.7). But a program that grows by a line per patch, kept once
+per patch, is quadratic — 190 MB at 1600 lessons, and something like
+2 GB by 5000.
+
+**A restart is the compaction, and it costs nothing.** The bot boots from
+the program it has become, which is the new `v0`: every rule is kept, the
+version history is dropped, and memory returns to a few megabytes. For a
+bot taught a handful of things a day this never comes up; if you are
+teaching it thousands, redeploy occasionally and it stays small. What you
+lose is the ability to read old versions back — the rules themselves are
+all in the source.
+
+One other ceiling: a patch arriving over HTTP is subject to the 16 MiB
+request-body cap (§5.5). `⟡` does not go through HTTP, so the bot teaching
+itself is not subject to it.
+
 ## Where a model would go, and why there isn't one
 
 Not in the hot path, ever: a turn is a substring match and costs nothing.
