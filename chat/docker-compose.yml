@@ -1,18 +1,25 @@
-# Coolify can deploy this directly (Docker Compose build pack), or use the
-# Dockerfile on its own. Either way the volume is the part that matters:
-# without it a redeploy resets the bot to the seed program.
+# For Coolify's "Docker Compose" build pack. The Dockerfile on its own works
+# just as well — see chat/README.md.
+#
+# Note there is no `ports:` mapping. Coolify puts its own proxy in front and
+# terminates TLS there, so the container only needs to be reachable on the
+# internal network; publishing 8080 on the host would bypass the proxy and
+# serve the bot over plain HTTP on a bare port. Set the domain in Coolify
+# instead and let it route to 8080.
 services:
   grid-chat:
     build:
       context: ..
       dockerfile: chat/Dockerfile
+    expose:
+      - "8080"
     environment:
-      # Required for POST /teach. No token, no teaching — the bot still runs.
+      # Required for POST /teach. Without it the bot serves and refuses to
+      # learn, which is the safe default.
       TEACH_TOKEN: ${TEACH_TOKEN}
     volumes:
+      # The bot's memory. Without this a redeploy resets it to the seed.
       - grid-data:/data
-    ports:
-      - "8080:8080"
     restart: unless-stopped
 
 volumes:

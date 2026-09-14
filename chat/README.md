@@ -43,35 +43,65 @@ bot's memory.** Without it a redeploy resets it to the seed program; with it,
 a restart boots from what the bot has become, and the learned program is the
 new `v0`.
 
-## Deploying with Coolify
+## Getting a URL
 
 Coolify *is* Docker — it orchestrates Docker Compose under the hood — so a
-Dockerfile is the normal path, not something to avoid.
+Dockerfile is the normal path, not something to avoid. It also does the part
+you actually want here: it runs a reverse proxy in front of your containers,
+assigns the domain, and gets a Let's Encrypt certificate for it. You do not
+set up TLS yourself and you do not publish a port on the host.
 
 1. **New Resource → your Git repository**, branch as you like.
-2. **Build Pack: Dockerfile**, path `chat/Dockerfile`, **build context the
-   repository root** (the build welds `std/*.ml` into the binary with
-   `include_str!`, so it needs `compiler/` *and* `std/`).
-3. **Port** `8080`.
-4. **Persistent volume** → mount at `/data`. Skip this and the bot forgets
-   everything on every deploy.
-5. **Environment** → `TEACH_TOKEN` = a long random string. Without it the bot
-   serves normally and refuses all teaching, which is a safe default.
+2. **Build Pack: Dockerfile**, file `chat/Dockerfile`, and set the **build
+   context to the repository root** — the build welds `std/*.ml` into the
+   binary with `include_str!`, so it needs `compiler/` *and* `std/`.
+3. **Port** `8080`. This is the port Coolify's proxy forwards *to*, inside
+   the container. Nothing is published on the host.
+4. **Domain**: give the resource a domain (a subdomain you point at the
+   server, or the free wildcard host Coolify offers). Point its DNS `A`
+   record at your server first, or the certificate cannot be issued.
+5. **Persistent volume** → mount at `/data`. Skip this and the bot forgets
+   everything it was taught on every redeploy.
+6. **Environment** → `TEACH_TOKEN` = a long random string.
 
-`chat/docker-compose.yml` is there if you prefer Coolify's Compose build pack;
-it declares the same volume and port.
+Deploy, and `https://your.domain` is the bot, reachable from anywhere. The
+page is responsive and works on a phone, which is the point — teaching it
+from a laptop and talking to it from a train should both be one tap.
 
-The image is two stages: `rust:1-slim` builds the toolchain, and the runtime
-carries a single ~4 MB self-contained binary plus `serve.py`. The standard
-library is welded in, so no MLang source ships except the bot's own program.
+`chat/docker-compose.yml` is there if you prefer Coolify's Compose build
+pack. It deliberately has no `ports:` mapping, for the reason above.
+
+Coolify renames UI fields between versions; if one of these is not where this
+says, its own documentation is authoritative.
+
+### The URL is public
+
+Anyone who has it can chat. That is usually fine — the bot only says what it
+has been taught — but be clear that it is true:
+
+* **Chatting is open. Teaching is not**, and the token is the whole defence.
+  Use a long random one, and rotate it by changing the environment variable
+  and redeploying.
+* **The token lives in the browser** once you type it into the teach form
+  (`localStorage`), which is the trade that makes teaching from a phone
+  practical. Use a private device, or teach with `curl` instead.
+* **There is no rate limiting.** If the URL leaks somewhere noisy, put
+  Coolify's proxy authentication or a Cloudflare Access policy in front — the
+  bot does not need to know about either.
+* `/.loom` is never routed from outside, whatever the domain. The grid binds
+  127.0.0.1 and the front process returns 404 for it.
 
 ## Teaching it
 
-```sh
-curl -XPOST -H "X-Teach-Token: $TOKEN" https://your.host/teach \
-     -d '{"pattern":"office hours","reply":"Tuesdays, 14:00–16:00."}'
+Open the page and use the **teach me something** form at the bottom — it
+remembers the token, so it is one tap from a phone thereafter. Or from a
+shell:
 
-curl -H "X-Teach-Token: $TOKEN" https://your.host/versions   # what it has learned
+```sh
+curl -XPOST -H "X-Teach-Token: $TOKEN" https://your.domain/teach \
+     -d '{"pattern":"office hours","reply":"Tuesdays, 14:00-16:00."}'
+
+curl -H "X-Teach-Token: $TOKEN" https://your.domain/versions  # what it has learned
 ```
 
 A pattern is matched as a substring of the lowercased message, so `coolify`
