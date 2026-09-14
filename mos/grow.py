@@ -111,9 +111,13 @@ from remembering them.
 SCORING. +100 per delivery, −1 per step into a wall, −5 for gripping or
 dropping in the wrong place, over 200 ticks. A machine that walks shortest
 paths scores 1300. The best possible is 1500. Your line is kept only if it
-scores at least as well as it costs and never makes the robot walk into a
-wall, fail to grip while standing on the pickup, or fail to drop while
-standing on the dropoff.
+scores at least as well as it costs, and if over the whole run the robot
+never steps into a wall and never grips or drops in the wrong place.
+
+Note what that rule does NOT forbid. It is judged over the run, not tick by
+tick, so you are free to hand the policy a different target from the one you
+were given — the policy simply walks where you point it — provided the robot
+ends up gripping and dropping in the right places.
 
 YOUR ANSWER must be exactly one line of MLang, in a single fenced code
 block, and it must be a pump from γ to α — that is, it must end with ⇉γα.
@@ -144,10 +148,17 @@ def splice(body_line):
 
 
 def evaluate(body_line, corpus, ticks):
+    """Fitness, judged in context — the unit has memory, so the single-frame
+    corpus of M3 no longer applies to it (see gate.in_context)."""
     v = splice(body_line)
     path = v.write(TMP)
     f = evolve.fitness(path, corpus, ticks)
-    _, w, rc, err = G.rollout(path, ticks)
+    score, w, rc, err = G.rollout(path, ticks)
+    if not f["fatal"]:
+        viol = G.in_context(w)
+        f["violations"] = sum(n for _, n in viol)
+        f["detail"] = viol
+        f["fitness"] = score - f["upkeep"] if not viol else None
     return f, w, err.decode(errors="replace"), v
 
 
@@ -159,9 +170,8 @@ def feedback(f, w, err):
     if w.score() == 1300:
         out.append("That is exactly the score of the line that does nothing, []⇉γα, "
                    "so whatever you computed did not change where the robot went.")
-    if f["violations"]:
-        out.append("It broke %d of the invariants (walking into walls, or failing "
-                   "to grip or drop where it should)." % f["violations"])
+    for what, n in f.get("detail", []):
+        out.append("It %s, %d times." % (what, n))
     if f["dangling"]:
         out.append("Channels left dangling: %s" % " ".join(f["dangling"]))
     if f["fitness"] is not None:
@@ -192,7 +202,7 @@ def main():
         p = [primer, "\n", CONTRACT]
         if history:
             p.append("\nWhat you have tried so far:\n")
-            for i, (line, note) in enumerate(history, 1):
+            for i, (line, note) in enumerate(history[-3:], max(1, len(history) - 2)):
                 p.append("\nAttempt %d:\n```\n%s\n```\n%s\n" % (i, line, note))
             p.append("\nWrite a better line.")
         # A reply that is not a pump at all is harness noise, not an attempt:
@@ -200,7 +210,11 @@ def main():
         # text. Re-ask rather than spend a round on it.
         line = ""
         for _ in range(3):
-            line = heal.extract_program(complete("".join(p))).strip()
+            try:
+                line = heal.extract_program(complete("".join(p))).strip()
+            except Exception as exc:                  # a provider timeout is not an attempt
+                print("         (provider failed: %s)" % type(exc).__name__)
+                continue
             line = line.splitlines()[-1].strip() if line else ""
             if "⇉γα" in line:
                 break

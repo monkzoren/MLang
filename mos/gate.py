@@ -105,6 +105,30 @@ def invariants(program, corpus):
     return bad, len(acts)
 
 
+def in_context(w):
+    """The invariants, measured on the trajectory the machine actually walked.
+
+    The single-frame corpus above is only valid while the machine is
+    memoryless: `ask` feeds every frame to one process in sequence, so a
+    stateful unit builds its memory from 336 teleporting positions and its
+    answers there say nothing about its behaviour in the world. It is also
+    blind to a unit that legitimately rewrites the policy's target — at the
+    true pickup that reads as "did not grip", though the machine grips a
+    moment later having gone where it meant to.
+
+    So once the machine can remember, the honest check is what the world
+    recorded: steps into walls, and grips or drops in the wrong place. The
+    coverage is narrower — only states the trajectory visits — and it is
+    sound, which the corpus no longer is.
+    """
+    out = []
+    if w.bumps:
+        out.append(("walks into a wall", w.bumps))
+    if w.bad:
+        out.append(("grips or drops in the wrong place", w.bad))
+    return out
+
+
 def rollout(program, ticks=200):
     w, _, err, rc = W.episode(program, ticks)
     return w.score(), w, rc, err
