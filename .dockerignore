@@ -1,0 +1,5 @@
+compiler/target/
+bench/results/
+mos/corpus/
+**/__pycache__/
+.git/

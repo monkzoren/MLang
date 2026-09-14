@@ -1,0 +1,19 @@
+# Coolify can deploy this directly (Docker Compose build pack), or use the
+# Dockerfile on its own. Either way the volume is the part that matters:
+# without it a redeploy resets the bot to the seed program.
+services:
+  grid-chat:
+    build:
+      context: ..
+      dockerfile: chat/Dockerfile
+    environment:
+      # Required for POST /teach. No token, no teaching — the bot still runs.
+      TEACH_TOKEN: ${TEACH_TOKEN}
+    volumes:
+      - grid-data:/data
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  grid-data:
