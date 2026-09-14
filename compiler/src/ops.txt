@@ -1,5 +1,19 @@
 MLang sigils — every operation is one character.
 
+Two rules the effect column assumes, and the two things most often got
+wrong by someone writing MLang for the first time:
+
+  Operands come first. Everything an operation needs is on the stack
+  before its glyph runs, so the glyph is written last: «5»⍎ parses,
+  s « »⊆ splits, L [⍎]∵ maps, L i @ indexes. Writing ⊆« », ∵[⍎] or f@0
+  faults as `stack underflow`, with the caret on the glyph written early.
+
+  Names are one glyph. ≔ ⇒ ↥ ↧ ⇂ ⇈ ⇟ each swallow exactly one glyph as
+  their argument (⇉ takes two), so ⇒pos binds the local p and then
+  references o and s. Store with ⇒q and read it back as a bare q — ↧q is
+  not a local at all, it receives from channel q and blocks. `mlang check`
+  names both of these before the program runs.
+
 sigil  name          effect              description
 ──────────────────────────────────────────────────────────────────────────────
 ∂      dup           a → a a             duplicate top of stack
