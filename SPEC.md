@@ -221,6 +221,28 @@ that can never complete a handoff is almost always a misspelled or
 renamed name. Weave errors carry the same excerpt treatment, and a
 `]` without an opener reports the strand's bracket tally.
 
+**Checking without running.** `mlang check prog.ml` weaves the program and
+reports weave errors as above, and then names two things that are static
+properties of the text but that the runtime can only announce once the
+program has already gone wrong:
+
+* **Channels that can never complete a handoff** — the same census a
+  deadlock report makes (above), computed from the send and receive sites
+  rather than from a stuck grid, so a pathway that terminates nowhere is
+  visible before anything runs. A program bridged by `mlang hub` /
+  `mlang worker` (§6.2) exports its channels and is named here too.
+* **Names that are referenced and bound nowhere.** Referencing an unbound
+  name is a glitch (§3.7), but only when execution reaches it, which for a
+  rarely-taken branch may be much later. Where such a name sits directly
+  against the argument of a sigil-consuming op, `check` also says what
+  almost certainly happened: `≔ ⇒ ↥ ↧ ⇂ ⇈ ⇟` each swallow exactly one
+  glyph, so `⇒pos` binds the local `p` and then *references* `o` and `s`,
+  and `↧q` receives from channel `q` rather than reading a local.
+
+`check` exits 0 for a program that weaves, warnings or not; the warnings
+are advisory and are written to stderr. They are not part of `run`'s
+observable behavior and so are not pinned by the conformance corpus.
+
 Positions in woven library code report with the library's own file name
 and coordinates (`std.ml 26:7`, `ui.ml 3:12`) and excerpt the library's
 source, never a coincidental program line. `mlang build` welds the

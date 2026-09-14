@@ -403,7 +403,7 @@ PowerShell — no alias or PATH setup needed. Linux / macOS:
 ./mlang serve examples/architect.ml 4321  # serve a web app (⎆/⍅) live
 ./mlang pull 4321 > live.ml && ./mlang patch live.ml   # hot-patch it (the loom)
 ./mlang eval '«Hello, Matrix»⍞'      # inline source
-./mlang check examples/calc.ml       # compile only, report weave errors
+./mlang check examples/calc.ml       # weave errors, dangling channels, unbound names
 ./mlang rain examples/pipeline.ml    # render the vertical rain view
 ./mlang ops                          # the sigil reference
 ./mlang std                          # the standard library source

@@ -22,6 +22,26 @@ fn read_source(path: &str) -> Result<String, String> {
     }
 }
 
+/// Was this unbound name written as part of a longer one?
+///
+/// `⇒pos` binds the local 'p' and then references 'o' and 's', because the
+/// sigil ops swallow exactly one glyph. The reference faults as undefined,
+/// and the caret lands on a glyph the author never meant to write at all —
+/// so when an unbound name sits directly against a sigil op's argument, say
+/// what almost certainly happened.
+fn multiglyph_hint(text: &str, row: u32, col: u32) -> Option<(char, char)> {
+    let line: Vec<char> = text.lines().nth(row as usize - 1)?.chars().collect();
+    let mut i = (col as usize).checked_sub(1)?;
+    if i >= line.len() {
+        return None;
+    }
+    while i > 0 && !mlang::lex::is_reserved(line[i - 1]) {
+        i -= 1;
+    }
+    let op = *line.get(i.checked_sub(1)?)?;
+    (mlang::lex::is_arg_op(op) || mlang::lex::is_arg2_op(op)).then(|| (op, line[i]))
+}
+
 fn weave_error(text: &str, e: &LoadError) -> ExitCode {
     let loc = match e.pos {
         Some((r, c)) => format!(" at {r}:{c}"),
@@ -658,6 +678,31 @@ fn main() -> ExitCode {
             Ok(text) => match vm::compile_text(&text) {
                 Ok(prog) => {
                     eprintln!("✓ weaves clean ({} strands)", prog.strands.len());
+                    // Weaving clean is not the same as being sound. Two things
+                    // are visible in the text and cost nothing to say now,
+                    // rather than at the deadlock or the undefined sigil that
+                    // eventually announces them.
+                    let census = vm::static_channel_census(&prog);
+                    eprint!("{census}");
+                    if !census.is_empty() {
+                        eprintln!(
+                            "    (a program bridged by mlang hub/worker exports its \
+                             channels and will name them here)"
+                        );
+                    }
+                    for (name, (row, col)) in vm::unbound_names(&prog) {
+                        eprintln!("  ⚠ {row}:{col}: '{name}' is referenced and bound nowhere");
+                        if let Some((op, arg)) = multiglyph_hint(&text, row, col) {
+                            let takes = match op {
+                                '≔' | '⇒' => "binds",
+                                _ => "names the channel",
+                            };
+                            eprintln!(
+                                "    {op} takes exactly one glyph, so {op}{arg}… {takes} \
+                                 '{arg}' and then references '{name}' — names are one glyph"
+                            );
+                        }
+                    }
                     ExitCode::SUCCESS
                 }
                 Err(e) => weave_error(&text, &e),

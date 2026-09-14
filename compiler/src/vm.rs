@@ -3111,3 +3111,48 @@ fn fetch_url(url: &str) -> Result<String, Option<u16>> {
 }
 
 use num_traits::FromPrimitive;
+
+/// The channel census as a static property of a woven program.
+///
+/// The same check a deadlock report makes (§4.6), available before anything
+/// runs. A channel with senders and no receivers — or the reverse — is a
+/// pathway that terminates nowhere, and waiting for a deadlock to find out
+/// means waiting for the program to stop.
+pub fn static_channel_census(prog: &CompiledProgram) -> String {
+    let mut sites = HashMap::new();
+    channel_sites(&prog.boot, &mut sites);
+    for (_, code) in &prog.strands {
+        channel_sites(code, &mut sites);
+    }
+    channel_census(&sites, &[])
+}
+
+/// Names that are referenced but bound nowhere in the woven program.
+///
+/// Referencing an unbound name is a glitch (§3.7), but only when execution
+/// reaches it — which for a rarely-taken branch can be a long time after the
+/// program was written. The binding set is a static property, so `check` can
+/// say it up front. Returns (name, where it is referenced), first use only.
+pub fn unbound_names(prog: &CompiledProgram) -> Vec<(char, Pos)> {
+    fn walk(code: &[Instr], bound: &mut HashSet<char>, refs: &mut Vec<(char, Pos)>) {
+        for ins in code {
+            match &ins.op {
+                Op::B(op, a, _) if matches!(op, '≔' | '⇒') => {
+                    bound.insert(*a);
+                }
+                Op::Name(c) => refs.push((*c, ins.pos)),
+                Op::Push(Value::Quot(q)) => walk(q, bound, refs),
+                _ => {}
+            }
+        }
+    }
+    let (mut bound, mut refs) = (HashSet::new(), Vec::new());
+    walk(&prog.boot, &mut bound, &mut refs);
+    for (_, code) in &prog.strands {
+        walk(code, &mut bound, &mut refs);
+    }
+    let mut seen = HashSet::new();
+    refs.into_iter()
+        .filter(|(c, _)| !bound.contains(c) && seen.insert(*c))
+        .collect()
+}

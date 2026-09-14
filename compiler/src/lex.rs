@@ -279,3 +279,4 @@ impl Lexer {
 pub fn lex_strand(cells: Vec<Cell>, axis: Axis) -> LResult<Vec<Instr>> {
     Lexer { cells, i: 0, axis }.parse(None, None)
 }
+
