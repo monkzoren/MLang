@@ -62,6 +62,11 @@ fi
 # every later one into the wrong slot.
 set -- serve --parallel "$LIVE" "$PORT" "$TEACH_TOKEN" "$LIVE"
 KEY=${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-$ANTHROPIC_API_KEY}}
+# A key pasted into a deployment UI arrives with the newline it was copied
+# with more often than not, and an HTTP header cannot hold one: the request
+# then fails before the socket. Whitespace is never part of a key, so strip
+# it here rather than making every operator discover this once.
+KEY=$(printf %s "$KEY" | tr -d "\r\n" | sed "s/^[[:space:]]*//; s/[[:space:]]*$//")
 if [ -n "$KEY" ]; then
   set -- "$@" "$KEY" "$MODEL_NAME" "$MODEL_URL" "$MODEL_DIALECT" "$MODEL_VERSION"
 else

@@ -3,6 +3,7 @@
 //! Each test binds its own OS-chosen port, so they run in parallel.
 
 use mlang::http::{HttpBridge, validate_response};
+use mlang::vm;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -314,4 +315,49 @@ fn send_carries_its_headers_and_body_and_returns_the_answer() {
     assert!(seen.contains("Content-Type: application/json"), "{seen}");
     // and the response body comes back to the program
     assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), r#"{"q":"hello"}"#);
+}
+
+/// A header value that cannot go on the wire is a fault in the program, and
+/// has to say so.
+///
+/// ureq reports an invalid header as a *transport* error, which is
+/// indistinguishable from a refused connection — so a key carrying the
+/// newline it was pasted with reads as "cannot reach", and the operator goes
+/// looking for a firewall. The commonest real failure in a deployed grid
+/// deserves the commonest real cause, by name. No socket is opened.
+#[test]
+fn a_header_that_cannot_be_sent_is_named_not_blamed_on_the_network() {
+    // The url is never contacted: these must fail before any connection.
+    let url = "http://127.0.0.1:1/never";
+    // Built with ⍘ rather than written: the characters at issue cannot appear
+    // inside a « » literal, which is itself part of why they surprise people.
+    for (value, want) in [
+        ("«sk-abc»10⍘⧺", "a newline"),
+        ("«sk-abc»13⍘⧺", "a carriage return"),
+        ("«sk-caf»233⍘⧺", "a non-ASCII character"),
+    ] {
+        let src = format!("⇊\n⟨«{url}» ⟨⟨«Authorization» {value}⟩⟩ «{{}}»⟩⍄⌫\n");
+        let prog = vm::compile_text(&src).expect("weaves");
+        let mut input = std::io::Cursor::new(Vec::new());
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        vm::VM::new(&mut input, &mut out, &mut err).run_compiled(&prog);
+        let e = String::from_utf8_lossy(&err);
+        assert!(e.contains("header «Authorization»"), "should name the header: {e}");
+        assert!(e.contains(want), "should say it holds {want}: {e}");
+        assert!(!e.contains("cannot reach"), "must not read as a network fault: {e}");
+    }
+
+    // A tab and a space are legal in a header value and must still be sent.
+    let src = format!("⇊\n⟨«{url}» ⟨⟨«X» «a b»9⍘⧺«c»⧺⟩⟩ «{{}}»⟩⍄⌫\n");
+    let prog = vm::compile_text(&src).expect("weaves");
+    let mut input = std::io::Cursor::new(Vec::new());
+    let (mut out, mut err) = (Vec::new(), Vec::new());
+    vm::VM::new(&mut input, &mut out, &mut err).run_compiled(&prog);
+    let e = String::from_utf8_lossy(&err);
+    // What happens at the socket is the environment's business — refused here,
+    // answered by a proxy there. The claim is only that validation let it by.
+    assert!(
+        !e.contains("header «X»"),
+        "a tab and a space are legal in a header value: {e}"
+    );
 }

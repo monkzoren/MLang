@@ -89,7 +89,11 @@ sigil  name          effect              description
                                          already there; this says something first.
                                          Neither names an OS error — a run that did
                                          could not replay elsewhere; MLANG_HTTP_DEBUG
-                                         puts the reason on stderr when you need it
+                                         puts the reason on stderr when you need it.
+                                         A header value holding a newline or a
+                                         non-ASCII character is refused by name,
+                                         before the socket: the usual cause is a key
+                                         pasted with the newline it was copied with
 ⎆      accept        → ⟨id m path body⟩  the next HTTP request this program is serving, ∅ at end of input
                                          (lowest priority, like ⌨). Replay mode (default): ▷ frames on stdin;
                                          live mode (mlang serve / MLANG_PORT): a real listener

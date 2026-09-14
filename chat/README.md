@@ -144,6 +144,12 @@ you do not publish a port on the host.
    |---|---|---|
    | `PORT` | `8080` | the grid, the healthcheck and the proxy all follow it |
    | `MLANG_HTTP_DEBUG` | unset | put the reason `⍆`/`⍄` could not connect on stderr |
+
+   Paste the key carefully, or let `boot` do it for you: it strips whitespace,
+   because a key copied into a deployment UI usually arrives with a trailing
+   newline and an HTTP header cannot hold one. `⍄` now refuses such a value by
+   name rather than reporting it as a network failure — which is what it did
+   once, for an hour, to the person reading this.
    | `TEACH_TOKEN` | — | the password for `POST /teach`. Not a model key |
    | `MODEL_API_KEY` | — | unset ⇒ the learner is inert, by design |
    | `MODEL_NAME` | `deepseek-flash` | |

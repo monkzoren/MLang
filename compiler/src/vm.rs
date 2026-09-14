@@ -3044,6 +3044,27 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 let [Value::Str(k), Value::Str(val)] = &kv[..] else {
                     return bad("and each header must be ⟨name value⟩ of strings");
                 };
+                // A header value that cannot go on the wire is a fault in the
+                // program, not in the network, and saying "cannot reach" for
+                // it sends you hunting a firewall for an hour. The commonest
+                // cause by far is an API key carrying the newline it was
+                // pasted with. Checked here, before the socket, so the
+                // message names the header and stays the same everywhere.
+                if let Some(bad_ch) = val
+                    .chars()
+                    .find(|c| *c != '\t' && (c.is_control() || !c.is_ascii()))
+                {
+                    let what = match bad_ch {
+                        '\n' => "a newline".to_string(),
+                        '\r' => "a carriage return".to_string(),
+                        c if c.is_control() => format!("a control character (U+{:04X})", c as u32),
+                        c => format!("a non-ASCII character («{c}»)"),
+                    };
+                    return glitch(
+                        format!("⍄ header «{k}» holds {what}, which cannot be sent"),
+                        pos,
+                    );
+                }
                 headers.push((k.to_string(), val.to_string()));
             }
             if !(url.starts_with("http://") || url.starts_with("https://")) {
