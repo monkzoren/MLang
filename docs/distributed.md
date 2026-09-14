@@ -123,6 +123,15 @@ to join — the hub is a server.
 
 ## What is preserved, and what is traded
 
+Traded, and worth knowing before you design around it:
+
+* **A distributed grid cannot be re-woven while it runs.** The loom needs
+  the deterministic scheduler (SPEC §4.7) and a hub or worker runs its
+  strands on threads, so a patch — arriving on `/.loom` or raised from
+  inside with `⟡` — is refused with 422. Patch each machine's own program
+  and restart it. A single-process grid keeps hot patching; spreading it
+  over machines is the thing you give up to get it.
+
 Preserved, and covered by `compiler/tests/net.rs`:
 
 * **Per-sender FIFO and blocking receive.** TCP keeps each connection

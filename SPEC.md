@@ -353,8 +353,16 @@ takes a stamped file back (or `?base=N` for an unstamped one),
 `GET /.loom/log` lists every version with what it changed, and
 `GET /.loom/vN` is one past version. `mlang pull`, `mlang patch`, and
 `mlang loom` are those routes from the command line; `MLANG_LOOM=0`
-closes them. The loom requires the deterministic scheduler; under
-`--parallel` a patch is refused.
+closes them.
+
+**The loom requires the deterministic scheduler.** A seam is a point in a
+deterministic schedule, and there is no such point when the strands are
+running at once, so anything that puts them on real threads is out of the
+loom's reach: under `--parallel`, and equally under `mlang hub` /
+`mlang worker` (§6.2), a patch is refused with 422 — an arriving one and
+`⟡` alike. The refusal names which of the two it is looking at, because
+the remedies differ: drop `--parallel`, or patch each machine's own
+program and restart it.
 
 **A served grid never exits.** When every strand has finished, died,
 or deadlocked, a live program with its loom open holds its port: each

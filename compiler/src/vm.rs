@@ -1405,8 +1405,19 @@ impl VM<'_> {
         text: &str,
         mut me: Option<&mut Strand>,
     ) -> Result<String, (u16, String)> {
-        if self.bus.is_some() {
-            return Err((422, "✗ patch rejected: hot patching needs the deterministic scheduler — drop --parallel\n".into()));
+        // Anything that runs strands on real threads is out of the loom's
+        // reach: a seam is a point in a deterministic schedule, and there is
+        // no such point when the strands are running at once. `--parallel`
+        // and `mlang hub`/`mlang worker` both land here, and they have
+        // different remedies, so the refusal names the one it is looking at.
+        if let Some(bus) = &self.bus {
+            return Err((422, if bus.is_distributed() {
+                "✗ patch rejected: hot patching needs the deterministic scheduler, and a \
+                 distributed grid (mlang hub / mlang worker) runs its strands on threads — \
+                 patch each machine's own program and restart it\n".into()
+            } else {
+                "✗ patch rejected: hot patching needs the deterministic scheduler — drop --parallel\n".to_string()
+            }));
         }
         let loom = match &self.loom {
             Some(l) => l.clone(),

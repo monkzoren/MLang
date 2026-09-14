@@ -87,6 +87,10 @@ pub struct Bus {
     /// Channels bridged outward by net.rs: a send goes to the tap, not
     /// the local queue. Empty except under `mlang hub` / `mlang worker`.
     exports: HashMap<char, ExportTap>,
+    /// Whether this grid is spread over machines — a hub exports channels
+    /// and a worker imports them, and `--parallel` alone does neither. The
+    /// loom refuses both, and needs to say which one it is looking at.
+    distributed: bool,
     /// Replay-mode web state (⎆/⍅ without a live listener): the request
     /// counter and the ids still awaiting a response, shared by all strands.
     replay_web: Mutex<(i64, HashSet<i64>)>,
@@ -130,6 +134,10 @@ impl Bus {
         )
     }
 
+    pub(crate) fn is_distributed(&self) -> bool {
+        self.distributed
+    }
+
     /// A Bus with network bridging: sends to an exported channel go to
     /// its tap, and imported channels stay deadlock-exempt until the
     /// wire delivers their ∅ (close_import).
@@ -142,7 +150,9 @@ impl Bus {
         exports: HashMap<char, ExportTap>,
         imports: HashSet<char>,
     ) -> Bus {
+        let distributed = !exports.is_empty() || !imports.is_empty();
         Bus {
+            distributed,
             state: Mutex::new(State {
                 chans: HashMap::new(),
                 globals: HashMap::new(),
