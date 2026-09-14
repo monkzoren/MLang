@@ -12,7 +12,7 @@ services:
       context: ..
       dockerfile: chat/Dockerfile
     expose:
-      - "8080"
+      - "${PORT:-8080}"
     environment:
       # Reaches the grid as ⌂0@, the token POST /teach must carry. Without
       # it the bot serves and refuses to learn, which is the safe default.
@@ -21,6 +21,8 @@ services:
       # that is comes from E in chat.ml, not from here. Leave it unset and the
       # bot still answers everything it knows, says so plainly when it does
       # not, and never talks to anything outside this server.
+      # The grid listens here and the healthcheck probes here, together.
+      PORT: ${PORT:-8080}
       MODEL_API_KEY: ${MODEL_API_KEY:-}
       # Any of these that is blank keeps chat.ml's default, so setting the
       # model alone does not mean restating the endpoint it belongs to.

@@ -108,7 +108,10 @@ you do not publish a port on the host.
 2. **Build Pack: Dockerfile**, file `chat/Dockerfile`, **build context the
    repository root** — the build welds `std/*.ml` into the binary with
    `include_str!`, so it needs `compiler/` *and* `std/`.
-3. **Port** `8080` — what the proxy forwards to inside the container.
+3. **Port** `8080` — what the proxy forwards to inside the container. It
+   has to match what the grid is listening on or the proxy answers 502
+   from a container reporting itself perfectly healthy. Change both at
+   once with the `PORT` variable rather than only this field.
 4. **Domain**: point its DNS `A` record at the server first, or the
    certificate cannot be issued.
 5. **Persistent volume** at `/data`. Skip it and the bot forgets everything
@@ -123,6 +126,7 @@ you do not publish a port on the host.
 
    | variable | default | |
    |---|---|---|
+   | `PORT` | `8080` | the grid, the healthcheck and the proxy all follow it |
    | `TEACH_TOKEN` | — | the password for `POST /teach`. Not a model key |
    | `MODEL_API_KEY` | — | unset ⇒ the learner is inert, by design |
    | `MODEL_NAME` | `deepseek-flash` | |

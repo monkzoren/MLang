@@ -29,11 +29,16 @@ USER grid
 # Reachable from off the machine — which is why the loom's HTTP routes stay
 # shut here (SPEC §5.5). The bot still re-weaves itself; nobody else can.
 ENV MLANG_HOST=0.0.0.0
+# The port the grid listens on, and the one the healthcheck probes, are the
+# same variable — so a deployment that moves one cannot leave the other
+# behind. A proxy pointed at a port nothing is on is a 502 from a container
+# that reports itself healthy, which is a miserable thing to debug.
+ENV PORT=8080
 EXPOSE 8080
 # ⍆ honours HTTP_PROXY, and a proxy set for outbound traffic would answer
 # this instead of the grid.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
-  CMD env -u HTTP_PROXY -u http_proxy mlang eval '«http://127.0.0.1:8080/»⍆⌫'
+  CMD env -u HTTP_PROXY -u http_proxy mlang eval "«http://127.0.0.1:$PORT/»⍆⌫"
 # The one line here that is not MLang: seed the volume on first boot, because
 # /data is mounted over whatever the image put there.
 # Two things this start line has to get right, both measured in chat/README.md:
@@ -45,4 +50,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
 #               MODEL_URL, MODEL_DIALECT and MODEL_VERSION ride along with
 #               it; each is optional, and blank means "keep the default",
 #               so they are always passed and never have to be counted.
-CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml; K=\"${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-$ANTHROPIC_API_KEY}}\"; if [ -n \"$K\" ]; then set -- \"$@\" \"$K\" \"$MODEL_NAME\" \"$MODEL_URL\" \"$MODEL_DIALECT\" \"$MODEL_VERSION\"; fi; exec mlang \"$@\""]
+CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; set -- serve --parallel /data/chat.ml \"${PORT:-8080}\" \"$TEACH_TOKEN\" /data/chat.ml; K=\"${MODEL_API_KEY:-${DEEPSEEK_API_KEY:-$ANTHROPIC_API_KEY}}\"; if [ -n \"$K\" ]; then set -- \"$@\" \"$K\" \"$MODEL_NAME\" \"$MODEL_URL\" \"$MODEL_DIALECT\" \"$MODEL_VERSION\"; fi; exec mlang \"$@\""]
