@@ -117,6 +117,9 @@ standing on the dropoff.
 
 YOUR ANSWER must be exactly one line of MLang, in a single fenced code
 block, and it must be a pump from γ to α — that is, it must end with ⇉γα.
+Reply with nothing but that fenced block. Do not use tools, do not read
+files, do not explain. There is no repository to inspect and no command to
+run; everything you need is in this message.
 Anything before the pump on that line runs once, when the strand starts,
 which is where to give a local its first value. The line doing nothing is:
 
@@ -153,6 +156,9 @@ def feedback(f, w, err):
         report = "\n".join(err.strip().splitlines()[:12])
         return "The machine broke. The runtime said:\n\n" + report
     out = ["It ran. %s" % w.summary()]
+    if w.score() == 1300:
+        out.append("That is exactly the score of the line that does nothing, []⇉γα, "
+                   "so whatever you computed did not change where the robot went.")
     if f["violations"]:
         out.append("It broke %d of the invariants (walking into walls, or failing "
                    "to grip or drop where it should)." % f["violations"])
@@ -189,14 +195,19 @@ def main():
             for i, (line, note) in enumerate(history, 1):
                 p.append("\nAttempt %d:\n```\n%s\n```\n%s\n" % (i, line, note))
             p.append("\nWrite a better line.")
-        line = heal.extract_program(complete("".join(p))).strip()
-        line = line.splitlines()[-1].strip() if line else ""
+        # A reply that is not a pump at all is harness noise, not an attempt:
+        # `claude -p` is an agentic CLI and sometimes answers with tool-call
+        # text. Re-ask rather than spend a round on it.
+        line = ""
+        for _ in range(3):
+            line = heal.extract_program(complete("".join(p))).strip()
+            line = line.splitlines()[-1].strip() if line else ""
+            if "⇉γα" in line:
+                break
+            print("         (discarded a reply that was not a γ→α pump)")
         print("round %d: %s" % (r, line[:110] + ("…" if len(line) > 110 else "")))
-
         if "⇉γα" not in line:
-            note = "That was not a pump from γ to α; the line must end with ⇉γα."
-            print("         rejected — not a γ→α pump")
-            history.append((line, note))
+            history.append((line, "That was not a pump from γ to α."))
             continue
 
         f, w, err, v = evaluate(line, corpus, args.ticks)
