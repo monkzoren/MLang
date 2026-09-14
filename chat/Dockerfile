@@ -1,9 +1,10 @@
 # The grid chatbot. Build context is the repository root:
 #     docker build -f chat/Dockerfile -t grid-chat .
 #
-# Two stages, because the toolchain is only needed to produce one 4 MB
-# self-contained binary — the standard library is welded into it, so the
-# runtime image carries no MLang source but the bot's own program.
+# The runtime carries one ~4 MB binary and one .ml file. No interpreter, no
+# web server, no sidecar: the program below is the whole application, and it
+# re-weaves itself with ⟐ and ⟡ (SPEC §4.7) rather than being patched from
+# outside.
 FROM rust:1-slim AS build
 WORKDIR /src
 # vm.rs welds std/*.ml into the binary with include_str!, so both are needed.
@@ -13,21 +14,19 @@ COPY std/ std/
 # server never opens.
 RUN cargo build --release --no-default-features --manifest-path compiler/Cargo.toml
 
-FROM python:3.12-slim
-COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
-WORKDIR /app
-COPY chat/serve.py chat/chat.ml ./
-# LIVE_SOURCE is the program the bot has become; mount a volume there or a
-# restart forgets everything it was taught.
-ENV PORT=8080 \
-    GRID_PORT=4321 \
-    MLANG_BIN=/usr/local/bin/mlang \
-    SEED_SOURCE=/app/chat.ml \
-    LIVE_SOURCE=/data/chat.ml \
-    PYTHONUNBUFFERED=1
+FROM debian:stable-slim
 RUN useradd -m grid && mkdir -p /data && chown grid:grid /data
+COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
+COPY chat/chat.ml /app/chat.ml
 USER grid
+# Reachable from off the machine — which is why the loom's HTTP routes stay
+# shut here (SPEC §5.5). The bot still re-weaves itself; nobody else can.
+ENV MLANG_HOST=0.0.0.0
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD python3 -c "import urllib.request,os;urllib.request.urlopen('http://127.0.0.1:'+os.environ['PORT']+'/').read()"
-CMD ["python3", "serve.py"]
+# ⍆ honours HTTP_PROXY, and a proxy set for outbound traffic would answer
+# this instead of the grid.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
+  CMD env -u HTTP_PROXY -u http_proxy mlang eval '«http://127.0.0.1:8080/»⍆⌫'
+# The one line here that is not MLang: seed the volume on first boot, because
+# /data is mounted over whatever the image put there.
+CMD ["sh", "-c", "[ -f /data/chat.ml ] || cp /app/chat.ml /data/chat.ml; exec mlang serve /data/chat.ml 8080 \"$TEACH_TOKEN\" /data/chat.ml"]

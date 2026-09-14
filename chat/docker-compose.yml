@@ -14,8 +14,8 @@ services:
     expose:
       - "8080"
     environment:
-      # Required for POST /teach. Without it the bot serves and refuses to
-      # learn, which is the safe default.
+      # Reaches the grid as ⌂0@, the token POST /teach must carry. Without
+      # it the bot serves and refuses to learn, which is the safe default.
       TEACH_TOKEN: ${TEACH_TOKEN}
     volumes:
       # The bot's memory. Without this a redeploy resets it to the seed.
