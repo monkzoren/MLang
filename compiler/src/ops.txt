@@ -88,6 +88,11 @@ sigil  name          effect              description
                                          live mode (mlang serve / MLANG_PORT): a real listener
 ⍅      respond       ⟨id st type body⟩ ⍅ →   answer request id with status st; replay writes a ◁ frame,
                                          live writes the real HTTP response; unknown id glitches
+⟐      source        → s                 the program this grid is currently running, as text
+⟡      weave         s ⟡ → ⟨status rpt⟩   re-weave this grid into program s — the loom (§4.7) from the
+                                         inside. 200 and the loom's report, or 409/422 and why. A text
+                                         that does not weave changes nothing; each strand takes the new
+                                         code at its own seam, so nothing blocks and nothing restarts
 ⍟      debug         →                   dump this strand's stack to stderr
 ⌂      args          → L                 the program's command-line arguments, a list of strings
 ⍜      termsize      → ⟨rows cols⟩       the terminal size (⟨24 80⟩ when there is no terminal)

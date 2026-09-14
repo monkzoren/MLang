@@ -889,6 +889,16 @@
    "name": "loom-rebinds-a-library-sigil-the-program-owns",
    "source": "«mine»≔ⓐ\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» ⓐ⟩⍅ 1]?]⟳\n",
    "stdin": "▷ GET /a\n⟡ 0 101\n«still mine»≔ⓐ\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⟨⇅0@ 200 «text/plain» ⓐ⟩⍅ 1]?]⟳\n▷ GET /b\n"
+  },
+  {
+   "name": "self-weave",
+   "source": "«one»≔G\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/grow»=[⟐«one»⊆«two»⊇⇒n n⟡0@⍕][G]?⇒a ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+   "stdin": "▷ GET /\n▷ GET /grow\n▷ GET /\n"
+  },
+  {
+   "name": "self-weave-refused",
+   "source": "«one»≔G\n⇊\n1⇒g[g][⎆∂∅=[⌫0⇒g][⇒r r2@«/break»=[⟐«≔G»⊆«≔G [[[»⊇⇒n n⟡0@⍕][G]?⇒a ⟨r0@ 200 «text/plain» a⟩⍅]?]⟳\n",
+   "stdin": "▷ GET /break\n▷ GET /\n"
   }
  ],
  "examples": [

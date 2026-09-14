@@ -2847,6 +2847,45 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
                 return glitch(format!("⍈ cannot write «{path}»"), pos);
             }
         }
+        // ── the loom, from the inside ──
+        //
+        // A grid could always be re-woven; until these two it could only be
+        // re-woven by somebody else. ⟐ hands a strand the program it is
+        // currently running, and ⟡ weaves a new one in. Everything the loom
+        // does to an outside patch it does to this one: the whole text is
+        // woven before anything changes, a text that does not weave is
+        // refused and the running grid is untouched, and each strand takes
+        // the new code at its own seam. Nothing blocks and nothing is
+        // re-executed — the strand that patched itself keeps running its old
+        // code until its next iteration boundary, exactly as if the patch had
+        // arrived from outside.
+        //
+        // This is deterministic: a self-patch is a function of the program
+        // and its input, so a replayed run produces the same versions in the
+        // same order without the patches having to travel in the stream.
+        '⟐' => {
+            let text = match &vm.loom {
+                Some(l) => l.text(l.current()).unwrap_or_default(),
+                None => vm.sources.first().map(|l| l.join("\n") + "\n").unwrap_or_default(),
+            };
+            s.push(Value::str(text));
+        }
+        '⟡' => {
+            let v = s.pop(pos, "a program")?;
+            let Value::Str(text) = &v else {
+                return glitch(format!("⟡ expects a program string, got {}", type_name(&v)), pos);
+            };
+            let base = vm.loom.as_ref().map(|l| l.current()).unwrap_or(0);
+            let text = text.to_string();
+            let (status, report) = match vm.hot_patch(base, &text, Some(s)) {
+                Ok(report) => (200i64, report),
+                Err((status, why)) => (i64::from(status), why),
+            };
+            s.push(Value::List(std::sync::Arc::new(vec![
+                Value::int(status),
+                Value::str(report),
+            ])));
+        }
         '⍆' => {
             let v = s.pop(pos, "a url")?;
             let Value::Str(url) = &v else {

@@ -327,6 +327,22 @@ how a server waits for its next request), a top-level `⇉` between two
 values — or a strand that has not started, or one that died. A strand
 busy inside an iteration takes its patch when the iteration ends.
 
+**From the inside.** `⟐` pushes the program the grid is currently running,
+and `⟡` weaves a new one in: a strand can read its own source, change it,
+and submit it without anything outside the grid taking part. The submitted
+text is treated exactly as an arriving patch — merged against the live
+version, woven in full first, refused with the same 409 and 422 and the same
+reports, and taken by each strand at its own seam. `⟡` leaves
+`⟨status report⟩` on the stack rather than writing a frame, so a program can
+answer for its own re-weaving. Nothing blocks and nothing is re-executed:
+the strand that submitted the patch runs on its old code until its next
+seam, exactly as if the patch had come from outside. A self-patch is a
+function of the program and its input, so determinism is unaffected — a
+replayed run produces the same versions in the same order without the
+patches travelling in the stream. `⟐` and `⟡` work whether or not the
+`/.loom` routes are published, so a grid that offers no loom to the network
+can still re-weave itself.
+
 **Transports.** In replay mode a patch is a frame on stdin, `⟡ base
 nbytes` followed by nbytes of source, and the runtime writes `⟡ status
 nbytes` and its report to stdout (200 applied, 409 conflict, 422
@@ -460,6 +476,8 @@ strings; otherwise glitch) · `∧` `∨` `¬` `⊻` (truthiness).
 | `⍆` | `url → s` | HTTP(S) GET, the response body as a string (§5.2); failure glitches `⍆ cannot fetch «url»`, an error status glitches `⍆ «url» answered 404` |
 | `⎆` | `→ ⟨id method path body⟩ \| ∅` | accept the next HTTP request this program is serving (§5.5); `∅` at end of input; lowest scheduling priority, like `⌨` |
 | `⍅` | `⟨id status type body⟩ →` | answer request `id` with an HTTP status, content type, and body (§5.5); an unknown or already-answered id glitches |
+| `⟐` | `→ s` | the program this grid is currently running, as text (§4.7) |
+| `⟡` | `s → ⟨status report⟩` | re-weave this grid into program `s`: the loom from the inside (§4.7) |
 | `⍟` | `→` | dump this strand's stack to stderr |
 | `⌂` | `→ L` | the program's command-line arguments, a list of strings |
 | `⍜` | `→ ⟨rows cols⟩` | the terminal size; `⟨24 80⟩` when there is no terminal |
@@ -583,7 +601,12 @@ meaning:
   deterministic byte for byte.
 * **Live mode** — `mlang serve prog.ml [port]` (default 4321), or
   `MLANG_PORT=…` for a welded binary. A real HTTP/1.1 listener on
-  127.0.0.1 materializes each request into the identical value shape,
+  127.0.0.1 — `MLANG_HOST=…` binds another interface, and a grid that is
+  reachable from off the machine keeps its loom **shut** unless
+  `MLANG_LOOM=1` asks for it by name, because publishing a port should not
+  quietly publish the power to replace the program behind it (`⟐` and `⟡`
+  are unaffected, so such a grid can still re-weave itself: §4.7). The
+  listener materializes each request into the identical value shape,
   and `⍅` writes the real response (`Connection: close`; the status
   line, `Content-Type`, and `Content-Length` come from the response
   value). Requests are parsed with a hard 10-second deadline and a

@@ -215,12 +215,21 @@ fn run_compiled(
         // A served program opens its loom (SPEC §4.7) unless MLANG_LOOM=0:
         // the bridge serves the version store, the VM patches it.
         if let Some(bridge) = &http {
-            if !loom_disabled() {
-                let loom = mlang::loom::Loom::new(&(prog.source.join("\n") + "\n"));
+            let host = serve_host();
+            // ⟐ and ⟡ need the version store whether or not the routes are
+            // published, so a grid that is not offering /.loom to the network
+            // can still re-weave itself from the inside.
+            let loom = mlang::loom::Loom::new(&(prog.source.join("\n") + "\n"));
+            if loom_open(&host) {
                 bridge.attach_loom(loom.clone());
-                eprintln!("⟡ the loom is open at http://127.0.0.1:{}/.loom", bridge.port);
-                machine.loom = Some(loom);
+                eprintln!("⟡ the loom is open at http://{host}:{}/.loom", bridge.port);
+            } else if !is_loopback(&host) {
+                eprintln!(
+                    "⟡ the loom is closed: this grid is bound to {host}, not the loopback \
+                     (MLANG_LOOM=1 opens it anyway)"
+                );
             }
+            machine.loom = Some(loom);
         }
         machine.http = http;
         machine.run_compiled(prog)
@@ -237,9 +246,28 @@ fn run_source(text: &str, prog_args: Vec<String>, parallel: bool) -> ExitCode {
     }
 }
 
-/// MLANG_LOOM=0 keeps a served program's source private: no /.loom routes.
-fn loom_disabled() -> bool {
-    std::env::var("MLANG_LOOM").map(|v| v == "0").unwrap_or(false)
+/// MLANG_HOST chooses the interface `mlang serve` (and MLANG_PORT for a
+/// welded binary) listens on. The default is the loopback, as §5.5 says: a
+/// grid is not reachable from off the machine unless somebody says so.
+fn serve_host() -> String {
+    std::env::var("MLANG_HOST").unwrap_or_else(|_| "127.0.0.1".into())
+}
+
+fn is_loopback(host: &str) -> bool {
+    host == "127.0.0.1" || host == "::1" || host == "localhost"
+}
+
+/// Whether a served program opens its loom (SPEC §4.7), and there are two
+/// ways for it not to. MLANG_LOOM=0 closes it outright. And a grid bound to
+/// anything but the loopback can be reached by strangers, so there the loom
+/// stays shut unless MLANG_LOOM=1 asks for it by name — publishing a port
+/// should never quietly publish the power to replace the program behind it.
+fn loom_open(host: &str) -> bool {
+    match std::env::var("MLANG_LOOM").as_deref() {
+        Ok("0") => false,
+        Ok("1") => true,
+        _ => is_loopback(host),
+    }
 }
 
 /// Normalize what `pull`/`patch`/`loom` accept as a server: a full URL,
@@ -391,9 +419,10 @@ fn loom_log(server: &str) -> ExitCode {
 /// `mlang serve` (and MLANG_PORT for welded binaries): start the live web
 /// listener and announce it, then run the program against it.
 fn start_bridge(port: u16) -> Result<std::sync::Arc<mlang::http::HttpBridge>, ExitCode> {
-    match mlang::http::HttpBridge::start(port) {
+    let host = serve_host();
+    match mlang::http::HttpBridge::start_on(&host, port) {
         Ok(bridge) => {
-            eprintln!("⇓ the grid is listening on http://127.0.0.1:{}", bridge.port);
+            eprintln!("⇓ the grid is listening on http://{host}:{}", bridge.port);
             Ok(bridge)
         }
         Err(e) => {

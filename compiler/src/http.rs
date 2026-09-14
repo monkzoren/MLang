@@ -110,14 +110,29 @@ impl HttpBridge {
     /// Bind 127.0.0.1:port (0 lets the OS choose) and start accepting,
     /// with the 10-second request deadline the spec promises.
     pub fn start(port: u16) -> std::io::Result<Arc<HttpBridge>> {
-        HttpBridge::start_with_deadline(port, DEADLINE)
+        HttpBridge::start_on("127.0.0.1", port)
+    }
+
+    /// `start`, on a chosen interface. The loopback remains the default and
+    /// the only address a program gets without asking: see MLANG_HOST, and
+    /// the loom rule that goes with it.
+    pub fn start_on(host: &str, port: u16) -> std::io::Result<Arc<HttpBridge>> {
+        HttpBridge::start_with_deadline_on(host, port, DEADLINE)
     }
 
     /// `start`, with the request deadline chosen by the caller. The
     /// runtime always uses the spec's 10 seconds; a shorter budget exists
     /// so tests can prove the deadline bites without waiting it out.
     pub fn start_with_deadline(port: u16, deadline: Duration) -> std::io::Result<Arc<HttpBridge>> {
-        let listener = TcpListener::bind(("127.0.0.1", port))?;
+        HttpBridge::start_with_deadline_on("127.0.0.1", port, deadline)
+    }
+
+    pub fn start_with_deadline_on(
+        host: &str,
+        port: u16,
+        deadline: Duration,
+    ) -> std::io::Result<Arc<HttpBridge>> {
+        let listener = TcpListener::bind((host, port))?;
         let port = listener.local_addr()?.port();
         let bridge = Arc::new(HttpBridge {
             queue: Mutex::new(Queue { items: VecDeque::new(), next_id: 1 }),
