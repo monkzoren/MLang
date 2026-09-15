@@ -55,10 +55,17 @@
 [⇒i⇒v ⌂#i>[⌂i@⇒t t#0>[t][v]?][v]?]≔O            ※ default index → the argument, if given and not blank
 ⟨G0@ 4 O  G1@ 3 O  G2@ 6 O  G3@ 5 O⟩≔E          ※ so the deployment can say, without a rebuild
 «Answer in one short plain sentence. No preamble, no markdown, no newlines.»≔I
+※ A truncated answer is never learned. A reasoning model spends the budget
+※ thinking before it says anything, so a cap that looks generous can still
+※ cut the sentence in half — and a half sentence welded into the program is
+※ there for good. Both dialects say when they stopped early; believe them.
 [⇒q ⌂#3<[∅][E3@«openai»=⇒o
  o[⟨⟨«Authorization» «Bearer »⌂2@⧺⟩ ⟨«content-type» «application/json»⟩⟩][⟨⟨«x-api-key» ⌂2@⟩ ⟨«anthropic-version» E2@⟩ ⟨«content-type» «application/json»⟩⟩]?⇒x
- o[⟨⟨«model» E1@⟩ ⟨«max_tokens» 512⟩ ⟨«messages» ⟨⟨⟨«role» «system»⟩ ⟨«content» I⟩⟩ ⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩][⟨⟨«model» E1@⟩ ⟨«max_tokens» 512⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩]?⒮⇒d
- ⟨E0@ x d⟩⇒b [b⍄⒥ o[⟨«choices» 0 «message» «content»⟩][⟨«content» 0 «text»⟩]?⒫][⌫∅]⍥]?]≔K   ※ question → an answer, or ∅   ※ question → an answer, or ∅
+ o[⟨⟨«model» E1@⟩ ⟨«max_tokens» 2048⟩ ⟨«messages» ⟨⟨⟨«role» «system»⟩ ⟨«content» I⟩⟩ ⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩][⟨⟨«model» E1@⟩ ⟨«max_tokens» 2048⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩]?⒮⇒d
+ ⟨E0@ x d⟩⇒b [b⍄⒥⇒j
+  [j o[⟨«choices» 0 «finish_reason»⟩][⟨«stop_reason»⟩]?⒫][⌫«»]⍥⇒z   ※ absent is not truncated
+  z«length»= z«max_tokens»= ∨[∅][j o[⟨«choices» 0 «message» «content»⟩][⟨«content» 0 «text»⟩]?⒫]?
+ ][⌫∅]⍥]?]≔K   ※ question → an answer, or ∅   ※ question → an answer, or ∅
 [«|»⊆⇒f ⌂#2<[«teaching is not configured here.⏎»][
   ⌂0@#0=[«teaching is not configured here.⏎»][   ※ an unset TEACH_TOKEN is not a blank one
    f#3≠[«expected token|pattern|reply⏎»][
