@@ -95,7 +95,7 @@
 ※ there for good. Both dialects say when they stopped early; believe them.
 [⇒q ⌂#3<[∅][E3@«openai»=⇒o
  o[⟨⟨«Authorization» «Bearer »⌂2@⧺⟩ ⟨«content-type» «application/json»⟩⟩][⟨⟨«x-api-key» ⌂2@⟩ ⟨«anthropic-version» E2@⟩ ⟨«content-type» «application/json»⟩⟩]?⇒x
- o[⟨⟨«model» E1@⟩ ⟨«max_tokens» 2048⟩ ⟨«messages» ⟨⟨⟨«role» «system»⟩ ⟨«content» I⟩⟩ ⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩][⟨⟨«model» E1@⟩ ⟨«max_tokens» 2048⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩]?⒮⇒d
+ o[⟨⟨«model» E1@⟩ ⟨«max_tokens» 8192⟩ ⟨«messages» ⟨⟨⟨«role» «system»⟩ ⟨«content» I⟩⟩ ⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩][⟨⟨«model» E1@⟩ ⟨«max_tokens» 8192⟩ ⟨«output_config» ⟨⟨«effort» «low»⟩⟩⟩ ⟨«system» I⟩ ⟨«messages» ⟨⟨⟨«role» «user»⟩ ⟨«content» q⟩⟩⟩⟩⟩]?⒮⇒d
  ⟨E0@ x d⟩⇒b [b⍄⒥⇒j
   [j o[⟨«choices» 0 «finish_reason»⟩][⟨«stop_reason»⟩]?⒫][⌫«»]⍥⇒z   ※ absent is not truncated
   z«length»= z«max_tokens»= ∨[∅][j o[⟨«choices» 0 «message» «content»⟩][⟨«content» 0 «text»⟩]?⒫]?
