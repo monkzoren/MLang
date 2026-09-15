@@ -28,6 +28,17 @@
 ※ re-weaves itself from the inside, and nobody outside can.
 171⍘≔L 187⍘≔Y                                   ※ « and », which no literal can hold
 «⟩≔»«R»⧺≔M                                      ※ where the table ends — built, never written
+※ The first skill. A row answers one question; this answers every sum,
+※ including the ones nobody has asked yet, and it costs no API call. It
+※ keeps only the characters arithmetic is made of, so «what is 120+50»
+※ is «120+50», and leaves ∅ — not mine — for anything it cannot read, so
+※ the question goes on as if no rule had matched.
+※ Locals are the calling strand's. The body strand keeps its request in r
+※ and its answer in a, so nothing called from it may store there — a
+※ definition that does answers the wrong request. C uses u v l f i j.
+[⇒s s«»⊆[⇒c «0123456789.+-×*÷/» c∈]⌿«»⊇⇒u ∅⇒v
+ ⟨«+» «-» «×» «*» «÷» «/»⟩[⇒l v∅=[u l⊆⇒f f#2=[[f0@⍎⇒i f1@⍎⇒j l«+»=[i j+][l«-»=[i j-][l«÷»=l«/»=∨[i j÷][i j×]?]?]?⍕⇒v][⌫]⍥][]?][]?]∀
+ v]≔C
 ⟨
  ⟨«hello» «Hello. I am a grid. Every reply you get is computed by an MLang program.»⟩
  ⟨«hi» «Hello there.»⟩
@@ -35,13 +46,20 @@
  ⟨«how do you learn» «Teach me: POST /teach with token|pattern|reply. I re-weave myself, in flight.»⟩
  ⟨«help» «Say hello, ask who I am, ask how I learn, or teach me something new.»⟩
  ⟨«bye» «Goodbye.»⟩
+ ⟨«+» [C]⟩ ⟨«-» [C]⟩ ⟨«×» [C]⟩ ⟨«*» [C]⟩ ⟨«÷» [C]⟩ ⟨«/» [C]⟩
 ⟩≔R
 «I do not know that yet. I am finding out — ask me again shortly.»≔D
 ※ With no key in ⌂2@ the learner cannot ask anyone, so D would be a lie
 ※ told forever. A bot that says what it is is worth more than one that
 ※ promises what it cannot do.
 «I do not know that yet, and nobody has taught me. Teach me with /teach.»≔U
-[⇩⇒s R[⇒p s p0@∈]⌿⇒m m#0>[m0@1@][∅]?]≔A          ※ message → reply, ∅ when it does not know
+※ A reply is a string, said as it is — or a quotation, run with the message,
+※ and what it leaves is the answer. ∅ from a quotation means «not mine»,
+※ and the next matching rule is tried; ∅ from all of them means the grid
+※ does not know. Matches are tried in table order, so the seed comes
+※ before anything learned, and a skill before a fact about the same thing.
+※ A skill that glitches is «not mine» too, not the end of the conversation.
+[⇩⇒s R[⇒p s p0@∈]⌿ ∅⇒m [⇒p m∅=[p1@ ∂⍙⇒e⌫ e«quot»=[[s⇅!][⌫∅]⍥][]?⇒m][]?]∀ m]≔A
 [L⊆«»⊇Y⊆«»⊇«⏎»⊆« »⊇]≔Z                          ※ scrub: a rule is one line, and holds no guillemets
 [⇒w⇒p « ⟨»L⧺p⧺Y⧺« »⧺L⧺w⧺Y⧺«⟩⏎»⧺M⧺⇒c ⟐M⊆c⊇⟡]≔W   ※ pattern reply → ⟨status report⟩
 ※ Where to ask, and in whose dialect: ⟨url model version dialect⟩. Two wire

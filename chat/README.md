@@ -335,6 +335,44 @@ This is the whole reason the medium is a program rather than a database. You
 can add a fact to a key-value store; you cannot add *the ability to read a
 file* to one.
 
+### The first skill in the seed
+
+The rule table can now hold a skill directly: a reply that is a **quotation**
+is run with the message, and what it leaves is the answer. The seed carries
+one — `C`, a calculator — routed to by six rows, one per operator:
+
+```
+ ⟨«+» [C]⟩ ⟨«-» [C]⟩ ⟨«×» [C]⟩ ⟨«*» [C]⟩ ⟨«÷» [C]⟩ ⟨«/» [C]⟩
+```
+
+It keeps only the characters arithmetic is made of, so *what is 120+50* is
+`120+50`, and answers in under a millisecond with no API call — for every
+sum, including the ones nobody has asked yet. What it cannot read it
+declines with `∅`, meaning *not mine*, and the next matching rule gets the
+turn; `∅` from every rule means the grid does not know and the learner is
+asked. A skill that glitches counts as *not mine* too, not as the end of the
+conversation.
+
+The live comparison that motivated it, on a deployed bot with a model key:
+
+```
+5+5       → learned the fact «5+5 equals 10»       one API call, one row
+120+50    → I do not know that yet                  another call, another row
+```
+
+Three facts and a claim it can do arithmetic, and it could not. With `C`,
+the learned `5+5` row is never reached: the seed comes before anything
+learned, and a skill before a fact about the same thing. (`5+5+5` still
+falls through to that stale fact — a fact answering where a skill was
+needed is precisely the failure the distinction is about.)
+
+Two things a skill author has to know. **Locals belong to the calling
+strand**: the body strand keeps its request in `r` and its answer in `a`,
+so a definition that stores there answers the wrong request — `C` uses
+`u v l f i j`. And **a local holding a quotation runs when named**, so a
+quotation to be inspected or handed on stays on the stack (`∂⍙`), never in
+a `⇒` local.
+
 ## The co-development storm
 
 `codev.py` puts the loom's headline claim under load: many agents rewriting

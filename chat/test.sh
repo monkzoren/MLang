@@ -67,4 +67,15 @@ out=$(run tok "$(frame /say 'qwx zzt vurp')$(frame /say hello)")
 check "an unknown question does not stop the conversation" "Hello. I am a grid" "$out"
 check "and is answered immediately" "nobody has taught me" "$out"
 
+# A skill, not a fact: the calculator is a quotation in the rule table, run
+# with the message. It answers sums nobody taught it, and says «not mine»
+# for what it cannot read so the next rule — or the model — gets a turn.
+out=$(run tok "$(frame /say '120+50')")
+check "computes a sum it was never taught" "170" "$out"
+out=$(run tok "$(frame /say 'what is 7×9')")
+check "reads the arithmetic out of a sentence" "63" "$out"
+out=$(run tok "$(frame /say '7 ÷ 0')$(frame /say hello)")
+check "a skill that cannot answer passes the turn on" "nobody has taught me" "$out"
+check "and a skill that glitches does not end the conversation" "Hello. I am a grid" "$out"
+
 exit $fail
