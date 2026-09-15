@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
   && rm -rf /var/lib/apt/lists/* \
   && useradd -m grid && mkdir -p /data && chown grid:grid /data
 COPY --from=build /src/compiler/target/release/mlang /usr/local/bin/mlang
+# The primer the learner hands the model when it asks for a skill: the
+# language reference, from the binary that will run what comes back, so
+# the two can never disagree about which operations exist.
+RUN mkdir -p /app && mlang ops > /app/primer.txt
 COPY chat/chat.ml /app/chat.ml
 COPY chat/boot.sh /usr/local/bin/boot
 USER grid

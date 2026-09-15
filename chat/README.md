@@ -366,6 +366,54 @@ learned, and a skill before a fact about the same thing. (`5+5+5` still
 falls through to that stale fact — a fact answering where a skill was
 needed is precisely the failure the distinction is about.)
 
+### Learning a skill on its own
+
+With a model key, the learner no longer asks *answer this*; it asks **is
+this a fact or a skill?** The model replies in JSON — `{"kind":"fact",
+"answer":…}` or `{"kind":"skill","pattern":…,"code":…,"tests":[…]}` — with
+the language reference (`mlang ops`, dropped into the image at build time)
+in its system prompt. A fact becomes a row, as before. A skill goes through
+`S`:
+
+1. a row whose reply is the model's quotation is woven in with `⟡`
+   (refused outright if it does not weave);
+2. the model's own three tests are run against the **live grid**;
+3. if any fails, the previous program is woven straight back.
+
+The loom makes step 3 a transaction. A rejected skill leaves nothing behind
+but a version in the log; the program is byte-identical to before. A skill
+that passes then answers inputs it was never tested on — `reverse
+parliament` after being tested on `reverse qwerty` — which is the whole
+point, and the thing no number of rows could do.
+
+`chat/learn_test.py` drives every path against a model that is a
+dictionary: a fact, a skill that passes, one that fails its tests, one that
+does not weave, and garbage. What it cannot tell you is how often a real
+model writes a working skill in a language it has never seen. The gate makes
+a bad answer cost nothing; it does not make good ones likely. Watch
+`diff /data/seed.ml /data/chat.ml` after a few questions and see.
+
+There is deliberately **no sandbox** on what a learned skill may do — it
+runs with the grid's full powers, including `⍇`, `⍄` and `⌂` — because the
+deployment this was built for sits behind an access whitelist. On an open
+URL that would be a mistake: anyone who could chat could ask for a skill
+that posts `⌂2@` somewhere. The place to add one is `S`, before `⟡`.
+
+### Where lessons live
+
+Learned rows — facts, skills, and `/teach` alike — go in `Q`, a second table
+the image ships **empty and never writes inside**. `A` searches `R` then
+`Q`. This is not tidiness: the seed and the memory must own different lines
+or a new image cannot merge with an old volume. They did once share an
+insertion point (both after `«bye»`), and `diff3` rightly called the
+calculator and a volume's three lessons a conflict.
+
+A volume from before `Q` existed carries its lessons inside `R`, and the
+first redeploy after this change will conflict for exactly that reason;
+`boot` keeps the old program and says so. Once: `rm /data/seed.ml`, then
+restart. It backs up the old program, re-seeds, and every merge after that
+is clean.
+
 Two things a skill author has to know. **Locals belong to the calling
 strand**: the body strand keeps its request in `r` and its answer in `a`,
 so a definition that stores there answers the wrong request — `C` uses
