@@ -238,7 +238,7 @@ renamed name. Weave errors carry the same excerpt treatment, and a
 `]` without an opener reports the strand's bracket tally.
 
 **Checking without running.** `mlang check prog.ml` weaves the program and
-reports weave errors as above, and then names two things that are static
+reports weave errors as above, and then names three things that are static
 properties of the text but that the runtime can only announce once the
 program has already gone wrong:
 
@@ -254,6 +254,27 @@ program has already gone wrong:
   almost certainly happened: `≔ ⇒ ↥ ↧ ⇂ ⇈ ⇟` each swallow exactly one
   glyph, so `⇒pos` binds the local `p` and then *references* `o` and `s`,
   and `↧q` receives from channel `q` rather than reading a local.
+* **Glyphs that are certain to glitch on the stack they are given.**
+  `check` runs every strand on shapes instead of values — how deep the
+  stack is and, where it is known, the type in each slot — following
+  both arms of `?`, iterating loops until the shape at the loop head
+  stops changing, and entering each definition at each place it is
+  called. A glyph that reaches for more than the stack holds, or is
+  handed a type it refuses, is reported with its coordinates and an
+  excerpt, and with the call site when it sits inside a definition:
+  `⚠ 1:2: + needs 2 values and the stack holds 1 here — in A, called at
+  3:3`. The rule is *certain or silent*. A finding means that if
+  execution reaches the glyph on that path, it glitches; it may sit on a
+  branch this run's input never takes. Wherever the shape cannot be
+  known — a value off a channel or out of a list, a quotation of unknown
+  origin, arms of a `?` that leave different depths, a definition that
+  calls itself — the pass forgets the stack and says nothing more until
+  it knows again. A glitch inside a `⍥` body is the program's own
+  business and is not reported, and a value the program has asked the
+  type of (`⍙`) is treated as untyped from then on, since the program is
+  about to branch on the answer. What this cannot see is a wrong
+  *value*: an off-by-one or a swapped operand of the same type still
+  weaves, checks clean, and runs.
 
 `check` exits 0 for a program that weaves, warnings or not; the warnings
 are advisory and are written to stderr. They are not part of `run`'s
