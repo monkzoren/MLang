@@ -153,6 +153,47 @@ carry every transcript, so per-mutant comparison across runs is a
 `pip install tiktoken`) measures the char-vs-BPE-token table quoted in
 the top-level README's honest notes.
 
+## The speed suite
+
+`bench/perf/` holds seven small programs that each lean on one part of
+the VM, and `bench/perf.py` runs them, checks every answer against a
+recorded golden, and prints the best wall time of five runs:
+
+```sh
+python3 bench/perf.py                  # the built toolchain
+python3 bench/perf.py --mlang ./old    # another build, to compare
+```
+
+| program | what it leans on | before | after | |
+|---|---|---|---|---|
+| `loop.ml` | locals, int arithmetic, `⟳` | 1310 ms | 407 ms | 3.2× |
+| `mandel.ml` | float arithmetic, a definition call per pixel | 1147 ms | 312 ms | 3.7× |
+| `fib.ml` | recursive definition calls, `?` | 278 ms | 123 ms | 2.3× |
+| `mapfold.ml` | `∵ ⌿ ⍀` over a million items | 427 ms | 219 ms | 2.0× |
+| `pipeline.ml` | three strands, two channels, 300 000 values | 180 ms | 121 ms | 1.5× |
+| `strings.ml` | `⍕ ⊆ ⍎ ⊇` | 146 ms | 123 ms | 1.2× |
+| `append.ml` | an accumulator grown by `⧺` | 12 521 ms | 37 ms | 340× |
+
+One machine (4 cores, Linux), one sitting; "before" is the commit
+preceding the suite. The ratios are the claim, not the milliseconds.
+Where the time went: a heap-allocated string naming the glyph on every
+arithmetic operand, a scheduler round (a scan of every strand, a `Vec`,
+two moves of the running strand) every eight instructions even when one
+strand was the only one alive, SipHash on every global lookup, and `⧺`
+copying its whole left operand — which made every accumulate-by-append
+loop quadratic. None of the fixes changes what a program can observe:
+slices are still eight instructions, and the conformance corpus passes
+byte for byte. CI checks the suite's answers on every push; it does not
+gate on time, because a shared runner cannot measure it.
+
+What is still slow, and why: the VM walks `Vec<Instr>` and dispatches
+on the glyph itself, every quotation entered costs reference-count
+traffic on its code, and values are 16-byte tagged enums behind `Arc`.
+A counting loop runs about 80 million instructions a second — the same
+order as CPython, well short of a register VM. Closing that gap means
+compiling glyphs to dense opcodes with resolved local slots, which is a
+rewrite of the dispatch loop rather than a tune-up.
+
 ## What the numbers do and don't say
 
 * The corpus programs are small (a line to a screenful). This measures

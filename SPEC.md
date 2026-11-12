@@ -194,6 +194,22 @@ enormous exponent, a definition that recurses without bound — is reported
 with the same coordinates and stack as every other glitch, kills only its
 strand, and is catchable with `⍥` (§7 for the exit status).
 
+Memory is the resource no single operation can refuse, so it is
+budgeted for the whole grid: the runtime counts the bytes the process
+holds, and a strand that is running when the count passes the budget
+glitches `out of memory — the grid holds more than its N MiB budget
+(MLANG_MEM_LIMIT)` at the instruction it stands on — an unbounded
+accumulator or a channel nobody drains is a fault with coordinates, not
+an aborted process. `⍥` catches it, and unwinding to the handler is what
+releases the memory; a strand it kills gives up its stack so the rest of
+the grid can go on. The budget is `MLANG_MEM_LIMIT` in MiB — 4096 by
+default, `0` to lift it — and it is part of a run's input (§5.2): the
+count is of bytes requested, so under the deterministic scheduler the
+same program crosses the same budget at the same instruction every
+time. The check sits between instructions; an operation that asks for
+more than the machine has in one allocation is what the per-operation
+limits above exist to refuse.
+
 `[body] [handler] ⍥` runs `body`; if a glitch reaches the `⍥`, the stack
 is truncated to its depth at entry, the glitch value is pushed, and
 `handler` runs. Success disarms the handler. An uncaught glitch kills only

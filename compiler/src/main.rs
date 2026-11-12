@@ -639,6 +639,12 @@ fn net_cmd(hub: bool, rest: &[String]) -> ExitCode {
 }
 
 fn main() -> ExitCode {
+    // The memory budget applies to everything that runs a grid — the
+    // toolchain and a welded binary alike.
+    if let Err(e) = mlang::mem::limit_from_env() {
+        eprintln!("✗ {e}");
+        return ExitCode::from(2);
+    }
     // A welded binary runs its embedded program — it is not a compiler.
     // Its command-line arguments belong to that program (⌂), which is what
     // lets a welded editor open a file dropped onto the executable.

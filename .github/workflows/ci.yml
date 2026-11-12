@@ -18,6 +18,8 @@ jobs:
           python3 bench/record_ports.py --check
           python3 bench/robustness.py --seeds-mlang 1 --seeds-python 2 --jobs 4
           git checkout -- bench/results/
+      - name: Speed suite answers (bench/perf — outputs only; times are not gated)
+        run: python3 bench/perf.py --check
       - name: Weld and run standalone binaries
         run: |
           M=compiler/target/release/mlang
