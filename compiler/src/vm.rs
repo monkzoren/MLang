@@ -336,7 +336,19 @@ impl Strand {
         self.pop(pos, "a value")
     }
 
-    fn pop_num(&mut self, pos: Pos, op: &str) -> R<Value> {
+    /// The op is named only when the pop fails — arithmetic is the hottest
+    /// path in the VM, and formatting a glyph it will never print cost an
+    /// allocation per operand.
+    #[inline]
+    fn pop_num(&mut self, pos: Pos, op: impl std::fmt::Display) -> R<Value> {
+        match self.stack.last() {
+            Some(v) if v.is_num() => Ok(self.stack.pop().unwrap()),
+            _ => self.pop_num_slow(pos, &op.to_string()),
+        }
+    }
+
+    #[cold]
+    fn pop_num_slow(&mut self, pos: Pos, op: &str) -> R<Value> {
         let v = self.pop_for(pos, op, "a number")?;
         if !v.is_num() {
             return glitch(format!("{op} expects numbers, got {}", type_name(&v)), pos);
@@ -388,6 +400,26 @@ impl Strand {
             .filter(|&&(_, _, depth)| depth <= self.frames.len())
             .map(|&(c, pos, _)| (c, pos))
             .collect()
+    }
+
+    /// Where this strand stands: the instruction its top frame is about to
+    /// run, or the loop glyph that frame belongs to.
+    fn here(&self) -> Pos {
+        for f in self.frames.iter().rev() {
+            match f {
+                Frame::CF { code, ip } => {
+                    if let Some(i) = code.get(*ip).or(code.last()) {
+                        return i.pos;
+                    }
+                }
+                Frame::While { pos, .. }
+                | Frame::Iter { pos, .. }
+                | Frame::Drain { pos, .. }
+                | Frame::Pump { pos, .. } => return *pos,
+                Frame::Repeat { .. } | Frame::Try { .. } => {}
+            }
+        }
+        (0, 0)
     }
 
     fn catch(&mut self, value: Value) -> bool {
@@ -552,12 +584,38 @@ fn num_cmp(a: &Value, b: &Value) -> std::cmp::Ordering {
         .unwrap_or(std::cmp::Ordering::Equal)
 }
 
+/// Sigils and strand ids are small integers that are already distinct;
+/// the default SipHash spent longer hashing a glyph than the VM spends
+/// running it. One multiply spreads the bits across the table. Nothing
+/// iterates these maps in an order that reaches output.
+#[derive(Default, Clone, Copy)]
+pub struct GlyphHasher(u64);
+
+impl std::hash::Hasher for GlyphHasher {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            self.0 = (self.0 ^ u64::from(b)).wrapping_mul(0x100_0000_01b3);
+        }
+    }
+    fn write_u32(&mut self, n: u32) {
+        self.0 = u64::from(n).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+    }
+    fn write_i64(&mut self, n: i64) {
+        self.0 = (n as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+    }
+}
+
+pub type GlyphMap<K, V> = HashMap<K, V, std::hash::BuildHasherDefault<GlyphHasher>>;
+
 // ── the machine ────────────────────────────────────────────────────────
 pub struct VM<'io> {
-    pub globals: HashMap<char, Value>,
-    pub channels: HashMap<char, VecDeque<Value>>,
+    pub globals: GlyphMap<char, Value>,
+    pub channels: GlyphMap<char, VecDeque<Value>>,
     pub strands: Vec<Strand>,
-    by_sid: HashMap<i64, usize>,
+    by_sid: GlyphMap<i64, usize>,
     pub main_count: usize,
     next_spawn_sid: i64,
     pub failed: bool,
@@ -818,10 +876,10 @@ impl<'io> VM<'io> {
         err: &'io mut dyn Write,
     ) -> Self {
         VM {
-            globals: HashMap::new(),
-            channels: HashMap::new(),
+            globals: GlyphMap::default(),
+            channels: GlyphMap::default(),
             strands: Vec::new(),
-            by_sid: HashMap::new(),
+            by_sid: GlyphMap::default(),
             main_count: 0,
             next_spawn_sid: 0,
             failed: false,
@@ -1191,6 +1249,26 @@ impl<'io> VM<'io> {
         executed
     }
 
+    /// One strand is the only live one: nothing can interleave with it, so
+    /// its slices run back to back without a scheduler round between them
+    /// (a round re-scans every strand and moves this one out and back).
+    /// The slices themselves are unchanged — still SLICE instructions each
+    /// — so the moment anything else could run (a spawn, a block, a
+    /// pending patch, the strand ending) control returns to the ordinary
+    /// round at exactly the instruction it would have, and the
+    /// interleaving the conformance corpus pins is untouched.
+    fn run_alone(&mut self, idx: usize) {
+        let count = self.strands.len();
+        let mut s = std::mem::replace(&mut self.strands[idx], Strand::placeholder());
+        while s.status == Status::Run && s.pending.is_none() && self.strands.len() == count {
+            run_burst(self, &mut s, SLICE);
+        }
+        self.strands[idx] = s;
+        if self.strands[idx].status == Status::Dead {
+            self.report_glitch(idx);
+        }
+    }
+
     pub fn run_scheduler(&mut self) {
         loop {
             let mut progressed = 0;
@@ -1209,21 +1287,31 @@ impl<'io> VM<'io> {
                     }
                 }
             }
-            let live: Vec<usize> = (0..self.strands.len())
-                .filter(|&i| {
-                    matches!(self.strands[i].status, Status::Run | Status::Blocked)
-                })
-                .collect();
-            if live.is_empty() {
+            // Counted, not collected: this runs once per round, and a round
+            // is eight instructions per strand.
+            let (mut running, mut waiting, mut only) = (0usize, 0usize, 0usize);
+            for (i, t) in self.strands.iter().enumerate() {
+                match t.status {
+                    Status::Run => {
+                        running += 1;
+                        only = i;
+                    }
+                    Status::Blocked => waiting += 1,
+                    _ => {}
+                }
+            }
+            if running + waiting == 0 {
                 return;
             }
+            if running == 1 && waiting == 0 {
+                self.run_alone(only);
+                continue;
+            }
             if progressed == 0 {
-                let blocked: Vec<usize> = live
-                    .iter()
-                    .copied()
+                let blocked: Vec<usize> = (0..self.strands.len())
                     .filter(|&i| self.strands[i].status == Status::Blocked)
                     .collect();
-                if !blocked.is_empty() && blocked.len() == live.len() {
+                if !blocked.is_empty() && running == 0 {
                     // A strand waiting its turn at ⌨ is not deadlocked: the
                     // grid has gone quiet, so the next round wakes it and the
                     // read proceeds (blocking on the OS, not the scheduler).
@@ -1965,6 +2053,31 @@ pub(crate) fn run_burst(vm: &mut VM, s: &mut Strand, limit: usize) -> usize {
                 continue 'outer;
             }
         }
+        // The memory budget (mem.rs): a grid that has outgrown it glitches
+        // here, between instructions, instead of aborting the process at
+        // whichever allocation happens to fail. ⍥ catches it like any
+        // glitch — and unwinding to the handler is what frees the memory.
+        // A strand it kills gives up its stack, so the rest of the grid
+        // is not left over budget by a strand that can no longer run.
+        if let Some(mib) = crate::mem::over_budget() {
+            if !s.frames.is_empty() {
+                let pos = s.here();
+                let v = Value::str(format!(
+                    "out of memory — the grid holds more than its {mib} MiB budget (MLANG_MEM_LIMIT)"
+                ));
+                executed += 1;
+                let chain = s.live_calls();
+                if !s.catch(v.clone()) {
+                    s.status = Status::Dead;
+                    s.glitch = Some((v, pos));
+                    s.glitch_chain = chain;
+                    s.stack = Vec::new();
+                    s.marks.clear();
+                    break 'outer;
+                }
+                continue 'outer;
+            }
+        }
         if s.frames.is_empty() {
             // An unfinished ⟨ at the end of a strand is a fault, not a
             // silently successful run with a stray mark on the stack.
@@ -2095,23 +2208,23 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
             Ok(())
         }
         Frame::While { .. } => {
-            let (phase, cond, body, pos) = match &s.frames[fi] {
-                Frame::While { phase, cond, body, pos } => {
-                    (*phase, cond.clone(), body.clone(), *pos)
-                }
-                _ => unreachable!(),
+            let Frame::While { phase, cond, pos, .. } = &mut s.frames[fi] else {
+                unreachable!()
             };
-            if phase == 0 {
-                if let Frame::While { phase, .. } = &mut s.frames[fi] {
-                    *phase = 1;
-                }
+            if *phase == 0 {
+                *phase = 1;
+                let cond = cond.clone();
                 s.frames.push(cf(cond));
             } else {
-                if let Frame::While { phase, .. } = &mut s.frames[fi] {
-                    *phase = 0;
-                }
-                let flag = s.pop_for(pos, "⟳", "the condition's result")?;
+                *phase = 0;
+                let pos = *pos;
+                let flag = match s.stack.pop() {
+                    Some(v) => v,
+                    None => return s.pop_for(pos, "⟳", "the condition's result").map(|_| ()),
+                };
                 if truthy(&flag) {
+                    let Frame::While { body, .. } = &s.frames[fi] else { unreachable!() };
+                    let body = body.clone();
                     s.frames.push(cf(body));
                 } else {
                     s.frames.pop();
@@ -2120,16 +2233,12 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
             Ok(())
         }
         Frame::Repeat { .. } => {
-            let (left, body) = match &s.frames[fi] {
-                Frame::Repeat { left, body } => (*left, body.clone()),
-                _ => unreachable!(),
-            };
-            if left <= 0 {
+            let Frame::Repeat { left, body } = &mut s.frames[fi] else { unreachable!() };
+            if *left <= 0 {
                 s.frames.pop();
             } else {
-                if let Frame::Repeat { left, .. } = &mut s.frames[fi] {
-                    *left -= 1;
-                }
+                *left -= 1;
+                let body = body.clone();
                 s.frames.push(cf(body));
             }
             Ok(())
@@ -2241,6 +2350,7 @@ fn step(vm: &mut VM, s: &mut Strand) -> R<()> {
 }
 
 // ── instruction execution ──────────────────────────────────────────────
+#[inline]
 fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
     let pos = instr.pos;
     match &instr.op {
@@ -2294,7 +2404,92 @@ fn execute(vm: &mut VM, s: &mut Strand, instr: &Instr) -> R<()> {
             s.push(Value::List(Arc::new(items)));
             Ok(())
         }
-        Op::B(ch, arg, arg2) => builtin(vm, s, *ch, *arg, *arg2, pos),
+        Op::B(ch, arg, arg2) => {
+            if fast_op(s, *ch, *arg) {
+                return Ok(());
+            }
+            builtin(vm, s, *ch, *arg, *arg2, pos)
+        }
+    }
+}
+
+/// The handful of glyphs that make up most of any running program —
+/// stack shuffles, local stores, small-integer and float arithmetic and
+/// comparison — done in place, without entering `builtin`. Only the
+/// plain success case is handled here: anything else (an underflow, a
+/// type mismatch, an overflow into bignums, a mixed int/float pair)
+/// returns false having touched nothing, and `builtin` runs the glyph in
+/// full, so every result and every diagnostic stays its own. None of
+/// these glyphs has an effect, so the pure-evaluation guard is not
+/// bypassed.
+#[inline(always)]
+fn fast_op(s: &mut Strand, ch: char, arg: char) -> bool {
+    let n = s.stack.len();
+    match ch {
+        '∂' if n >= 1 => {
+            let v = s.stack[n - 1].clone();
+            s.stack.push(v);
+            true
+        }
+        '⌫' if n >= 1 => {
+            s.stack.pop();
+            true
+        }
+        '⇅' if n >= 2 => {
+            s.stack.swap(n - 1, n - 2);
+            true
+        }
+        '⊚' if n >= 2 => {
+            let v = s.stack[n - 2].clone();
+            s.stack.push(v);
+            true
+        }
+        '⇒' if n >= 1 => {
+            let v = s.stack.pop().unwrap();
+            s.local_set(arg, v);
+            true
+        }
+        '+' | '-' | '×' if n >= 2 => {
+            let r = match (&s.stack[n - 2], &s.stack[n - 1]) {
+                (Value::Int(x), Value::Int(y)) => {
+                    let r = match ch {
+                        '+' => x.checked_add(*y),
+                        '-' => x.checked_sub(*y),
+                        _ => x.checked_mul(*y),
+                    };
+                    match r {
+                        Some(r) => Value::Int(r),
+                        None => return false,
+                    }
+                }
+                (Value::Float(x), Value::Float(y)) => Value::Float(match ch {
+                    '+' => x + y,
+                    '-' => x - y,
+                    _ => x * y,
+                }),
+                _ => return false,
+            };
+            s.stack.pop();
+            s.stack[n - 2] = r;
+            true
+        }
+        '<' | '≤' | '>' | '≥' | '=' | '≠' if n >= 2 => {
+            let (Value::Int(x), Value::Int(y)) = (&s.stack[n - 2], &s.stack[n - 1]) else {
+                return false;
+            };
+            let r = match ch {
+                '<' => x < y,
+                '≤' => x <= y,
+                '>' => x > y,
+                '≥' => x >= y,
+                '=' => x == y,
+                _ => x != y,
+            };
+            s.stack.pop();
+            s.stack[n - 2] = Value::Int(r as i64);
+            true
+        }
+        _ => false,
     }
 }
 
@@ -2339,8 +2534,24 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         // ── arithmetic ──
         '+' | '-' | '×' | '÷' | '%' | '^' => {
-            let b = s.pop_num(pos, &ch.to_string())?;
-            let a = s.pop_num(pos, &ch.to_string())?;
+            // Two numbers on top: compute straight off the stack. A fault
+            // still leaves the stack as the popping path would — both
+            // operands consumed — because the report prints it.
+            let n = s.stack.len();
+            if n >= 2 && s.stack[n - 1].is_num() && s.stack[n - 2].is_num() {
+                let r = arith(ch, &s.stack[n - 2], &s.stack[n - 1], pos);
+                s.stack.pop();
+                match r {
+                    Ok(v) => s.stack[n - 2] = v,
+                    Err(e) => {
+                        s.stack.pop();
+                        return Err(e);
+                    }
+                }
+                return Ok(());
+            }
+            let b = s.pop_num(pos, ch)?;
+            let a = s.pop_num(pos, ch)?;
             let r = arith(ch, &a, &b, pos)?;
             s.push(r);
         }
@@ -2353,7 +2564,7 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
             s.push(Value::Float(x.sqrt()));
         }
         '⌊' | '⌈' => {
-            let v = s.pop_num(pos, &ch.to_string())?;
+            let v = s.pop_num(pos, ch)?;
             match v {
                 Value::Int(_) | Value::Big(_) => s.push(v),
                 Value::Float(f) => {
@@ -2516,7 +2727,26 @@ fn builtin(vm: &mut VM, s: &mut Strand, ch: char, arg: char, arg2: char, pos: Po
         }
         '⧺' => {
             let b = s.pop_any(pos)?;
-            let a = s.pop_any(pos)?;
+            let mut a = s.pop_any(pos)?;
+            // An accumulator nobody else holds grows in place: building a
+            // string or list in a fold is then linear, not quadratic.
+            match (&mut a, &b) {
+                (Value::Str(x), Value::Str(y)) => {
+                    if let Some(own) = Arc::get_mut(x) {
+                        own.push_str(y);
+                        s.push(a);
+                        return Ok(());
+                    }
+                }
+                (Value::List(x), Value::List(y)) => {
+                    if let Some(own) = Arc::get_mut(x) {
+                        own.extend(y.iter().cloned());
+                        s.push(a);
+                        return Ok(());
+                    }
+                }
+                _ => {}
+            }
             match (&a, &b) {
                 (Value::Str(x), Value::Str(y)) => s.push(Value::str(format!("{x}{y}"))),
                 (Value::List(x), Value::List(y)) => {

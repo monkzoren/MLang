@@ -273,9 +273,32 @@ fn echo_once() -> (u16, std::sync::mpsc::Receiver<String>) {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         let (mut sock, _) = listener.accept().unwrap();
-        let mut buf = vec![0u8; 8192];
-        let n = sock.read(&mut buf).unwrap();
-        let req = String::from_utf8_lossy(&buf[..n]).to_string();
+        // Read the whole request, not whatever one read() returns: a
+        // client may send its headers and its body in separate segments,
+        // and a server that stops at the first would echo an empty body
+        // — which is how this test failed, now and then, with exit 0 and
+        // nothing on stdout.
+        let mut buf = Vec::new();
+        let mut chunk = [0u8; 8192];
+        loop {
+            let n = sock.read(&mut chunk).unwrap();
+            buf.extend_from_slice(&chunk[..n]);
+            let text = String::from_utf8_lossy(&buf);
+            let whole = text.split_once("\r\n\r\n").is_some_and(|(head, body)| {
+                let want = head
+                    .lines()
+                    .find_map(|l| {
+                        let (k, v) = l.split_once(':')?;
+                        k.eq_ignore_ascii_case("content-length").then(|| v.trim().parse::<usize>().ok())?
+                    })
+                    .unwrap_or(0);
+                body.len() >= want
+            });
+            if whole || n == 0 {
+                break;
+            }
+        }
+        let req = String::from_utf8_lossy(&buf).to_string();
         let body = req.split("\r\n\r\n").nth(1).unwrap_or("").to_string();
         tx.send(req).unwrap();
         let out = format!(

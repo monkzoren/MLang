@@ -6,6 +6,7 @@ pub mod gui;
 pub mod http;
 pub mod lex;
 pub mod loom;
+pub mod mem;
 pub mod net;
 pub mod par;
 pub mod payload;
@@ -15,6 +16,9 @@ pub mod vm;
 pub mod wire;
 
 use std::io::Cursor;
+
+#[global_allocator]
+static ALLOC: mem::Counting = mem::Counting;
 
 /// Compile and run MLang source with captured I/O.
 /// Returns (exit_code, stdout, stderr). Exit 2 = weave (load) error.

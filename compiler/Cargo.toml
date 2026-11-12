@@ -28,3 +28,9 @@ windows-sys = { version = "0.59", features = ["Win32_System_Console", "Win32_Fou
 
 [dev-dependencies]
 serde_json = "1.0.151"
+
+# The interpreter loop is one crate-spanning hot path (vm ↔ values ↔
+# num-bigint); whole-program optimization is worth the longer build.
+[profile.release]
+lto = "fat"
+codegen-units = 1
