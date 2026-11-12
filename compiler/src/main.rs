@@ -532,7 +532,9 @@ usage:
                                   MLANG_PORT does the same for a welded
                                   binary — without it, ⎆ replays request
                                   frames from stdin)
-  mlang check <file|->            compile only; report weave errors
+  mlang check <file|->            compile only; report weave errors, dangling
+                                  channels, unbound names, and glyphs certain
+                                  to underflow or be handed the wrong type
   mlang merge <base> <ours> <theirs>   three-way merge (the loom's diff3)
                                   of three files; merged program to stdout,
                                   conflicts to stderr (exit 3)
@@ -791,6 +793,23 @@ fn main() -> ExitCode {
                                  '{arg}' and then references '{name}' — names are one glyph"
                             );
                         }
+                    }
+                    // And the stack: a glyph that reaches for more than
+                    // the stack holds, or is handed the wrong type, on a
+                    // path where both are certain.
+                    let lines: Vec<String> = text.lines().map(String::from).collect();
+                    let report = mlang::check::stack_effects(&prog);
+                    for f in &report.findings {
+                        eprintln!("  ⚠ {}:{}: {}", f.pos.0, f.pos.1, f.msg);
+                        if let Some(x) = vm::excerpt(&lines, f.pos) {
+                            eprintln!("{x}");
+                        }
+                    }
+                    if !report.complete {
+                        eprintln!(
+                            "  (the stack check ran out of budget before it had \
+                             followed every path — it says nothing about the rest)"
+                        );
                     }
                     ExitCode::SUCCESS
                 }

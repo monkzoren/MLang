@@ -153,6 +153,38 @@ carry every transcript, so per-mutant comparison across runs is a
 `pip install tiktoken`) measures the char-vs-BPE-token table quoted in
 the top-level README's honest notes.
 
+## What `mlang check` catches before the run
+
+The robustness table above counts a mutant as *caught before running*
+only when it fails to weave. `mlang check` now also runs a stack-effect
+pass (SPEC §4.6): it follows every path on stack shapes and reports a
+glyph only when it is certain to underflow or to be handed a type it
+refuses. Over the same sweep — 1532 one-token mutants of 161 programs,
+ten seeds — bucketed by what each mutant does when run:
+
+| what the mutant becomes when run | mutants | flagged by `check` |
+|---|---|---|
+| load error (already caught) | 229 | — |
+| runtime fault | 771 | 559 (73%) |
+| proven deadlock | 41 | 1 |
+| **silent wrong output** | 417 | 16 (4%) |
+| hang | 10 | 0 |
+| no behavior change | 64 | 6 |
+
+So `weave + check` names 811 of 1532 mutants (53%) before anything
+runs, against 229 (15%) for weaving alone — most of the distance to
+Python's 73%. It does almost nothing for the bucket that matters most:
+a silent wrong output is nearly always a wrong *value* on a stack of
+the right shape, and no shape analysis sees that. The six flagged
+mutants that "pass" are real faults on a path the recorded input never
+takes (a `⍣` that runs zero times, an end-of-input branch), not false
+alarms. On unmutated programs the pass is silent: every corpus program
+that runs clean checks clean, and a test pins that.
+
+These numbers are from a one-off sweep, not from `robustness.py`: the
+recorded tables above are unchanged and still define "caught before
+running" as a load error.
+
 ## The speed suite
 
 `bench/perf/` holds seven small programs that each lean on one part of

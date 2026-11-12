@@ -1,6 +1,7 @@
 //! The MLang toolchain library: parser, compiler, runtime, and the
 //! payload format used to weld compiled programs into native binaries.
 
+pub mod check;
 pub mod forms;
 pub mod gui;
 pub mod http;
